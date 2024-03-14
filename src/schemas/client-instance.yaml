@@ -24,7 +24,8 @@ properties:
     description: The manufacturer name
   owner:
     description: The owner of the client instance
-    $ref: "./subject-gesundheitsid.yaml"
+    oneOf:
+      - "$ref": "./subject-gesundheitsid.yaml#"
   registration_date:
     type: string
     format: date-time
