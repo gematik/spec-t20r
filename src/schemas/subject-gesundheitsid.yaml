@@ -36,7 +36,7 @@ properties:
   iss:
     type: string
     description: The issuer of the token
-  urn:telematik:claims:display_name:
+  "urn:telematik:claims:display_name":
     type: string
     description: The display name of the subject
   nonce:
