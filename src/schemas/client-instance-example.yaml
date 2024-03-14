@@ -21,5 +21,15 @@ attestation:
 
 owner:
   sub: "string"
+  "urn:telematik:claims:id": "T020821918"
+  "urn:telematik:claims:organization": "101575519"
+  "urn:telematik:claims:display_name": "Juliane Mustermann"
+  "urn:telematik:claims:profession": "1.2.276.0.76.4.49"
+  amr:
+    - "urn:telematik:auth:other"
+  iss: "https://..."
+  aud: "https://"
+  acr: "gematik-ehealth-loa-high"
+  auth_time: 1710409161
 
 owner_mail: "mail@example.com"
