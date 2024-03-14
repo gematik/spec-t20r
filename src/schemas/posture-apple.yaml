@@ -3,12 +3,12 @@ type: object
 properties:
   name:
     type: string
-  systemVersion:
+  system_version:
     type: string
     description: Operating system version, e.g. 10.15.7
-  systemName:
+  system_name:
     type: string
     description: The name of the operating system running on the device.
-  deviceModel:
+  device_model:
     type: string
     description: The model of the device, e.g. "iPhone6,2"

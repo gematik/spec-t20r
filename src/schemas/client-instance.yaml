@@ -1,1 +1,56 @@
 # Schema for client instance information used by the zero trust components
+type: object
+properties:
+  name:
+    type: string
+    description: The name of the client instance, chosen by the user of the client
+  client_id:
+    type: string
+    description: The client identifier
+  product_id:
+    type: string
+    description: The product identifier
+  product_name:
+    type: string
+    description: The product name
+  product_version:
+    type: string
+    description: The product version
+  manufacturer_id:
+    type: string
+    description: The manufacturer identifier
+  manufacturer_name:
+    type: string
+    description: The manufacturer name
+  owner:
+    description: The owner of the client instance
+    $ref: "./subject-gesundheitsid.yaml"
+  registration_date:
+    type: string
+    format: date-time
+    description: The registration date of the client instance
+  platform:
+    type: string
+    description: The platform of the client instance
+  posture:
+    description: The posture of the client instance
+    $ref: "./posture.yaml"
+  attestation_format:
+    type: string
+    description: The format of the attestation data
+  attestation_data:
+    type: object
+    description: The attestation data
+required:
+  - name
+  - client_id
+  - product_id
+  - product_name
+  - product_version
+  - manufacturer_id
+  - manufacturer_name
+  - owner
+  - registration_date
+  - platform
+  - posture
+  - attestation_format

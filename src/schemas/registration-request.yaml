@@ -11,7 +11,4 @@ properties:
       - apple
       - software
   posture:
-    oneOf:
-      - $ref: './posture-android.yaml'
-      - $ref: './posture-apple.yaml'
-      - $ref: './posture-software.yaml'
+    $ref: './posture.yaml'
