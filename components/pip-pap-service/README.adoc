@@ -1,0 +1,45 @@
+= pip-pap-service
+
+This pip-pap-service is intended for local development and testing. It is not intended for production use.
+
+== Usage
+
+The following command starts pip-pap-service on localhost:5000.
+----
+python pip-pap-service.py
+----
+
+or with uWSGI on localhost:8900
+----
+uwsgi --yaml uwsgi.yaml
+----
+
+or as docker container on localhost:8900
+----
+docker-compose up -d
+----
+
+== Configuration
+
+The config.yaml file contains the following configuration options:
+[source,yaml]
+----
+# Base path for bundle storage
+bundle_storage_path: /var/tmp/pip-pap-service
+
+# logging configuration
+logging:
+  loglevel: DEBUG
+  log_to_console: True
+  log_to_file: True
+  # If log _to_file is True then the logfile is: <service_name>.log
+  service_name: pip-pap-service
+----
+
+== Requirements
+
+* docker
+* docker-compose
+* python3
+* flask
+* uwsgi

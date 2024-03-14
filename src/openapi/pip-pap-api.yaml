@@ -74,6 +74,18 @@ paths:
                 description: The signed OPA {bundleType} bundle
         '304':
           description: Not Modified
+        '400':
+          description: Invalid bundle type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: The error message
+                example:
+                  error: Invalid bundle type.
         '404':
           description: Not Found
           content:
