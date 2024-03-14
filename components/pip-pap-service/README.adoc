@@ -44,6 +44,8 @@ To retrieve the bundle file you can use the following curl command:
 curl -v -H "If-None-Match: yourETag" http://127.0.0.1:8900/KIM/2.0/pap/bundle.tar.gz --output bundle.tar.gz
 ----
 
+You can also use an https://www.openpolicyagent.org/docs/latest/#running-opa[OPA client]
+
 == Configuration
 
 The config.yaml file contains the following configuration options:
