@@ -17,7 +17,7 @@ posture:
   device_model: "iPhone13,4"
 attestation:
   method: "apple-attestation"
-  timestamp: 0
+  timestamp: 1710409161
 
 owner:
   sub: "string"
