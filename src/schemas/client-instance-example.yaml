@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=client-instance.yaml
+# Sample client instance information for an attested iOS app
+name: "string"
+client_id: "string"
+product_id: "A9FL89PFFL.de.gematik.zero-ios"
+product_name: "Zero iOS"
+product_version: "0.5.0"
+manufacturer_id: "gematik"
+manufacturer_name: "gematik GmbH"
+registration_timestamp: 0
+platform: "apple"
+platform_product_id:
+  app_bundle_id: "A9FL89PFFL.de.gematik.zero-ios"
+posture:
+  system_name: "iOS"
+  system_version: "17.4"
+  device_model: "iPhone13,4"
+attestation:
+  method: "apple-attestation"
+  timestamp: 0
+
+owner:
+  sub: "string"
+
+owner_mail: "mail@example.com"

@@ -24,17 +24,35 @@ properties:
     description: The manufacturer name
   owner:
     description: The owner of the client instance
-    oneOf:
-      - "$ref": "./subject-gesundheitsid.yaml#"
+    "$ref": "./subject-gesundheitsid.yaml"
   owner_mail:
     type: string
     description: The mail address of the owner
   registration_timestamp:
-    type: int
+    type: integer
     description: The timestamp of the registration in seconds since epoch
   platform:
     type: string
     description: The platform of the client instance
+  platform_product_id:
+    oneOf:
+      - type: object
+        properties:
+          app_bundle_id:
+            type: string
+        required:
+          - app_bundle_id
+      - type: object
+        properties:
+          packageName:
+            type: string
+          sha_256_cert_fingerprints:
+            type: array
+            items:
+              type: string
+        required:
+          - packageName
+          - sha_256_cert_fingerprints
   posture:
     description: The posture of the client instance
     $ref: "./posture.yaml"
@@ -50,7 +68,8 @@ required:
   - manufacturer_id
   - manufacturer_name
   - owner
-  - registration_date
+  - owner_mail
+  - registration_timestamp
   - platform
   - posture
-  - attestation_format
+  - attestation

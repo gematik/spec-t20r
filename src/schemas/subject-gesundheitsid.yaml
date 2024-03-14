@@ -1,22 +1,23 @@
-#
-# 
-#{
-#  "sub": "0XkIBtL3XhZ9qncbFmkYbLkj4vjkES4T3dgSgTfl2s5WyZgDkl7WW1HakMyi9iN6kLEGu7ssw1S52uW521gn9vLeNFLaIBlDJbbo55xQFJIqfPqUWYarCL253hQL2uIB4A",
-#  "urn:telematik:claims:id": "T020821918",
-#  "urn:telematik:claims:organization": "101575519",
-#  "amr": [
-#    "urn:telematik:auth:other"
-#  ],
-#  "iss": "https://...",
-#  "urn:telematik:claims:display_name": "Juliane Mustermann",
-#  "nonce": "WEgmvoUcr5EUAB7x41fmbXRqBdnr4gio",
-#  "aud": "https://...",
-#  "acr": "gematik-ehealth-loa-high",
-#  "urn:telematik:claims:profession": "1.2.276.0.76.4.49",
-#  "auth_time": 1710409161,
-#  "exp": 1710409463,
-#  "iat": 1710409163
-#}
+# Schema for subject information from GesundheitsID
+# All properties are claims from ID_TOKEN
+# Example:
+#  {
+#    "sub": "0XkIBtL3XhZ9qncbFmkYbLkj4vjkES4T3dgSgTfl2s5WyZgDkl7WW1HakMyi9iN6kLEGu7ssw1S52uW521gn9vLeNFLaIBlDJbbo55xQFJIqfPqUWYarCL253hQL2uIB4A",
+#    "urn:telematik:claims:id": "T020821918",
+#    "urn:telematik:claims:organization": "101575519",
+#    "amr": [
+#      "urn:telematik:auth:other"
+#    ],
+#    "iss": "https://...",
+#    "urn:telematik:claims:display_name": "Juliane Mustermann",
+#    "nonce": "WEgmvoUcr5EUAB7x41fmbXRqBdnr4gio",
+#    "aud": "https://...",
+#    "acr": "gematik-ehealth-loa-high",
+#    "urn:telematik:claims:profession": "1.2.276.0.76.4.49",
+#    "auth_time": 1710409161,
+#    "exp": 1710409463,
+#    "iat": 1710409163
+#  }
 type: object
 properties:
   sub:
