@@ -26,22 +26,21 @@ properties:
     description: The owner of the client instance
     oneOf:
       - "$ref": "./subject-gesundheitsid.yaml#"
-  registration_date:
+  owner_mail:
     type: string
-    format: date-time
-    description: The registration date of the client instance
+    description: The mail address of the owner
+  registration_timestamp:
+    type: int
+    description: The timestamp of the registration in seconds since epoch
   platform:
     type: string
     description: The platform of the client instance
   posture:
     description: The posture of the client instance
     $ref: "./posture.yaml"
-  attestation_format:
-    type: string
-    description: The format of the attestation data
-  attestation_data:
-    type: object
-    description: The attestation data
+  attestation:
+    description: The attestation information of the client instance
+    $ref: "./attestation-info.yaml"
 required:
   - name
   - client_id
