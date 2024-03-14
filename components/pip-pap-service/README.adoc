@@ -4,6 +4,8 @@ This pip-pap-service is intended for local development and testing. It is not in
 
 == Usage
 
+The files to start the service are in the `/components/pip-pap-service/src` directory of the project.
+
 The following command starts pip-pap-service on localhost:5000.
 ----
 python pip-pap-service.py
