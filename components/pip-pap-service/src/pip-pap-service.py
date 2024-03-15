@@ -156,7 +156,7 @@ def sigterm_handler(signal, frame):
 
 def interrupt_handler(signum, frame):
     logger = logging.getLogger("pip-pap-service")
-    logger.info(f"{signal} received. Exiting...")
+    logger.info(f"{signum} received. Exiting...")
     sys.exit(0)
 
 
