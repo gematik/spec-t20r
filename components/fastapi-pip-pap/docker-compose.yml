@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  fastapi-pip-pap:
+    container_name: fastapi-pip-pap
+    build: .
+    ports:
+      - "8200:8200"
+    volumes:
+      - ./config.yaml:/app/config.yaml  # Mount the config file
+      # Mount the bundle directory;
+      # From config.yaml: bundle_storage_path: /var/tmp/fastapi-pip-pap
+      - /var/tmp/fastapi-pip-pap:/var/tmp/fastapi-pip-pap
+    environment:
+      - PYTHONPATH=/app

@@ -1,0 +1,10 @@
+uwsgi:
+  http-socket: :8900
+  module: pip-pap-service:app
+  master: true
+  processes: 5
+  threads: 2
+  vacuum: true
+  uid: 1000
+  gid: 1000
+  die-on-term: true
