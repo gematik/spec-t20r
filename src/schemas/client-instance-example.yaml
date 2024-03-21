@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=client-instance.yaml
+# Sample client instance information for an attested iOS app
+name: "string"
+client_id: "string"
+product_id: "A9FL89PFFL.de.gematik.zero-ios"
+product_name: "Zero iOS"
+product_version: "0.5.0"
+manufacturer_id: "gematik"
+manufacturer_name: "gematik GmbH"
+registration_timestamp: 0
+platform: "apple"
+platform_product_id:
+  app_bundle_id: "A9FL89PFFL.de.gematik.zero-ios"
+posture:
+  system_name: "iOS"
+  system_version: "17.4"
+  device_model: "iPhone13,4"
+attestation:
+  method: "apple-attestation"
+  timestamp: 1710409161
+
+owner:
+  sub: "string"
+  "urn:telematik:claims:id": "T020821918"
+  "urn:telematik:claims:organization": "101575519"
+  "urn:telematik:claims:display_name": "Juliane Mustermann"
+  "urn:telematik:claims:profession": "1.2.276.0.76.4.49"
+  amr:
+    - "urn:telematik:auth:other"
+  iss: "https://..."
+  aud: "https://..."
+  acr: "gematik-ehealth-loa-high"
+  auth_time: 1710409161
+
+owner_mail: "mail@example.com"
