@@ -1,0 +1,71 @@
+= gemini-pip-pap
+
+This gemini-pip-pap is intended for local development and testing. It is not intended for production use.
+The code was created to compare code generation capabilities of ChatGPT and gemini.
+
+Conclusion: it's almost the same code. ChatGPT seems to create code with less problems than gemini.
+Some "ideas" in the gemini code are useful. Sometimes it could help to use both tools.
+
+== Usage
+
+Install https://python-poetry.org[Python Poetry] 
+
+[source,sh]
+----
+pipx install poetry
+----
+
+Install the dependencies and switch to virtual environment
+[source,sh]
+----
+poetry install
+poetry shell
+----
+
+The files to start the service in the `/components/gemini-pip-pap` directory of the project.
+You need to `create bundle.tar.gz` files and place them in the `<config.yaml bundle_storage_path>/<application>/<version>/<bundleType>` directory.
+Example: `/var/tmp/gemini-pip-pap/KIM/2.0/pap/bundle.tar.gz`
+
+The following command starts pip-pap-service on localhost:8600.
+[source,sh]
+----
+python gemini-pip-pap.py
+----
+
+or as docker container on localhost:8600
+[source,sh]
+----
+docker-compose up -d
+----
+
+To retrieve the bundle file you can use the following curl command:
+[source,sh]
+----
+curl -v -H "If-None-Match: yourETag" http://127.0.0.1:8600/KIM/2.0/pap/bundle.tar.gz --output bundle.tar.gz
+----
+
+You can also use an https://www.openpolicyagent.org/docs/latest/#running-opa[OPA client]
+
+== Configuration
+
+The config.yaml file contains the following configuration options:
+[source,yaml]
+----
+# Base path for bundle storage
+bundle_storage_path: /var/tmp/gemini-pip-pap
+
+# logging configuration
+logging:
+  loglevel: DEBUG
+  log_to_console: True
+  log_to_file: False
+  # If log _to_file is True then the logfile is: <service_name>.log
+  service_name: gemini-pip-pap
+----
+
+== Requirements
+
+* docker
+* docker-compose
+* python3
+* uvicorn

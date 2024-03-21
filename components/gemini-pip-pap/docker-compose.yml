@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  gemini-pip-pap:
+    container_name: gemini-pip-pap
+    build: .
+    ports:
+      - "8600:8600"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro  # Mount config file as read-only
+      # From config.yaml: bundle_storage_path: /var/tmp/gemini-pip-pap
+      - /var/tmp/gemini-pip-pap:/var/tmp/gemini-pip-pap
+    environment:
+      PYTHONUNBUFFERED: 1  # Suppress output buffering for logs
