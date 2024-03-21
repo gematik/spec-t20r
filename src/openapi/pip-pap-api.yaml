@@ -42,7 +42,7 @@ paths:
         required: true
         schema:
           type: string
-          enum: [pip, pap]
+          enum: [pip, pap, sim_pip, sim_pap]
       - in: header
         name: If-None-Match
         description: The revision of the last retrieved policy bundle
