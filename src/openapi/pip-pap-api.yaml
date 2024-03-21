@@ -15,7 +15,7 @@ tags:
   - name: PAP
     description: Policy Administration Point
 servers:
-  - url: https://localhost:8080
+  - url: http://localhost:8080
     description: Local development server
   - url: https://pip-pap-ref.ti-dienste.de
     description: Reference server

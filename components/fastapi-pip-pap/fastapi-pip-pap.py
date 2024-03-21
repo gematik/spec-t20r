@@ -94,7 +94,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="mailrobot for automatic email testing.")
     parser.add_argument("--configfile", default="config.yaml", help="The configfile for tsp-cli.")
     parser.add_argument("--servername", default="localhost", help="The IP address or FQDN of the server.")
-    parser.add_argument("--port", default="8200", help="The TCP port of the server.")
+    parser.add_argument("--port", default="8080", help="The TCP port of the server.")
     args = parser.parse_args()
     # Load the configuration
     config = load_config(args.configfile)
