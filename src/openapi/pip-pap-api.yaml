@@ -17,6 +17,8 @@ tags:
 servers:
   - url: http://localhost:8080
     description: Local development server
+  - url: https://pip-pap-test.ti-dienste.de
+    description: Reference server
   - url: https://pip-pap-ref.ti-dienste.de
     description: Reference server
   - url: https://pip-pap.ti-dienste.de
