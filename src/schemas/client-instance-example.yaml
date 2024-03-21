@@ -10,7 +10,8 @@ manufacturer_name: "gematik GmbH"
 registration_timestamp: 0
 platform: "apple"
 platform_product_id:
-  app_bundle_id: "A9FL89PFFL.de.gematik.zero-ios"
+  app_bundle_ids: 
+    - "A9FL89PFFL.de.gematik.zero-ios"
 posture:
   system_name: "iOS"
   system_version: "17.4"
