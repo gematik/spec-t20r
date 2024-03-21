@@ -5,3 +5,5 @@ properties:
     type: array
     items:
       type: string
+required:
+  - app_bundle_ids

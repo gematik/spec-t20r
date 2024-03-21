@@ -13,3 +13,7 @@ properties:
     type: array
     items:
       type: string
+required:
+  - namespace
+  - app_package_names
+  - sha_256_cert_fingerprints
