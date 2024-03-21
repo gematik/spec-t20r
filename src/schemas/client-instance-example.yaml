@@ -28,7 +28,7 @@ owner:
   amr:
     - "urn:telematik:auth:other"
   iss: "https://..."
-  aud: "https://"
+  aud: "https://..."
   acr: "gematik-ehealth-loa-high"
   auth_time: 1710409161
 
