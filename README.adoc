@@ -1,6 +1,6 @@
 = Telemeatikinfrastruktur
 
-Hier sind die Festlegungen zur Telematikinfrastruktur dokumentiert. Es werden insbesondere die Komponenten der anwendungsübergreifenden Telematikinfrastruktur sowie deren Schnittstellen beschrieben.
+Hier sind die Festlegungen zur Telematikinfrastruktur dokumentiert. Es werden insbesondere die Komponenten der anwendungsübergreifenden Telematikinfrastruktur sowie deren Schnittstellen dargestellt und erläutert.
 
 == Branch Modell
 
