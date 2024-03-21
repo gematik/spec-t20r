@@ -36,25 +36,8 @@ properties:
     description: The platform of the client instance
   platform_product_id:
     oneOf:
-      - type: object
-        properties:
-          app_bundle_ids:
-            type: array
-            items:
-              type: string
-        required:
-          - app_bundle_ids
-      - type: object
-        properties:
-          packageName:
-            type: string
-          sha_256_cert_fingerprints:
-            type: array
-            items:
-              type: string
-        required:
-          - packageName
-          - sha_256_cert_fingerprints
+      - $ref: "./product-id-apple.yaml"
+      - $ref: "./product-id-android.yaml"
   posture:
     description: The posture of the client instance
     $ref: "./posture.yaml"

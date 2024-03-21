@@ -1,0 +1,15 @@
+# Platform specific product id for Android Apps
+type: object
+properties:
+  namespace:
+    type: string
+    enum:
+      - "android_app"
+  app_package_names:
+    type: array
+    items:
+      type: string
+  sha_256_cert_fingerprints:
+    type: array
+    items:
+      type: string
