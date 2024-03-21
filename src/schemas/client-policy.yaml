@@ -12,10 +12,12 @@ properties:
     oneOf:
       - type: object
         properties:
-          app_bundle_id:
-            type: string
+          app_bundle_ids:
+            type: array
+            items:
+              type: string
         required:
-          - app_bundle_id
+          - app_bundle_ids
       - type: object
         properties:
           packageName:
