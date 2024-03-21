@@ -22,7 +22,7 @@ servers:
   - url: https://pip-pap.ti-dienste.de
     description: Production server
 paths:
-  /{application}/{version}/{bundleType}/bundle.tar.gz:
+  /{application}/{version}/{bundleType}_bundle.tar.gz:
     parameters:
       - name: application
         in: path
@@ -38,7 +38,7 @@ paths:
           type: string
       - name: bundleType
         in: path
-        description: Type of bundle (pip or pap)
+        description: Type of bundle
         required: true
         schema:
           type: string
