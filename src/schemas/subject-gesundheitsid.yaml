@@ -18,6 +18,7 @@
 #    "exp": 1710409463,
 #    "iat": 1710409163
 #  }
+#
 type: object
 properties:
   sub:
