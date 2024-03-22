@@ -2,10 +2,10 @@
 # Sample client instance information for an attested iOS app
 name: "string"
 client_id: "string"
-product_id: "A9FL89PFFL.de.gematik.zero-ios"
+product_id: "APP-001"
 product_name: "Zero iOS"
 product_version: "0.5.0"
-manufacturer_id: "gematik"
+manufacturer_id: "HRST-001"
 manufacturer_name: "gematik GmbH"
 registration_timestamp: 0
 platform: "apple"
