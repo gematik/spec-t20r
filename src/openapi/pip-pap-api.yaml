@@ -5,15 +5,13 @@ info:
                 Telematikinfrastruktur and implements download
                 endpoints for OPA compatible PIP and PAP bundles.
                 Open Policy Agents of the Telematikinfrastruktur can
-                retrieve bundles (with policies and data) for their
-                application and version. The bundles are signed by the
+                retrieve bundles (with policies and/or data) for their
+                application. The bundles are signed by the
                 central administrative OPA instance.
   version: 1.0.0
 tags:
-  - name: PIP
-    description: Policy Information Point
-  - name: PAP
-    description: Policy Administration Point
+  - name: PIP_and_PAP
+    description: Policy Information Point and Policy Administration Point
 servers:
   - url: http://localhost:8080
     description: Local development server
@@ -24,7 +22,7 @@ servers:
   - url: https://pip-pap.ti-dienste.de
     description: Production server
 paths:
-  /{application}/{version}/{bundleType}_bundle.tar.gz:
+  /policies/{application}/{label}:
     parameters:
       - name: application
         in: path
@@ -32,30 +30,34 @@ paths:
         required: true
         schema:
           type: string
-      - name: version
+      - name: label
         in: path
-        description: Version of the application
+        description: label of the policy and/or data bundle.tar.gz
         required: true
+        example: latest
         schema:
           type: string
-      - name: bundleType
-        in: path
-        description: Type of bundle
-        required: true
-        schema:
-          type: string
-          enum: [pip, pap, sim_pip, sim_pap]
       - in: header
         name: If-None-Match
-        description: The revision of the last retrieved policy bundle
+        description: The revision of the last retrieved bundle
                      (ETag header)
         schema:
           type: string
-          description: The revision of the last retrieved policy bundle
+          description: The revision of the last retrieved bundle
+    options:
+      summary: Get allowed HTTP methods for this resource
+      responses:
+        '200':
+          description: OK
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: GET, HEAD, OPTIONS
     get:
-      summary: Retrieve a signed {bundleType} OPA bundle
-      description: Retrieve a signed {bundleType} OPA bundle for the
-                   given application and version.
+      summary: Retrieve a signed OPA bundle
+      description: Retrieve a signed OPA bundle for the
+                   given application and label.
                    The service compares the value of the If-None-Match header
                    with the current revision of the bundle.
                    If the bundle has not changed since the last update
@@ -68,12 +70,16 @@ paths:
               schema:
                 type: string
                 description: The revision of the policy bundle.
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename=bundle.tar.gz
           content:
             application/gzip:
               schema:
                 type: string
                 format: binary
-                description: The signed OPA {bundleType} bundle
+                description: The signed OPA bundle
         '304':
           description: Not Modified
         '400':
