@@ -28,7 +28,7 @@ The following command starts pip-pap-service on localhost:8200.
 python fastapi-pip-pap.py
 ----
 
-or as docker container on localhost:8200
+or as docker container on localhost:8080
 [source,sh]
 ----
 docker-compose up -d
@@ -37,7 +37,7 @@ docker-compose up -d
 To retrieve the bundle file you can use the following curl command:
 [source,sh]
 ----
-curl -v -H "If-None-Match: yourETag" http://127.0.0.1:8200/KIM/2.0/pap/bundle.tar.gz --output bundle.tar.gz
+curl -v -H "If-None-Match: yourETag" http://127.0.0.1:8080/policies/KIM/latest --output bundle.tar.gz
 ----
 
 You can also use an https://www.openpolicyagent.org/docs/latest/#running-opa[OPA client]
