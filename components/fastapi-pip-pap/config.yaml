@@ -5,7 +5,7 @@ bundle_storage_path: /var/tmp/fastapi-pip-pap
 
 # logging configuration
 logging:
-  loglevel: INFO
+  loglevel: DEBUG
   log_to_console: True
   log_to_file: True
   # If log _to_file is True then the logfile is: <service_name>.log

@@ -4,6 +4,7 @@ import logging
 import coloredlogs
 import argparse
 import yaml
+import hashlib
 from fastapi import FastAPI, HTTPException, Header, Response
 from fastapi.responses import FileResponse
 from typing import Optional
@@ -12,51 +13,74 @@ app = FastAPI()
 
 class Bundles:
     """Class to handle the bundle storage and retrieval."""
-    def __init__(self, bundle_storage_path, application, version, bundle_type):
+    def __init__(self, bundle_storage_path, policies, application, label, filename):
         """Initialize the Bundles class."""
         self.bundle_storage_path = bundle_storage_path
+        self.policies = policies
         self.application = application
-        self.version = version
-        self.bundle_type = bundle_type
+        self.label = label
+        self.filename = filename
+        self.bundle_path = self.get_bundle_path()
 
     def get_bundle_path(self):
         """Return the path to the bundle."""
         return os.path.join(
             self.bundle_storage_path,
+            self.policies,
             self.application,
-            self.version,
-            self.bundle_type,
-            "bundle.tar.gz",
+            self.label,
+            self.filename
         )
 
-    def get_bundle_revision(self):
-        """Return the revision of the bundle."""
-        return os.path.getmtime(self.get_bundle_path())
+    def get_etag(self):
+      """Calculates the ETag header value based on the file content hash.
 
-@app.get("/{application}/{version}/{bundleType}/bundle.tar.gz")
+      Returns:
+          str: The ETag header value.
+      """
+      # Simulate reading file content
+      with open(self.bundle_path, 'rb') as f:
+        content = f.read()
+      # Calculate hash of the content
+      hasher = hashlib.sha256(content)
+      etag = hasher.hexdigest()
+      return etag
+
+@app.options("/policies/{application}/{label}")
+async def options_bundle(
+    application: str,
+    label: str
+):
+    """Handle OPTIONS request for bundle endpoint."""
+    return Response(status_code=200, headers={"Allow": "GET, HEAD, OPTIONS"})
+
+@app.get("/policies/{application}/{label}")
 async def get_bundle(
     application: str,
-    version: str,
-    bundleType: str,
+    label: str,
     if_none_match: Optional[str] = Header(None)
 ):
+
+    filename = "bundle.tar.gz"
     """Get the requested bundle."""
     bundle_storage_path = app.state.config["bundle_storage_path"]
-    bundle = Bundles(bundle_storage_path, application, version, bundleType)
+    bundle = Bundles(bundle_storage_path, "policies", application, label, filename)
     bundle_path = bundle.get_bundle_path()
-
-    if bundleType not in ["pip", "pap"]:
-        raise HTTPException(status_code=400, detail="Invalid bundle type")
 
     if not os.path.exists(bundle_path):
         raise HTTPException(status_code=404, detail="The requested bundle does not exist.")
 
-    etag = str(bundle.get_bundle_revision())
+    etag = bundle.get_etag()
 
     if if_none_match == etag:
         return Response(status_code=304)
 
-    return FileResponse(bundle_path, headers={"ETag": etag})
+    # Add Content-Disposition header
+    return FileResponse(bundle_path, media_type="application/gzip", headers={
+      "ETag": etag,
+      #"Content-Disposition": f'attachment; filename="{os.path.basename(bundle_path)}"'
+      "Content-Disposition": f"attachment; filename={filename}"
+    })
 
 def load_config(filename):
     """Load the configuration from the given file."""
@@ -94,7 +118,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="mailrobot for automatic email testing.")
     parser.add_argument("--configfile", default="config.yaml", help="The configfile for tsp-cli.")
     parser.add_argument("--servername", default="localhost", help="The IP address or FQDN of the server.")
-    parser.add_argument("--port", default="8200", help="The TCP port of the server.")
+    parser.add_argument("--port", default="8080", help="The TCP port of the server.")
     args = parser.parse_args()
     # Load the configuration
     config = load_config(args.configfile)

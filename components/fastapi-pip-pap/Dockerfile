@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose the port where the FastAPI app will listen
-EXPOSE 8200
+EXPOSE 8080
 
 # Command to run the FastAPI app
-CMD ["python", "fastapi-pip-pap.py", "--configfile", "config.yaml", "--servername", "0.0.0.0", "--port", "8200"]
+CMD ["python", "fastapi-pip-pap.py", "--configfile", "config.yaml", "--servername", "0.0.0.0", "--port", "8080"]
