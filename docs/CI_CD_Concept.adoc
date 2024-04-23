@@ -41,7 +41,7 @@ Die CI Pipeline wird durch GitHub Actions ausgelöst und überwacht. Sie umfasst
 
 == Rollen und Verantwortlichkeiten
 
-Im CI/CD Prozess 
+Im CI/CD Prozess sind verschiedene Rollen und Verantwortlichkeiten definiert. Diese umfassen:
 
 |===
 |Rolle|Beschreibung
