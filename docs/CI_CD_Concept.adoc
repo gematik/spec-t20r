@@ -56,11 +56,17 @@ Ist verantwortlich für den CI Prozess
 |ZT Cluster Anbieter
 |Ist verantwortlich für den CD Prozess
 
+|ZT Cluster Betreiber
+|Ist verantwortlich für den Betrieb des ZT Clusters
+
 |PIP und PAP Security Manager
 |Ist verantwortlich für die Bereitstellung der Policies und Daten, die über den PIP und PAP Service an den PDP verteilt werden.
 
 |PIP und PAP Test Entwickler
 |Ist verantwortlich für die Erstellung von automatisierten Tests für die Policies und Daten.
+
+|PIP und PAP Service Anbieter
+|Ist verantwortlich für die Entwicklung und den Betrieb des PIP und PAP Service.
 
 |===
 
