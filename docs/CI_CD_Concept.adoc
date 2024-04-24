@@ -51,24 +51,89 @@ Im CI/CD Prozess sind verschiedene Rollen und Verantwortlichkeiten definiert. Di
 
 Erzeugt die K8s yaml Dateien für den ZT Cluster
 
-Ist verantwortlich für den CI Prozess
+Steuert und Überwacht den Durchlauf des CI Prozesses inkl. Quality Gates
+
+Erstellt eine Installationsanleitung für den ZT Cluster inkl. Systemvoraussetzungen
+
+Leistet Support für die entwickelte SW und die yaml Dateien für den ZT Cluster
 
 |ZT Cluster Anbieter
-|Ist verantwortlich für den CD Prozess
+|Ist verantwortlich für den CI Prozess
+
+Leistet Support für den ZT Cluster
 
 |ZT Cluster Betreiber
 |Ist verantwortlich für den Betrieb des ZT Clusters
 
-|PIP und PAP Security Manager
+Ist verantwortlich für den CD Prozess inkl. Quality Gates
+
+|PIP und PAP Security Entwickler
 |Ist verantwortlich für die Bereitstellung der Policies und Daten, die über den PIP und PAP Service an den PDP verteilt werden.
 
-|PIP und PAP Test Entwickler
-|Ist verantwortlich für die Erstellung von automatisierten Tests für die Policies und Daten.
+Steuert und Überwacht den Durchlauf des CI Prozesses inkl. Quality Gates
+
+|PIP und PAP Security Manager
+|Ist verantwortlich für den CI Prozess
+
+Leistet Support für den ZT Cluster
 
 |PIP und PAP Service Anbieter
 |Ist verantwortlich für die Entwicklung und den Betrieb des PIP und PAP Service.
 
+Ist verantwortlich für den CD Prozess inkl. Quality Gates
+
 |===
+
+== Ablauf
+
+Es gibt einen CI/CD Prozess für den ZT Cluster und einen CI/CD Prozess für die Policies und Daten des PIP und PAP Service.
+
+=== CI Prozess ZT Cluster
+
+In diesem Prozess werden Änderungen am ZT Cluster entwickelt und nach erfolgreichem Durchlauf der Quality Gates in einen produktionsreifen Zustand gebracht.
+
+==== Konzeption
+
+Die Konzeption erfolgt durch die gematik. Das Ergebnis ist eine geänderte ZT Spezifikation.
+
+==== Implementierung
+
+
+
+==== Integration dev-test
+
+==== Integration qs-test
+
+==== Rollout ref
+
+==== Rollout prod
+
+=== CD Prozess ZT Cluster
+
+==== Deployment ref
+
+==== Deployment prod
+
+=== CI Prozess Policies und Daten für PIP und PAP Service
+
+==== Konzeption
+
+==== Implementierung
+
+==== Integration dev-test
+
+==== Integration qs-test
+
+==== Rollout ref
+
+==== Rollout prod
+
+=== CD Prozess Policies und Daten für PIP und PAP Service
+
+==== Deployment ref
+
+==== Deployment prod
+
 
 == Risiken beim Betrieb des ZT Clusters
 
