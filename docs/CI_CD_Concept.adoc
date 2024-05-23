@@ -11,9 +11,9 @@ ifndef::env-github[:source-style: source]
 
 :imagesdir: /images/
 
-= CI/CD Konzept für den Zero Trust Cluster
-
 image::gematik_logo.svg[gematik,width="70%"]
+
+= CI/CD Konzept für den Zero Trust Cluster
 
 == Einleitung
 
