@@ -50,9 +50,9 @@ Die Stationen der CI Pipeline werden durch GitHub Actions ausgelöst und überwa
 . Build: Erstellung von Container-Images für die Komponenten des ZT Clusters mit Docker. Multistage-Builds, um sicherzustellen, dass nur die notwendigen Abhängigkeiten im finalen Image vorhanden sind. 
 . ZT Cluster PU und RU: Signierung und Überprüfung von Container-Images, um die Integrität zu gewährleisten. Label Version, reference und latest.
 
-=== CD Prozess
+=== CD Pipeline
 
-Der CD Prozess knüpft an das Ergebnis des CI Prozesses an. Die ZT Cluster Manifeste und Terraform Scripte werden über git Submodule direkt in das GitHub CD Repository integriert.
+Die CD Pipeline knüpft an das Ergebnis der CI Pipeline an. Die ZT Cluster Manifeste und Terraform Scripte werden über git Submodule direkt in das GitHub CD Repository integriert.
 
 . TI 2.0 Dienst ZT Cluster Entwicklung: Automatisierung der Bereitstellung des TI 2.0 dienst-spezifischem K8s-Cluster basierend auf den Änderungen im CI Repository.
 . Quality Gate Dev: Automatisierte Tests des dienst-spezifischem K8s-Clusters
@@ -61,8 +61,9 @@ Der CD Prozess knüpft an das Ergebnis des CI Prozesses an. Die ZT Cluster Manif
 . Quality Gate TI 2.0 Dienst ZT Cluster Integration: Der Betreiber des TI 2.0 Dienstes führt seine Tests aus.
 . TI 2.0 Dienst ZT Cluster PU: Der dienstspezifische ZT Cluster steht für den Einsatz in der PU bereit.
 
-image::CI_CD_Concept/ZT_CI-CD-Pipeline.png[Zero Trust CI/CP Pipeline,width="70%"]
+Die Abbildung zeigt die Pipelines und wie sie verknüpft sind.
 
+image::CI_CD_Concept/ZT_CI-CD-Pipeline.png[Zero Trust CI/CP Pipeline,width="70%"]
 
 == Rollen und Verantwortlichkeiten
 
@@ -108,57 +109,6 @@ Leistet Support für den ZT Cluster
 Ist verantwortlich für den CD Prozess inkl. Quality Gates
 
 |===
-
-== Ablauf
-
-Es gibt einen CI/CD Prozess für den ZT Cluster und einen CI/CD Prozess für die Policies und Daten des PIP und PAP Service.
-
-=== CI Prozess ZT Cluster
-
-In diesem Prozess werden Änderungen am ZT Cluster entwickelt und nach erfolgreichem Durchlauf der Quality Gates in einen produktionsreifen Zustand gebracht.
-
-==== Konzeption
-
-Die Konzeption erfolgt durch die gematik. Das Ergebnis ist eine geänderte ZT Spezifikation.
-
-==== Implementierung
-
-
-
-==== Integration dev-test
-
-==== Integration qs-test
-
-==== Rollout ref
-
-==== Rollout prod
-
-=== CD Prozess ZT Cluster
-
-==== Deployment ref
-
-==== Deployment prod
-
-=== CI Prozess Policies und Daten für PIP und PAP Service
-
-==== Konzeption
-
-==== Implementierung
-
-==== Integration dev-test
-
-==== Integration qs-test
-
-==== Rollout ref
-
-==== Rollout prod
-
-=== CD Prozess Policies und Daten für PIP und PAP Service
-
-==== Deployment ref
-
-==== Deployment prod
-
 
 == Risiken beim Betrieb des ZT Clusters
 
