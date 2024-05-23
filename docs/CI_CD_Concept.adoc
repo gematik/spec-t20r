@@ -11,7 +11,7 @@ ifndef::env-github[:source-style: source]
 
 :imagesdir: /images/
 
-image::gematik_logo.svg[gematik,width="60%"]
+image::gematik_logo.svg[gematik,width="30%"]
 
 = CI/CD Konzept für den Zero Trust Cluster
 
@@ -61,7 +61,7 @@ Die CD Pipeline knüpft an das Ergebnis der CI Pipeline an. Die ZT Cluster Manif
 
 Die Abbildung zeigt die Pipelines und wie sie verknüpft sind.
 
-image::CI_CD_Concept/ZT_CI-CD-Pipeline.png[Zero Trust CI/CP Pipeline,width="70%"]
+image::CI_CD_Concept/ZT_CI-CD-Pipeline.png[Zero Trust CI/CP Pipeline,width="100%"]
 
 == Rollen und Verantwortlichkeiten
 
