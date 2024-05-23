@@ -9,7 +9,7 @@ endif::[]
 
 ifndef::env-github[:source-style: source]
 
-:imagesdir: ./images/
+:imagesdir: /images/
 
 = CI/CD Konzept für den Zero Trust Cluster
 
