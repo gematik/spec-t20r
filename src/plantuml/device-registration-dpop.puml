@@ -1,0 +1,44 @@
+@startuml ""
+
+actor u as "User"
+participant c as "Client"
+participant aas as "App Attestation\nService"
+participant as as "PEP\nAuthorization Server"
+participant fd as "Fachdienst"
+participant idp as "IDP"
+
+activate c
+
+c -> as: https GET /fd_ressource
+activate as
+as --> c: 401 Unauthorized {"supported_idp_list":[...], "attestation_required": "true",\n"DPoP_required": "true"}
+
+c -> as: GET /register/choosen_idp
+as -> idp: POST /par
+activate idp
+idp --> as: 200 OK
+as --> c: Redirect\nlocation: idp_url
+
+c -> idp: GET /authorize
+group Authentication
+    note over u, idp: idp specific authentication
+end group
+idp --> c: 302 Redirect url_with_authorization_code
+deactivate idp
+c -> c: generate key pair (for DPoP)
+
+c -> aas: Request App/Device attestation\nParameter: nonce
+activate aas
+aas --> c: signed_attestation_token
+deactivate aas
+
+c -> as: POST /register\n[signed_attestation_token, jkt]
+as --> as: creaate and sign\njwt device_registration_token
+as --> c: [jwt device_registration_token; includes jkt]
+deactivate as
+
+
+
+deactivate c
+
+@enduml

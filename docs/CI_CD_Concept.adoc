@@ -1,4 +1,19 @@
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+:source-style: listing
+endif::[]
+
+ifndef::env-github[:source-style: source]
+
+:imagesdir: ./images/
+
 = CI/CD Konzept für den Zero Trust Cluster
+
+image::gematik_logo.svg[gematik,width="70%"]
 
 == Einleitung
 
@@ -12,7 +27,7 @@ Die Sicherheit des ZT Clusters sollte durch Zero Trust Prinzipien, Zugriffskontr
 
 == CI/CD Konzept
 
-Die Bereitstellung der ZT Cluster-Komponenten PEP und PDP erfolgt über K8s-Infrastruktur-Code, der in einem GitHub Repository gespeichert ist. Die ZT Cluster-Konfiguration wird in einem separaten GitHub Repository gespeichert. Dadurch ist eine Trennung der Verantwortlichkeiten von Entwicklung (CI) und Betrieb (CD) des ZT Clusters möglich. Ein weiteres GitHub Repository enthält die Policies und Daten, die der PDP vom PIP und PAP Service bezieht. 
+Die Bereitstellung der ZT Cluster-Komponenten PEP und PDP erfolgt über SourceK8s-Infrastruktur-Code, der in einem GitHub Repository gespeichert ist. Die ZT Cluster-Konfiguration wird in einem separaten GitHub Repository gespeichert. Dadurch ist eine Trennung der Verantwortlichkeiten von Entwicklung (CI) und Betrieb (CD) des ZT Clusters möglich. Ein weiteres GitHub Repository enthält die Policies und Daten, die der PDP vom PIP und PAP Service bezieht. 
 Die CI Pipeline wird durch GitHub Actions ausgelöst und überwacht. Sie beinhaltet automatisierte Tests, Builds und Bereitstellungsschritte.
 Der ZT Cluster wird in der Infrastruktur des Anbieters des Fachdienstes betrieben. Der Anbieter des Fachdienstes ist für den Betrieb des ZT Clusters verantwortlich. Die gematik hat keinen direkten Zugriff auf den ZT Cluster. Die gematik erhält Zugriff auf die Logs und Metriken des ZT Clusters, um die Leistung und Sicherheit zu überwachen.
 
@@ -26,18 +41,28 @@ Die gematik stellt sicher, dass der ZT Cluster den Sicherheitsstandards entspric
 
 === CI Pipeline
 
-Vorbereitung: Herunterladen des Anwendungs- und Infrastrukturcodes aus den Repositories. Installation von Abhängigkeiten und Konfiguration der Umgebung.
+Die Stationen der CI Pipeline werden durch GitHub Actions ausgelöst und überwacht. Folgende Schrittesind vorgesehen:
 
-Die CI Pipeline wird durch GitHub Actions ausgelöst und überwacht. Sie umfasst folgende Schritte:
-
-. Entwicklung: Implementierung von Änderungen an PEP und PDP, einschließlich neuer Funktionen, Bugfixes und Sicherheitsupdates. Überprüfung der Änderungen durch Code-Reviews und Tests. Es werden Branches für die Entwicklung und das Auslösen der GitHub Actions verwendet (z.B. develop, staging, main).
-. Tests: Automatisierte Tests für den Anwendungscode, einschließlich Unittests, Integrationstests und End-to-End-Tests. Sicherheitstests, um Schwachstellen im Code zu identifizieren. Tests der Kubernetes-Infrastruktur, um sicherzustellen, dass sie den Sicherheitsstandards entspricht.
-. Build: Erstellung von Container-Images für die Komponenten des ZT Clusters mit Docker. Multistage-Builds, um sicherzustellen, dass nur die notwendigen Abhängigkeiten im finalen Image vorhanden sind. Signierung und Überprüfung von Container-Images, um die Integrität zu gewährleisten.
-. Bereitstellung: Erstellung von Kubernetes-Manifesten im Infrastruktur-Repository für die ZT Cluster Komponenten (Infrastructure as Code).
+. ZT Cluster Development: Implementierung von Änderungen an PEP und PDP, einschließlich neuer Funktionen, Bugfixes und Sicherheitsupdates. Erstellung von Container-Images für die Komponenten des ZT Clusters mit Docker. Erstellung von Kubernetes-Manifesten für die ZT Cluster Komponenten (Infrastructure as Code). Überprüfung der Änderungen durch Code-Reviews.
+. Quality Gate Dev: Automatisierte Tests für den Anwendungscode, einschließlich Unittests.
+. Quality Gate ZT Cluster Integration: Tests der Kubernetes-Infrastruktur, inklusive Sicherheitstests und Lasttests.
+. Quality Gate Referenz-Integration: End-to-End-Tests mit den Referenz-Integrations-Komponenten, inklusive Sicherheitstests und Lasttests. 
+. Build: Erstellung von Container-Images für die Komponenten des ZT Clusters mit Docker. Multistage-Builds, um sicherzustellen, dass nur die notwendigen Abhängigkeiten im finalen Image vorhanden sind. 
+. ZT Cluster PU und RU: Signierung und Überprüfung von Container-Images, um die Integrität zu gewährleisten. Label Version, reference und latest.
 
 === CD Prozess
 
-. Automatisierung der Bereitstellung auf dem K8s-Cluster basierend auf den Änderungen im Repository. Implementierung von Blue-Green- oder Canary-Deployment-Strategien, um Ausfallzeiten zu minimieren und die Sicherheit zu verbessern.
+Der CD Prozess knüpft an das Ergebnis des CI Prozesses an. Die ZT Cluster Manifeste und Terraform Scripte werden über git Submodule direkt in das GitHub CD Repository integriert.
+
+. TI 2.0 Dienst ZT Cluster Entwicklung: Automatisierung der Bereitstellung des TI 2.0 dienst-spezifischem K8s-Cluster basierend auf den Änderungen im CI Repository.
+. Quality Gate Dev: Automatisierte Tests des dienst-spezifischem K8s-Clusters
+. Quality Gate TI 2.0 Dienst ZT Cluster Integration: Automatische Integrations-Tests mit den dienst-spezifischen Referenz-Komponenten der RU
+. TI 2.0 Dienst ZT Cluster RU: Der dienstspezifische Cluster ist damit vollständig getestet und wird dem Betreiber für seine Tests bereitgestellt.
+. Quality Gate TI 2.0 Dienst ZT Cluster Integration: Der Betreiber des TI 2.0 Dienstes führt seine Tests aus.
+. TI 2.0 Dienst ZT Cluster PU: Der dienstspezifische ZT Cluster steht für den Einsatz in der PU bereit.
+
+image::CI_CD_Concept/ZT_CI-CD-Pipeline.png[Zero Trust CI/CP Pipeline,width="70%"]
+
 
 == Rollen und Verantwortlichkeiten
 
