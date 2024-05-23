@@ -21,7 +21,11 @@ Die Zero Trust Komponenten PEP und PDP werden pro TI 2.0 Dienst in einem Kuberne
 
 Die Entwicklung und Bereitstellung der ZT Cluster-Komponenten PEP und PDP erfolgt durch die gematik oder einen von der gematik beauftragten Dienstleister. Mit der hier vorgestellten CI Pipeline werden die Bereitstellung, Weiterentwicklung und weitgehend automatisierte Tests des ZT Clusters kontinuierlich ermöglicht. Über Quality Gates werden auch Sicherheitstests, wie Schwachstellenscans und Compliance-Checks, im Entwicklungsprozess integriert. 
 
-Die Aktualisierung des ZT Cluster beim Betreiber eines TI 2.0 Dienstes erfolgt über einen CD Prozess. Dazu gehören das Update von PEP und PDP (nach erfolgreichem Durchlauf der CI Pipeline), die Aktualisierung der ZT Cluster-Konfiguration sowie die Aktualisierung der Policies und Daten für den PDP sowie die Anpassung der ZT Cluster Konfiguration an den spzifischen TI 2.0 Dienst. Der CD Prozess liegt in der Verantwortung der gematik.
+Die Aktualisierung des ZT Cluster beim Betreiber eines TI 2.0 Dienstes erfolgt über einen CD Prozess. Dazu gehören das Update von PEP und PDP (nach erfolgreichem Durchlauf der CI Pipeline), die Aktualisierung der ZT Cluster-Konfiguration sowie die Aktualisierung der Policies und Daten für den PDP sowie die Anpassung der ZT Cluster Konfiguration an den spzifischen TI 2.0 Dienst. Der CD Prozess liegt in der Verantwortung der gematik oder eines von der gematik beauftragten Dienstleisters.
+
+=== Abgrenzung
+
+Die Policies und Daten, die der PDP vom PIP und PAP Service bezieht werden in einer weiteren CI-Pipeline entwickelt, qualitätsgesichert und in einem separaten GitHub Repository öffentlich bereitgestellt. Diese CI-Pipeline ist nicht Gegenstand des vorliegenden Konzeptes.
 
 == CI/CD Konzept
 
@@ -84,7 +88,7 @@ Ist verantwortlich für den CI Prozess
 
 Leistet Support für die entwickelte SW und die yaml Dateien für den ZT Cluster. Leistet Support für den ZT Cluster
 
-|gematik
+|ZT Cluster Anbieter
 |Ist verantwortlich für den CD Prozess inkl. Quality Gates
 
 Leistet Support für die dienst-spezifischen ZT Cluster Konfigurationen
@@ -111,7 +115,3 @@ Die Bereitstellung und der Betrieb des ZT Clusters sind mit verschiedenen Risike
 . Innovationsrisiken: Fehlende Innovation und Weiterentwicklung des ZT Clusters können die Wettbewerbsfähigkeit des Fachdienstes beeinträchtigen und die Attraktivität des Angebots für die Nutzer verringern.
 . Personalrisiken: Fehlende Expertise oder Ressourcen für den Betrieb des ZT Clusters können zu Personalengpässen führen und die Effizienz des Betriebs beeinträchtigen.
 . Wettbewerbsrisiken: Konkurrenzdruck und Marktentwicklungen können die Rentabilität des ZT Clusters beeinträchtigen und die Position des Fachdienstes am Markt gefährden.
-
-=== Abgrenzung
-
-Die Policies und Daten, die der PDP vom PIP und PAP Service bezieht werden in einer weiteren CI-Pipeline entwickelt, qualitätsgesichert und in einem separaten GitHub Repository öffentlich bereitgestellt. Diese CI-Pipeline ist nicht Gegenstand des vorliegenden Konzeptes.
