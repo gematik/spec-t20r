@@ -43,7 +43,7 @@ Die gematik stellt sicher, dass der ZT Cluster den Sicherheitsstandards entspric
 
 === CI Pipeline
 
-Die Stationen der CI Pipeline werden durch GitHub Actions ausgelöst und überwacht. Folgende Schritte sind vorgesehen:
+Basis der CI-Pipeline ist ein GitHub Repository. Dort werdenSource-Code, Testcases und Konfigurationsdaten gespeichert. Die Stationen der CI Pipeline werden durch GitHub Actions ausgelöst und überwacht. Beim Passieren eines Quality Gates werden Labels vergeben. Folgende Schritte sind vorgesehen:
 
 . ZT Cluster Development: Implementierung von Änderungen an PEP und PDP, einschließlich neuer Funktionen, Bugfixes und Sicherheitsupdates. Erstellung von Container-Images für die Komponenten des ZT Clusters mit Docker. Erstellung von Kubernetes-Manifesten für die ZT Cluster Komponenten (Infrastructure as Code). Überprüfung der Änderungen durch Code-Reviews.
 . Quality Gate Dev: Automatisierte Tests für den Anwendungscode, einschließlich Unittests.
@@ -54,7 +54,9 @@ Die Stationen der CI Pipeline werden durch GitHub Actions ausgelöst und überwa
 
 === CD Pipeline
 
-Die CD Pipeline knüpft an das Ergebnis der CI Pipeline an. Die ZT Cluster Manifeste und Terraform Scripte werden über git Submodule direkt in das GitHub CD Repository integriert.
+Die CD Pipeline knüpft an das Ergebnis der CI Pipeline an. Zweck dieser Pipeline ist es spezifische ZT Cluster Konfigurationen für die TI 2.0 Diennst zu erzeugen. Die Pipeline ist optional. Wenn diese Pipeline nicht genutzt wird, erfolgt die dienstspezifische ZT-Cluster-Konfiguration direkt beim Hersteller des TI 2.0 Dienstes. Die Pipeline dort könnte genauso aussehen, wird jedoch nicht durch die gematik vorgeschrieben.
+
+Die ZT Cluster Manifeste und Terraform Scripte werden über git Submodule direkt in das GitHub CD Repository integriert.
 Neben PEP und PDP enthält der dienst-spezifische ZT Cluster eine Management-Komponente (z. B. Argo CD), die überwacht, dass immer die korrekte ZT Cluster-Konfiguration aus dem GitHub Repository verwendet wird. Die Management-Komponente überwacht auch die Integrität der Container-Images und die Konfiguration des ZT Clusters.
 
 . TI 2.0 Dienst ZT Cluster Entwicklung: Automatisierung der Bereitstellung des TI 2.0 dienst-spezifischem K8s-Cluster basierend auf den Änderungen im CI Repository.

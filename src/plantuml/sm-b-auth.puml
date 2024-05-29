@@ -1,0 +1,58 @@
+@startuml
+autonumber "[00]"
+skinparam defaultFontSize 10
+skinparam defaultFontName Helvetica
+skinparam DefaultMonospacedFontName Courier
+skinparam lengthAdjust none
+
+
+participant Client
+box
+participant Konnektor
+participant SMB as "SM-B"
+end box
+
+box "FD-Betreiber" #orange
+participant AS as "PEP/AS"
+participant RS
+end box
+
+Client -> AS: GET /fd_ressource
+activate AS
+AS --> Client: 401 Unauthorized json body with auth_instuctions
+
+Client -> Client: generate DPoP keypair
+Client -> AS: Request nonce, GET nonce_endpoint
+return 200 OK new-nonce: nonce
+Client -> Client: create JWT\n nonce\n DPoP Thumbprint
+Client -> Konnektor: externalAuthenticate JWT-hash
+Konnektor -> SMB: sign JWT-hash
+SMB -> Konnektor: JWT-Signature
+Konnektor -> Client: JWT-signature
+
+Client -> Client: create signed JWT
+Client -> Client: create DPoP Proof
+Client -> AS: ""POST /token""\n\
+""DPoP: eyJh...""\n\n\
+""grant_type=authorization_code""\n\
+""code=...""\n\
+""client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer""\n\
+""client_assertion=eyJh....""
+note right
+RFC7523 (JWT Client Assertion)
+RFC9449 (DPoP)
+end note
+
+AS -> AS: verify Client Assertion, DPoP\n\
+issue tokens
+
+AS -> Client: access token, refresh token, bound to DPoP
+deactivate AS
+Client -> Client: Create DPoP Proof for RS
+
+Client -> RS: Access resource (access token, DPoP)
+RS -> RS: verify access token and\nDPoP Binding\n\
+provide resource access
+RS -> Client: resource
+
+@enduml
