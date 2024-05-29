@@ -45,10 +45,10 @@ Die gematik stellt sicher, dass der ZT Cluster den Sicherheitsstandards entspric
 
 Basis der CI-Pipeline ist ein GitHub Repository. Dort werden Source-Code, Testcases und Konfigurationsdaten gespeichert. Die Stationen der CI Pipeline werden durch GitHub Actions ausgelöst und überwacht. Zur Ausführung der Testfälle werden die Komponenten in der gcloud deployed. Beim Passieren eines Quality Gates werden Labels vergeben. Folgende Schritte sind vorgesehen:
 
-. ZT Cluster Development: Implementierung von Änderungen an PEP und PDP, einschließlich neuer Funktionen, Bugfixes und Sicherheitsupdates. Erstellung von Container-Images für die Komponenten des ZT Clusters mit Docker. Erstellung von Kubernetes-Manifesten für die ZT Cluster Komponenten (Infrastructure as Code). Überprüfung der Änderungen durch Code-Reviews.
-. Quality Gate Dev: Automatisierte Tests für den Anwendungscode, einschließlich Unittests.
+. ZT Cluster Development: Implementierung von Änderungen an PEP und PDP, einschließlich neuer Funktionen, Bugfixes und Sicherheitsupdates. Erstellung von Container-Images für die Komponenten des ZT Clusters mit Docker. Erstellung von Kubernetes-Manifesten für die ZT Cluster Komponenten (Infrastructure as Code). Überprüfung der Änderungen durch Code-Reviews. Entwicklung der Testkomponenten (Dienst und Clients) sowie der Testfälle.
+. Quality Gate Dev: Automatisierte Tests für den Anwendungscode, insbesondere Unittests.
 . Quality Gate ZT Cluster Integration: Tests der Kubernetes-Infrastruktur, inklusive Sicherheitstests und Lasttests. Die gesamte Testumgebung wird in der gematik gcloud deployed und die Testfälle dort ausgeführt.
-. Quality Gate Referenz-Integration: End-to-End-Tests mit den Referenz-Integrations-Komponenten, inklusive Sicherheitstests und Lasttests. Die gesamte Testumgebung wird in der gematik gcloud deployed und die Testfälle dort ausgeführt.
+. Quality Gate Referenz-Integration: End-to-End-Tests mit den Referenz-Integrations-Komponenten, inklusive Sicherheitstests und ggf. Lasttests. Die gesamte Testumgebung wird in der gematik gcloud deployed und die Testfälle dort ausgeführt.
 . Build: Erstellung von Container-Images für die Komponenten des ZT Clusters mit Docker. Multistage-Builds, um sicherzustellen, dass nur die notwendigen Abhängigkeiten im finalen Image vorhanden sind. 
 . ZT Cluster PU und RU: Signierung und Überprüfung von Container-Images, um die Integrität zu gewährleisten. Label Version, reference und latest.
 
