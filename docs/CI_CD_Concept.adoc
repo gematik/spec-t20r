@@ -43,7 +43,7 @@ Die gematik stellt sicher, dass der ZT Cluster den Sicherheitsstandards entspric
 
 === CI Pipeline
 
-Basis der CI-Pipeline ist ein GitHub Repository. Dort werdenSource-Code, Testcases und Konfigurationsdaten gespeichert. Die Stationen der CI Pipeline werden durch GitHub Actions ausgelöst und überwacht. Beim Passieren eines Quality Gates werden Labels vergeben. Folgende Schritte sind vorgesehen:
+Basis der CI-Pipeline ist ein GitHub Repository. Dort werden Source-Code, Testcases und Konfigurationsdaten gespeichert. Die Stationen der CI Pipeline werden durch GitHub Actions ausgelöst und überwacht. Zur Ausführung der Testfälle werden die Komponenten in der gcloud deployed. Beim Passieren eines Quality Gates werden Labels vergeben. Folgende Schritte sind vorgesehen:
 
 . ZT Cluster Development: Implementierung von Änderungen an PEP und PDP, einschließlich neuer Funktionen, Bugfixes und Sicherheitsupdates. Erstellung von Container-Images für die Komponenten des ZT Clusters mit Docker. Erstellung von Kubernetes-Manifesten für die ZT Cluster Komponenten (Infrastructure as Code). Überprüfung der Änderungen durch Code-Reviews.
 . Quality Gate Dev: Automatisierte Tests für den Anwendungscode, einschließlich Unittests.
