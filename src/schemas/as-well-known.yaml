@@ -28,6 +28,9 @@ properties:
     description: "The response types supported by the authorization server."
     items:
       type: string
+      enum:
+        - code
+        - token
   response_modes_supported:
     type: array
     description: "The response modes supported by the authorization server."
@@ -69,10 +72,8 @@ required:
   - jwks_uri
   - scopes_supported
   - response_types_supported
-  - response_modes_supported
   - grant_types_supported
   - token_endpoint_auth_methods_supported
   - token_endpoint_auth_signing_alg_values_supported
-  - service_documentation
   - ui_locales_supported
   - code_challenge_methods_supported

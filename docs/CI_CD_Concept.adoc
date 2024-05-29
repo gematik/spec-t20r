@@ -54,7 +54,9 @@ Basis der CI-Pipeline ist ein GitHub Repository. Dort werden Source-Code, Testca
 
 === CD Pipeline
 
-Die CD Pipeline knüpft an das Ergebnis der CI Pipeline an. Zweck dieser Pipeline ist es spezifische ZT Cluster Konfigurationen für die TI 2.0 Diennst zu erzeugen. Die Pipeline ist optional. Wenn diese Pipeline nicht genutzt wird, erfolgt die dienstspezifische ZT-Cluster-Konfiguration direkt beim Hersteller des TI 2.0 Dienstes. Die Pipeline dort könnte genauso aussehen, wird jedoch nicht durch die gematik vorgeschrieben.
+Die CD Pipeline knüpft an das Ergebnis der CI Pipeline an. Zweck dieser Pipeline ist es spezifische ZT Cluster Konfigurationen für die TI 2.0 Dienste zu erzeugen und durchzusetzen, dass in den dienstspezifischen ZT Cluster-Instanzen die im GitHub CD Repository freigegebene Cluster-Konfiguration der jeweiligen TI 2.0 Dienste ausgeführt wird. 
+
+Die hier beschriebene Pipeline ist optional. Wenn diese Pipeline nicht genutzt wird, erfolgt die dienstspezifische ZT-Cluster-Konfiguration direkt beim Hersteller des TI 2.0 Dienstes. Die Pipeline dort würde zusätzlich die Komponenten des Dienstes für Tests verwenden. Über git submodule werden die dienstspezifischen ZT Cluster Konfigurationen aus den GitHub Repositories der Dienst-Betreiber in das gematik CD GitHub Repository integriert, sodass die Überwachung der ZT-Cluster Konfigurationen wieder möglich ist. 
 
 Die ZT Cluster Manifeste und Terraform Scripte werden über git Submodule direkt in das GitHub CD Repository integriert.
 Neben PEP und PDP enthält der dienst-spezifische ZT Cluster eine Management-Komponente (z. B. Argo CD), die überwacht, dass immer die korrekte ZT Cluster-Konfiguration aus dem GitHub Repository verwendet wird. Die Management-Komponente überwacht auch die Integrität der Container-Images und die Konfiguration des ZT Clusters.
