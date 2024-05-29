@@ -1,10 +1,7 @@
-name: Generate Images
+name: Manually Generate Images
 
 on:
-  push:
-    paths:
-      - 'src/plantuml/**'
-      - 'src/draw.io/**'
+  workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
   generate_images:
