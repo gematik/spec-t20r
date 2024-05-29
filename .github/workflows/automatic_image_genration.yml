@@ -1,4 +1,4 @@
-name: Generate Images
+name: Automatic Image Generation
 
 on:
   push:
