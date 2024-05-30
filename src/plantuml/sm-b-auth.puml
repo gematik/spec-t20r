@@ -1,38 +1,57 @@
-@startuml
+@startuml "OAuth 2.0 DPoP with SM-B"
 autonumber "[00]"
 skinparam defaultFontSize 10
 skinparam defaultFontName Helvetica
 skinparam DefaultMonospacedFontName Courier
 skinparam lengthAdjust none
 
+!pragma teoz true
 
 participant Client
-box
-participant Konnektor
-participant SMB as "SM-B"
+box "LEI" #GhostWhite
+    participant Konnektor
+    participant SMB as "SM-B"
 end box
 
-box "FD-Betreiber" #orange
-participant AS as "PEP/AS"
-participant RS
+box "Betreiber" #TECHNOLOGY
+    box "ZT Cluster" #SandyBrown
+        participant AuthS as "PEP/AS" 
+        participant PDP as "PDP"
+    endbox
+    box TI 2.0 Dienst #DarkSeaGreen
+        participant RS
+    endbox
 end box
 
-Client -> AS: GET /fd_ressource
-activate AS
-AS --> Client: 401 Unauthorized json body with auth_instuctions
+activate Client
+group Service Discovery\nfor PEP/AS FQDN
+end
+
+alt #White
+    activate AuthS
+    Client -> AuthS: GET /fd_ressource
+    AuthS --> Client: 401 Unauthorized; json body with auth_instuctions
+else 
+    Client -> AuthS: GET /.well-known/oauth-authorization-server 
+    AuthS --> Client: 200 OK; json body with Well-Known json Document
+end
 
 Client -> Client: generate DPoP keypair
-Client -> AS: Request nonce, GET nonce_endpoint
+Client -> AuthS: GET /nonce
 return 200 OK new-nonce: nonce
 Client -> Client: create JWT\n nonce\n DPoP Thumbprint
 Client -> Konnektor: externalAuthenticate JWT-hash
+activate Konnektor
 Konnektor -> SMB: sign JWT-hash
+activate SMB
 SMB -> Konnektor: JWT-Signature
+deactivate SMB
 Konnektor -> Client: JWT-signature
+deactivate Konnektor
 
 Client -> Client: create signed JWT
 Client -> Client: create DPoP Proof
-Client -> AS: ""POST /token""\n\
+Client -> AuthS: ""POST /token""\n\
 ""DPoP: eyJh...""\n\n\
 ""grant_type=authorization_code""\n\
 ""code=...""\n\
@@ -43,16 +62,20 @@ RFC7523 (JWT Client Assertion)
 RFC9449 (DPoP)
 end note
 
-AS -> AS: verify Client Assertion, DPoP\n\
-issue tokens
-
-AS -> Client: access token, refresh token, bound to DPoP
-deactivate AS
+AuthS -> AuthS: verify Client Assertion, DPoP
+AuthS -> PDP: POST /v1/data/authz, json body {  "input": {...}} 
+PDP --> AuthS: 200 OK, json body {"result": {"allow": true, ...}}
+AuthS -> AuthS: issue tokens
+AuthS -> Client: 200 OK, access token, refresh token, bound to DPoP
+deactivate AuthS
 Client -> Client: Create DPoP Proof for RS
 
 Client -> RS: Access resource (access token, DPoP)
+activate RS
 RS -> RS: verify access token and\nDPoP Binding\n\
 provide resource access
 RS -> Client: resource
+deactivate RS
+deactivate Client
 
 @enduml
