@@ -9,12 +9,12 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2.3.4
+      uses: actions/checkout@v3
 
     - name: Set up JDK 11
-      uses: actions/setup-java@v2.3.1
+      uses: actions/setup-java@v3
       with:
-        distribution: 'ubuntu-latest'
+        distribution: 'temurin'
         java-version: '11'
 
     - name: Install PlantUML
@@ -26,7 +26,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y xdotool xvfb
-        sudo snap install drawio
+        sudo snap install drawio --classic
 
     - name: Generate images from PlantUML files
       run: |

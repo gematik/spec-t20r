@@ -24,14 +24,14 @@ box "Betreiber" #TECHNOLOGY
 end box
 
 activate Client
-group Service Discovery\nfor PEP/AS FQDN
-end
 
 alt #White
     activate AuthS
     Client -> AuthS: GET /fd_ressource
-    AuthS --> Client: 401 Unauthorized; json body with auth_instuctions
+    AuthS --> Client: 401 Unauthorized; json body with Well-Known json Document
 else 
+    group Service Discovery for PEP/Authorization Server FQDN
+    end
     Client -> AuthS: GET /.well-known/oauth-authorization-server 
     AuthS --> Client: 200 OK; json body with Well-Known json Document
 end
