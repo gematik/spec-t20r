@@ -15,11 +15,11 @@ end box
 
 box "Betreiber" #TECHNOLOGY
     box "ZT Cluster" #SandyBrown
-        participant AuthS as "PEP/AS" 
+        participant AuthS as "PEP\nAuthorization Server" 
         participant PDP as "PDP"
     endbox
     box TI 2.0 Dienst #DarkSeaGreen
-        participant RS
+        participant RS as "Resource Server"
     endbox
 end box
 

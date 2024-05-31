@@ -5,7 +5,7 @@ on:
     paths:
       - 'src/plantuml/**'
       - 'src/draw.io/**'
-  # workflow_dispatch: # Allows manual triggering of the workflow
+  workflow_dispatch:
 
 jobs:
   generate_images:
@@ -13,12 +13,12 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up JDK 11
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@v3
       with:
-        distribution: 'ubuntu-latest'
+        distribution: 'temurin'
         java-version: '11'
 
     - name: Install PlantUML
@@ -30,18 +30,18 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y xdotool xvfb
-        sudo snap install drawio
+        sudo snap install drawio --classic
 
     - name: Check for changed files
       id: changed_files
       run: |
         CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | grep -E 'src/plantuml/.*\.puml|src/draw.io/.*\.drawio' || true)
-        echo "::set-output name=changed_files::$CHANGED_FILES"
+        echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
 
     - name: Generate images from changed PlantUML files
-      if: steps.changed_files.outputs.changed_files != ''
+      if: env.changed_files != ''
       run: |
-        for file in $(echo "${{ steps.changed_files.outputs.changed_files }}" | grep 'src/plantuml/.*\.puml' || true); do
+        for file in $(echo "$changed_files" | grep 'src/plantuml/.*\.puml' || true); do
           output_dir=$(dirname "$file" | sed 's|^src/plantuml|images|')
           mkdir -p "$output_dir"
           plantuml -tpng "$file" -o "$output_dir"
@@ -49,9 +49,9 @@ jobs:
         done
 
     - name: Generate images from changed draw.io files
-      if: steps.changed_files.outputs.changed_files != ''
+      if: env.changed_files != ''
       run: |
-        for file in $(echo "${{ steps.changed_files.outputs.changed_files }}" | grep 'src/draw.io/.*\.drawio' || true); do
+        for file in $(echo "$changed_files" | grep 'src/draw.io/.*\.drawio' || true); do
           output_dir=$(dirname "$file" | sed 's|^src/draw.io|images|')
           mkdir -p "$output_dir"
           xvfb-run -a drawio -x -f png -o "$output_dir/$(basename "$file" .drawio).png" "$file"
@@ -59,7 +59,7 @@ jobs:
         done
 
     - name: Commit and push generated images
-      if: steps.changed_files.outputs.changed_files != ''
+      if: env.changed_files != ''
       run: |
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
