@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  auto_generate_images:
+  generate_images:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,16 +23,15 @@ jobs:
         distribution: 'temurin'
         java-version: '11'
 
-    - name: Install PlantUML
+    - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y plantuml
-
-    - name: Install draw.io
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y xdotool xvfb
+        sudo apt-get install -y graphviz xdotool xvfb
         sudo snap install drawio --classic
+
+    - name: Download PlantUML jar
+      run: |
+        wget https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -O /usr/local/bin/plantuml.jar
 
     - name: Check for changed files
       id: changed_files
@@ -44,21 +43,21 @@ jobs:
 
     - name: Debug changed files
       run: |
-        echo "Debug: Changed files are ${{ env.changed_files }}"
+        echo "Debug: Changed files are ${{ steps.changed_files.outputs.changed_files }}"
 
     - name: Generate images from changed PlantUML files
-      if: env.changed_files != ''
+      if: steps.changed_files.outputs.changed_files != ''
       run: |
         for file in $(echo "$changed_files" | grep 'src/plantuml/.*\.puml' || true); do
           echo "Processing PlantUML file: $file"
           output_dir=$(dirname "$file" | sed 's|^src/plantuml|images|')
           mkdir -p "$output_dir"
-          plantuml -tpng "$file" -o "$output_dir"
-          plantuml -tsvg "$file" -o "$output_dir"
+          java -jar /usr/local/bin/plantuml.jar -tpng "$file" -o "$output_dir"
+          java -jar /usr/local/bin/plantuml.jar -tsvg "$file" -o "$output_dir"
         done
 
     - name: Generate images from changed draw.io files
-      if: env.changed_files != ''
+      if: ${{ steps.changed_files.outputs.changed_files }} != ''
       run: |
         for file in $(echo "$changed_files" | grep 'src/draw.io/.*\.drawio' || true); do
           echo "Processing draw.io file: $file"
@@ -74,7 +73,7 @@ jobs:
         ls -R images
 
     - name: Commit and push generated images
-      if: env.changed_files != ''
+      if: steps.changed_files.outputs.changed_files != ''
       run: |
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
