@@ -39,7 +39,7 @@ end
 Client -> Client: generate DPoP keypair
 Client -> AuthS: GET /nonce
 return 200 OK new-nonce: nonce
-Client -> Client: create JWT\n nonce\n DPoP Thumbprint
+Client -> Client: create JWT with\n  nonce\n  Client and OS Information\n  DPoP Thumbprint
 Client -> Konnektor: externalAuthenticate JWT-hash
 activate Konnektor
 Konnektor -> SMB: sign JWT-hash
@@ -49,14 +49,15 @@ deactivate SMB
 Konnektor -> Client: JWT-signature
 deactivate Konnektor
 
-Client -> Client: create signed JWT
+Client -> Client: create SM-B signed JWT
 Client -> Client: create DPoP Proof
-Client -> AuthS: ""POST /token""\n\
-""DPoP: eyJh...""\n\n\
-""grant_type=authorization_code""\n\
-""code=...""\n\
-""client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer""\n\
-""client_assertion=eyJh....""
+Client -> AuthS: POST /token\n\
+  {SM-B signed JWT}\n\
+  ""DPoP: eyJh...""\n\
+  ""grant_type=authorization_code""\n\
+  ""code=...""\n\
+  ""client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer""\n\
+  ""client_assertion=eyJh....""
 note right
 RFC7523 (JWT Client Assertion)
 RFC9449 (DPoP)
