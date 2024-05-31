@@ -8,12 +8,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate_images:
+  auto_generate_images:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 2  # Ensures at least two commits are fetched
 
     - name: Set up JDK 11
       uses: actions/setup-java@v3
@@ -35,7 +37,8 @@ jobs:
     - name: Check for changed files
       id: changed_files
       run: |
-        CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | grep -E 'src/plantuml/.*\.puml|src/draw.io/.*\.drawio' || true)
+        BASE_SHA=$(git rev-parse HEAD^1)
+        CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD | grep -E 'src/plantuml/.*\.puml|src/draw.io/.*\.drawio' || true)
         echo "Changed files: $CHANGED_FILES"
         echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
 

@@ -4,7 +4,7 @@ on:
   workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
-  generate_images:
+  manually_generate_images:
     runs-on: ubuntu-latest
 
     steps:
