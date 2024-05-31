@@ -36,12 +36,18 @@ jobs:
       id: changed_files
       run: |
         CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | grep -E 'src/plantuml/.*\.puml|src/draw.io/.*\.drawio' || true)
+        echo "Changed files: $CHANGED_FILES"
         echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
+
+    - name: Debug changed files
+      run: |
+        echo "Debug: Changed files are ${{ env.changed_files }}"
 
     - name: Generate images from changed PlantUML files
       if: env.changed_files != ''
       run: |
         for file in $(echo "$changed_files" | grep 'src/plantuml/.*\.puml' || true); do
+          echo "Processing PlantUML file: $file"
           output_dir=$(dirname "$file" | sed 's|^src/plantuml|images|')
           mkdir -p "$output_dir"
           plantuml -tpng "$file" -o "$output_dir"
@@ -52,11 +58,17 @@ jobs:
       if: env.changed_files != ''
       run: |
         for file in $(echo "$changed_files" | grep 'src/draw.io/.*\.drawio' || true); do
+          echo "Processing draw.io file: $file"
           output_dir=$(dirname "$file" | sed 's|^src/draw.io|images|')
           mkdir -p "$output_dir"
           xvfb-run -a drawio -x -f png -o "$output_dir/$(basename "$file" .drawio).png" "$file"
           xvfb-run -a drawio -x -f jpg -o "$output_dir/$(basename "$file" .drawio).jpg" "$file"
         done
+
+    - name: Debug images folder
+      run: |
+        echo "Contents of the images folder:"
+        ls -R images
 
     - name: Commit and push generated images
       if: env.changed_files != ''
