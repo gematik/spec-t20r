@@ -58,9 +58,8 @@ Client -> AuthS: POST /token\n\
   ""code=...""\n\
   ""client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer""\n\
   ""client_assertion=eyJh....""
-note right
-RFC7523 (JWT Client Assertion)
-RFC9449 (DPoP)
+note left of AuthS
+RFC7523 (JWT Client Assertion), RFC9449 (DPoP)
 end note
 
 AuthS -> AuthS: verify Client Assertion, DPoP
