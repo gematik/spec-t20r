@@ -31,6 +31,7 @@ alt #White
     Client -> HP: GET /fd_ressource
     activate HP
     HP --> Client: 401 Unauthorized; json body with Well-Known json Document
+    deactivate HP
 else 
     group Service Discovery for PEP/Authorization Server FQDN
     end
@@ -74,6 +75,7 @@ deactivate AuthS
 Client -> Client: Create DPoP Proof for RS
 
 Client -> HP: Access resource (access token, DPoP)
+activate HP
 HP -> HP: verify access token and\nDPoP Binding
 HP -> RS: forward
 activate RS
