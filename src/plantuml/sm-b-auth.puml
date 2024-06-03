@@ -33,8 +33,6 @@ alt #White
     HP --> Client: 401 Unauthorized; json body with Well-Known json Document
     deactivate HP
 else 
-    group Service Discovery for PEP/Authorization Server FQDN
-    end
     Client -> AuthS: GET /.well-known/oauth-authorization-server 
     activate AuthS
     AuthS --> Client: 200 OK; json body with Well-Known json Document
