@@ -16,6 +16,7 @@ end box
 box "Betreiber" #TECHNOLOGY
     box "ZT Cluster" #SandyBrown
         participant AuthS as "PEP\nAuthorization Server" 
+        participant HP as "http Proxy"
         participant PDP as "PDP"
     endbox
     box TI 2.0 Dienst #DarkSeaGreen
@@ -25,20 +26,22 @@ end box
 
 activate Client
 
+
 alt #White
-    activate AuthS
-    Client -> AuthS: GET /fd_ressource
-    AuthS --> Client: 401 Unauthorized; json body with Well-Known json Document
+    Client -> HP: GET /fd_ressource
+    activate HP
+    HP --> Client: 401 Unauthorized; json body with Well-Known json Document
 else 
     group Service Discovery for PEP/Authorization Server FQDN
     end
     Client -> AuthS: GET /.well-known/oauth-authorization-server 
+    activate AuthS
     AuthS --> Client: 200 OK; json body with Well-Known json Document
 end
 
 Client -> Client: generate DPoP keypair
 Client -> AuthS: GET /nonce
-return 200 OK new-nonce: nonce
+AuthS --> Client: return 200 OK new-nonce: nonce
 Client -> Client: create JWT with\n  nonce\n  Client and OS Information\n  DPoP Thumbprint
 Client -> Konnektor: externalAuthenticate JWT-hash
 activate Konnektor
@@ -70,11 +73,15 @@ AuthS -> Client: 200 OK, access token, refresh token, bound to DPoP
 deactivate AuthS
 Client -> Client: Create DPoP Proof for RS
 
-Client -> RS: Access resource (access token, DPoP)
+Client -> HP: Access resource (access token, DPoP)
+HP -> HP: verify access token and\nDPoP Binding
+HP -> RS: forward
 activate RS
-RS -> RS: verify access token and\nDPoP Binding\n\
-provide resource access
-RS -> Client: resource
+RS -> RS: provide resource access
+RS -> HP: resource
+deactivate RS
+HP -> Client: resource
+deactivate HP
 deactivate RS
 deactivate Client
 

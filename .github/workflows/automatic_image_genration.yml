@@ -52,8 +52,8 @@ jobs:
           echo "Processing PlantUML file: $file"
           output_dir=$(dirname "$file" | sed 's|^src/plantuml|images|')
           mkdir -p "$output_dir"
-          java -jar /usr/local/bin/plantuml.jar -tpng "$file" -o "$output_dir"
-          java -jar /usr/local/bin/plantuml.jar -tsvg "$file" -o "$output_dir"
+          java -jar /usr/local/bin/plantuml.jar -tpng "$file" -o "${PWD}/$output_dir"
+          java -jar /usr/local/bin/plantuml.jar -tsvg "$file" -o "${PWD}/$output_dir"
         done
 
     - name: Generate images from changed draw.io files
@@ -63,8 +63,8 @@ jobs:
           echo "Processing draw.io file: $file"
           output_dir=$(dirname "$file" | sed 's|^src/draw.io|images|')
           mkdir -p "$output_dir"
-          xvfb-run -a drawio -x -f png -o "$output_dir/$(basename "$file" .drawio).png" "$file"
-          xvfb-run -a drawio -x -f jpg -o "$output_dir/$(basename "$file" .drawio).jpg" "$file"
+          xvfb-run -a drawio -x -f png -o "${PWD}/$output_dir/$(basename "$file" .drawio).png" "$file"
+          xvfb-run -a drawio -x -f jpg -o "${PWD}/$output_dir/$(basename "$file" .drawio).jpg" "$file"
         done
 
     - name: Debug images folder
