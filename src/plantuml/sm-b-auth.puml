@@ -79,9 +79,9 @@ HP -> RS: forward GET /resource\n\
 (access token, DPoP)
 activate RS
 RS -> RS: provide resource access
-RS -> HP: 200 OK resource
+RS -> HP: 200 OK, resource
 deactivate RS
-HP -> Client: 200 OK resource
+HP -> Client: 200 OK, resource
 deactivate HP
 deactivate RS
 deactivate Client
