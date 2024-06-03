@@ -28,7 +28,7 @@ activate Client
 
 
 alt #White
-    Client -> HP: GET /fd_ressource
+    Client -> HP: GET /resource
     activate HP
     HP --> Client: 401 Unauthorized; json body with Well-Known json Document
     deactivate HP
@@ -72,7 +72,7 @@ AuthS -> Client: 200 OK, access token, refresh token, bound to DPoP
 deactivate AuthS
 Client -> Client: Create DPoP Proof for RS
 
-Client -> HP: Access resource (access token, DPoP)
+Client -> HP: GET /resource (access token, DPoP)
 activate HP
 HP -> HP: verify access token and\nDPoP Binding
 HP -> RS: forward
