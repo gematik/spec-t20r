@@ -75,12 +75,13 @@ Client -> Client: Create DPoP Proof for RS
 Client -> HP: GET /resource (access token, DPoP)
 activate HP
 HP -> HP: verify access token and\nDPoP Binding
-HP -> RS: forward
+HP -> RS: forward GET /resource\n\
+(access token, DPoP)
 activate RS
 RS -> RS: provide resource access
-RS -> HP: resource
+RS -> HP: 200 OK resource
 deactivate RS
-HP -> Client: resource
+HP -> Client: 200 OK resource
 deactivate HP
 deactivate RS
 deactivate Client
