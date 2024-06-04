@@ -38,10 +38,11 @@ else
 end
 
 Client -> Client: generate DPoP keypair
+alt JWT Client Assertion
 Client -> AuthS: GET /nonce
 activate AuthS
 AuthS --> Client: return 200 OK new-nonce: nonce
-Client -> Client: create JWT with\n  nonce\n  Client and OS Information\n  DPoP Thumbprint
+Client -> Client: create Client Assertion JWT with nonce\n  Client and OS Information\n  DPoP Thumbprint
 Client -> Konnektor: externalAuthenticate JWT-hash
 activate Konnektor
 Konnektor -> SMB: sign JWT-hash
@@ -51,22 +52,34 @@ deactivate SMB
 Konnektor -> Client: JWT-signature
 deactivate Konnektor
 
-Client -> Client: create SM-B signed JWT
-Client -> Client: create DPoP Proof
+Client -> Client: add SM-B Signature to Client Assertion JWT\n\
+cC4h... (Client Assertion JWT)
+Client -> Client: create DPoP Proof JWT
 Client -> AuthS: POST /token\n\
-  {SM-B signed JWT}\n\
+  (Client Assertion JWT and DPoP JWT)\n\
   ""DPoP: eyJh...""\n\
-  ""grant_type=authorization_code""\n\
-  ""code=...""\n\
-  ""client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer""\n\
-  ""client_assertion=eyJh....""
+  ""grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer""\n\
+  ""assertion=cC4h...""\n\
+  ""scope=...""
 note left of AuthS
   RFC7523 (JWT Client Assertion), RFC9449 (DPoP)
 end note
+AuthS -> AuthS: verify Client Assertion JWT, DPoP
+AuthS -> AuthS: Create state for Identity/App/Device
+else Use Refresh token
+Client -> AuthS: POST /token\n\
+  (Refresh token and DPoP JWT)\n\
+  ""grant_type=refresh_token""\n\
+  ""refresh_token=eyJ0...""\n\
+  ""scope=...""\n\
+  ""DPoP: eyJh...""
+AuthS -> AuthS: verify Refresh token, DPoP
+end
 
-AuthS -> AuthS: verify Client Assertion, DPoP
 AuthS -> PDP: POST /v1/data/authz, json body {  "input": {...}} 
+activate PDP
 PDP --> AuthS: 200 OK, json body {"result": {"allow": true, ...}}
+deactivate PDP
 AuthS -> AuthS: issue tokens
 AuthS --> Client: 200 OK, access token, refresh token, bound to DPoP
 deactivate AuthS
