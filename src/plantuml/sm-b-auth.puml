@@ -9,7 +9,7 @@ skinparam lengthAdjust none
 
 participant Client
 box "LEI" #GhostWhite
-    participant Konnektor
+    participant Konnektor as "Konnektor or\nTI-Gateway"
     participant SMB as "SM-B"
 end box
 
@@ -28,16 +28,18 @@ activate Client
 alt #White
     Client -> HP: GET /resource
     activate HP
-    HP --> Client: 401 Unauthorized; json body with Well-Known json Document
+    HP --> Client: 401 Unauthorized; json body with Well-Known json Document (RFC8414)
     deactivate HP
 else 
-    Client -> AuthS: GET /.well-known/oauth-authorization-server 
-    activate AuthS
-    AuthS --> Client: 200 OK; json body with Well-Known json Document
+    Client -> HP: GET /.well-known/oauth-authorization-server 
+    activate HP
+    HP --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
+    deactivate HP
 end
 
 Client -> Client: generate DPoP keypair
 Client -> AuthS: GET /nonce
+activate AuthS
 AuthS --> Client: return 200 OK new-nonce: nonce
 Client -> Client: create JWT with\n  nonce\n  Client and OS Information\n  DPoP Thumbprint
 Client -> Konnektor: externalAuthenticate JWT-hash
@@ -66,7 +68,7 @@ AuthS -> AuthS: verify Client Assertion, DPoP
 AuthS -> PDP: POST /v1/data/authz, json body {  "input": {...}} 
 PDP --> AuthS: 200 OK, json body {"result": {"allow": true, ...}}
 AuthS -> AuthS: issue tokens
-AuthS -> Client: 200 OK, access token, refresh token, bound to DPoP
+AuthS --> Client: 200 OK, access token, refresh token, bound to DPoP
 deactivate AuthS
 Client -> Client: Create DPoP Proof for RS
 
@@ -76,10 +78,12 @@ HP -> HP: verify access token and\nDPoP Binding
 HP -> RS: forward GET /resource\n\
 (access token, DPoP)
 activate RS
-RS -> RS: provide resource access
-RS -> HP: 200 OK, resource
+RS -> RS: provide\n\
+resource\n\
+access
+RS --> HP: 200 OK, resource
 deactivate RS
-HP -> Client: 200 OK, resource
+HP --> Client: 200 OK, resource
 deactivate HP
 deactivate RS
 deactivate Client
