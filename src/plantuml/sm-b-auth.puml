@@ -38,7 +38,7 @@ else
 end
 
 Client -> Client: generate DPoP keypair
-alt JWT Client Assertion
+alt Client Assertion JWT
 Client -> AuthS: GET /nonce
 activate AuthS
 AuthS --> Client: return 200 OK new-nonce: nonce
