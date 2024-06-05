@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - 'src/plantuml/**'
-      - 'src/draw.io/**'
+      - 'src/drawio/**'
   workflow_dispatch:
 
 jobs:
@@ -37,7 +37,7 @@ jobs:
       id: changed_files
       run: |
         BASE_SHA=$(git rev-parse HEAD^1)
-        CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD | grep -E 'src/plantuml/.*\.puml|src/draw.io/.*\.drawio' || true)
+        CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD | grep -E 'src/plantuml/.*\.puml|src/drawio/.*\.drawio' || true)
         echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
         echo "::set-output name=changed_files::$CHANGED_FILES"
 
@@ -56,12 +56,12 @@ jobs:
           java -jar /usr/local/bin/plantuml.jar -tsvg "$file" -o "${PWD}/$output_dir"
         done
 
-    - name: Generate images from changed draw.io files
+    - name: Generate images from changed drawio files
       if: ${{ steps.changed_files.outputs.changed_files }} != ''
       run: |
-        for file in $(echo "${{ steps.changed_files.outputs.changed_files }}" | grep 'src/draw.io/.*\.drawio' || true); do
-          echo "Processing draw.io file: $file"
-          output_dir=$(dirname "$file" | sed 's|^src/draw.io|images|')
+        for file in $(echo "${{ steps.changed_files.outputs.changed_files }}" | grep 'src/drawio/.*\.drawio' || true); do
+          echo "Processing drawio file: $file"
+          output_dir=$(dirname "$file" | sed 's|^src/drawio|images|')
           mkdir -p "$output_dir"
           xvfb-run -a drawio -x -f png -o "${PWD}/$output_dir/$(basename "$file" .drawio).png" "$file"
           xvfb-run -a drawio -x -f jpg -o "${PWD}/$output_dir/$(basename "$file" .drawio).jpg" "$file"
@@ -78,7 +78,7 @@ jobs:
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
         git add -A images
-        git commit -m "Generate images from changed PlantUML and draw.io files"
+        git commit -m "Generate images from changed PlantUML and drawio files"
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
