@@ -64,7 +64,7 @@ jobs:
           output_dir=$(dirname "$file" | sed 's|^src/drawio|images|')
           mkdir -p "$output_dir"
           xvfb-run -a drawio -x -f png -o "${PWD}/$output_dir/$(basename "$file" .drawio).png" "$file"
-          xvfb-run -a drawio -x -f jpg -o "${PWD}/$output_dir/$(basename "$file" .drawio).jpg" "$file"
+          xvfb-run -a drawio -x -f svg -o "${PWD}/$output_dir/$(basename "$file" .drawio).svg" "$file"
         done
 
     - name: Debug images folder
