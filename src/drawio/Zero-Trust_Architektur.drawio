@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2024-06-05T15:38:51.059Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" etag="sl5NFyXnhl-vb7sWu7up" version="24.4.14" type="device">
+<mxfile host="app.diagrams.net" modified="2024-06-05T15:51:13.099Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" etag="K12_F4wXCSpEsJ5C96CI" version="24.4.14" type="device">
   <diagram name="Seite-1" id="rmcg_aQgjtSpjyozXI4n">
     <mxGraphModel dx="875" dy="442" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
       <root>
@@ -129,7 +129,7 @@
             <mxPoint x="11" y="8" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="VlHYgpy21l1go6Lui4qg-10" value="ZT Cluster Telemetrie Daten&amp;nbsp;&lt;span style=&quot;background-color: initial;&quot;&gt;Service&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
+        <mxCell id="VlHYgpy21l1go6Lui4qg-10" value="Telemetrie-Daten&amp;nbsp;&lt;span style=&quot;background-color: initial;&quot;&gt;Service&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
           <mxGeometry x="730" y="440" width="120" height="40" as="geometry" />
         </mxCell>
         <mxCell id="VlHYgpy21l1go6Lui4qg-71" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;curved=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="VlHYgpy21l1go6Lui4qg-11" target="VlHYgpy21l1go6Lui4qg-69" edge="1">
