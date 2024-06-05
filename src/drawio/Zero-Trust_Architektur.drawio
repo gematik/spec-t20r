@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2024-06-05T13:58:31.104Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" etag="y861aW2DMKzNmuCpmfRL" version="24.4.14" type="device">
+<mxfile host="app.diagrams.net" modified="2024-06-05T14:43:23.921Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" etag="0Ji5CTKeNyiJheQjG0p3" version="24.4.14" type="device">
   <diagram name="Seite-1" id="rmcg_aQgjtSpjyozXI4n">
     <mxGraphModel dx="875" dy="442" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
       <root>
@@ -107,7 +107,7 @@
             <mxPoint x="-19" y="20" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="VlHYgpy21l1go6Lui4qg-8" value="&lt;div&gt;Resource server&lt;/div&gt;&lt;div&gt;(Application Backend)&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+        <mxCell id="VlHYgpy21l1go6Lui4qg-8" value="&lt;div&gt;Resource Server&lt;/div&gt;&lt;div&gt;(Application Backend)&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
           <mxGeometry x="970" y="200" width="120" height="40" as="geometry" />
         </mxCell>
         <mxCell id="VlHYgpy21l1go6Lui4qg-82" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="VlHYgpy21l1go6Lui4qg-9" target="VlHYgpy21l1go6Lui4qg-14" edge="1">
