@@ -25,12 +25,12 @@ box "Betreiber" #TECHNOLOGY
 end box
 
 activate Client
-alt #White
+alt Client has no Authorization Server FQDN
     Client -> HP: GET /resource
     activate HP
     HP --> Client: 401 Unauthorized; json body with Well-Known json Document (RFC8414)
     deactivate HP
-else 
+else Client has Authorization Server FQDN
     Client -> HP: GET /.well-known/oauth-authorization-server 
     activate HP
     HP --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
@@ -38,7 +38,7 @@ else
 end
 
 Client -> Client: generate DPoP keypair
-alt Client Assertion JWT
+alt Client has no valid refrash token
 Client -> AuthS: GET /nonce
 activate AuthS
 AuthS --> Client: return 200 OK new-nonce: nonce
@@ -66,7 +66,7 @@ note left of AuthS
 end note
 AuthS -> AuthS: verify Client Assertion JWT, DPoP
 AuthS -> AuthS: Create state for Identity/App/Device
-else Use Refresh token
+else Client has valid Refresh token
 Client -> AuthS: POST /token\n\
   (Refresh token and DPoP JWT)\n\
   ""grant_type=refresh_token""\n\
