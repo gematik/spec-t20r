@@ -70,6 +70,7 @@ else Client has valid Refresh token
 Client -> AuthS: POST /token\n\
   (Refresh token and DPoP JWT)
 AuthS -> AuthS: verify Refresh token, DPoP
+AuthS -> AuthS: Invalidate Refresh token
 end
 
 AuthS -> PDP: POST /v1/data/authz, json body {  "input": {...}} 
