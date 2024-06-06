@@ -54,7 +54,7 @@ deactivate Konnektor
 
 Client -> Client: add SM-B Signature to Client Assertion JWT\n\
 cC4h... (Client Assertion JWT)
-Client -> Client: create DPoP Proof JWT
+Client -> Client: create DPoP Proof JWT with nonce
 Client -> AuthS: POST /token\n\
   (Client Assertion JWT and DPoP JWT)\n\
   ""DPoP: eyJh...""\n\
