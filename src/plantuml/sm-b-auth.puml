@@ -65,13 +65,10 @@ note left of AuthS
   RFC7523 (JWT Client Assertion), RFC9449 (DPoP)
 end note
 AuthS -> AuthS: verify Client Assertion JWT and DPoP JWT
+AuthS -> AuthS: Create state for Identity/App/Device
 else Client has valid Refresh token
 Client -> AuthS: POST /token\n\
-  (Refresh token and DPoP JWT)\n\
-  ""grant_type=refresh_token""\n\
-  ""refresh_token=eyJ0...""\n\
-  ""scope=...""\n\
-  ""DPoP: eyJh...""
+  (Refresh token and DPoP JWT)
 AuthS -> AuthS: verify Refresh token, DPoP
 end
 
@@ -79,7 +76,6 @@ AuthS -> PDP: POST /v1/data/authz, json body {  "input": {...}}
 activate PDP
 PDP --> AuthS: 200 OK, json body {"result": {"allow": true, ...}}
 deactivate PDP
-AuthS -> AuthS: Create state for Identity/App/Device
 AuthS -> AuthS: issue tokens
 AuthS --> Client: 200 OK, access token, refresh token, bound to DPoP
 deactivate AuthS
