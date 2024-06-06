@@ -70,14 +70,14 @@ else Client has valid Refresh token
 Client -> AuthS: POST /token\n\
   (Refresh token and DPoP JWT)
 AuthS -> AuthS: verify Refresh token, DPoP
-AuthS -> AuthS: Invalidate Refresh token
+AuthS -> AuthS: invalidate Refresh token
 end
 
 AuthS -> PDP: POST /v1/data/authz, json body {  "input": {...}} 
 activate PDP
 PDP --> AuthS: 200 OK, json body {"result": {"allow": true, ...}}
 deactivate PDP
-AuthS -> AuthS: issue tokens
+AuthS -> AuthS: issue Access and Refresh token with DPoP Binding
 AuthS --> Client: 200 OK, access token, refresh token, bound to DPoP
 deactivate AuthS
 Client -> Client: Create DPoP Proof for RS
