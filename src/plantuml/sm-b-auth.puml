@@ -64,7 +64,7 @@ Client -> AuthS: POST /token\n\
 note left of AuthS
   RFC7523 (JWT Client Assertion), RFC9449 (DPoP)
 end note
-AuthS -> AuthS: verify Client Assertion JWT, DPoP
+AuthS -> AuthS: verify Client Assertion JWT and DPoP JWT
 AuthS -> AuthS: Create state for Identity/App/Device
 else Client has valid Refresh token
 Client -> AuthS: POST /token\n\
