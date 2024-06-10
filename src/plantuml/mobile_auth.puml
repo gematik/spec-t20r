@@ -1,4 +1,4 @@
-@startuml "SM-B_Auth_with_DPoP"
+@startuml "Mobile_Auth_with_DPoP"
 autonumber "(00)"
 skinparam defaultFontSize 10
 skinparam defaultFontName Helvetica
@@ -7,16 +7,13 @@ skinparam lengthAdjust none
 
 !pragma teoz true
 
-participant Client
-box "LEI" #GhostWhite
-    participant Konnektor as "Konnektor or\nTI-Gateway"
-    participant SMB as "SM-B"
-end box
-
+actor N as "Nutzer"
+participant Client as "mobile\nClient"
+participant IDP as "IDP"
 box "Betreiber" #TECHNOLOGY
     box "ZT Cluster" #SandyBrown
         participant AS as "PEP\nAuthorization Server" 
-        participant HP as "http Proxy"
+        participant HP as "PEP\nhttp Proxy"
         participant PDP as "PDP"
     endbox
     box TI 2.0 Dienst #DarkSeaGreen
@@ -24,6 +21,7 @@ box "Betreiber" #TECHNOLOGY
     endbox
 end box
 
+N -> Client
 activate Client
 alt Client has no Authorization Server FQDN
     Client -> HP: GET /resource
@@ -42,25 +40,33 @@ alt Client has no valid refrash token
 Client -> AS: GET /nonce
 activate AS
 AS --> Client: return 200 OK new-nonce: nonce
-Client -> Client: create Client Assertion JWT with nonce\n  Client and OS Information\n  DPoP Thumbprint
-Client -> Konnektor: externalAuthenticate JWT-hash
-activate Konnektor
-Konnektor -> SMB: sign JWT-hash
-activate SMB
-SMB -> Konnektor: JWT-Signature
-deactivate SMB
-Konnektor -> Client: JWT-signature
-deactivate Konnektor
 
-Client -> Client: add SM-B Signature to Client Assertion JWT\n\
-cC4h... (Client Assertion JWT)
-Client -> Client: create DPoP Proof JWT with nonce
-Client -> AS: POST /token\n\
-  (Client Assertion JWT and DPoP JWT)
-note left of AS
-  RFC7523 (JWT Client Assertion), RFC9449 (DPoP)
-end note
-AS -> AS: verify Client Assertion JWT and DPoP JWT
+Client -> Client: Retrieve IDP list (from /idp.app.ti-dienste.de/directory/fed_idp_list)
+Client -> Client: Select IDP
+Client -> AS: GET /auth (selected_idp)
+AS -> IDP: POST /par (client_id, state, redirect_uri\n\
+code_challenge, code_challenge_method, response_type=code,\n\
+nonce, scope, acr_values)
+activate IDP
+IDP --> AS: 200 OK,\n\
+(request_uri, expires_in)
+AS --> Client: 302 Redirect (location: IDP authorization_endpoint, request_uri)
+Client -> IDP: GET /authorize (request_uri)
+group #White User Authentication and consent 
+IDP -> Client: Challenge (Consent Page)
+Client -> N: 
+N --> Client: 
+Client --> IDP: Challenge response
+end
+IDP --> Client: 200 OK, (code, state)
+Client -> AS: POST /token (code, grant_type=authorization_code,\n\
+redirect_uri, code_verifier)
+AS -> IDP: POST /token (code, grant_type=authorization_code,\n\
+redirect_uri, code_verifier)
+IDP --> AS: 200 OK, (id_token)
+deactivate IDP
+
+AS -> AS: verify id_token
 AS -> AS: Create state for Identity/App/Device
 else Client has valid Refresh token
 Client -> AS: POST /token\n\
