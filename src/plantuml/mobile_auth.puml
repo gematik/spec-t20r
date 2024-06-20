@@ -7,71 +7,91 @@ skinparam lengthAdjust none
 
 !pragma teoz true
 
-actor N as "Nutzer"
-participant Client as "mobile\nClient"
+actor Nutzer as "Nutzer"
+box Mobiles Gerät #GhostWhite
+  participant App as "App" #DarkSeaGreen
+  participant AuthModul as "Authenticator\nModul"
+endbox
 participant IDP as "IDP"
 box "Betreiber" #TECHNOLOGY
-    box "ZT Cluster" #SandyBrown
-        participant AS as "PEP\nAuthorization Server" 
-        participant HP as "PEP\nhttp Proxy"
-        participant PDP as "PDP"
-    endbox
-    box TI 2.0 Dienst #DarkSeaGreen
-        participant RS as "Resource Server"
-    endbox
+  box "ZT Cluster" #SandyBrown
+    participant AS as "PEP\nAuthorization Server" 
+    participant Proxy as "PEP\nhttp Proxy"
+    participant PDP as "PDP"
+  endbox
+  box TI 2.0 Dienst #DarkSeaGreen
+    participant RS as "Resource Server"
+  endbox
 end box
 
-N -> Client
-activate Client
-alt Client has no Authorization Server FQDN
-    Client -> HP: GET /resource
-    activate HP
-    HP --> Client: 401 Unauthorized; json body with Well-Known json Document (RFC8414)
-    deactivate HP
-else Client has Authorization Server FQDN
-    Client -> HP: GET /.well-known/oauth-authorization-server 
-    activate HP
-    HP --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
-    deactivate HP
+Nutzer -> App
+activate App
+alt App has no Authorization Server FQDN
+  App -> Proxy: GET /resource
+  activate Proxy
+  Proxy --> App: 401 Unauthorized; json body with Well-Known json Document (RFC8414)
+  deactivate Proxy
+else App has Authorization Server FQDN
+  App -> Proxy: GET /.well-known/oauth-authorization-server 
+  activate Proxy
+  Proxy --> App: 200 OK; json body with Well-Known json Document (RFC8414)
+  deactivate Proxy
 end
 
-Client -> Client: generate DPoP keypair
-alt Client has no valid refrash token
-Client -> AS: GET /nonce
-activate AS
-AS --> Client: return 200 OK new-nonce: nonce
+alt App has no DPoP key pair
+App -> App: generate DPoP key pair
+end
 
-Client -> Client: Retrieve IDP list (from /idp.app.ti-dienste.de/directory/fed_idp_list)
-Client -> Client: Select IDP
-Client -> AS: GET /auth (selected_idp)
-AS -> IDP: POST /par (client_id, state, redirect_uri\n\
+alt App has no valid refresh token
+App -> App: Retrieve IDP list (from /idp.app.ti-dienste.de/directory/fed_idp_list)
+App -> App: Select IDP
+App -> AS: GET /nonce
+activate AS
+AS --> App: return 200 OK new-nonce: nonce
+App -> App: Create DPoP JWT with nonce
+App -> AS: GET /auth (selected_idp)\n\
+  DPoP: ... (DPoP JWT)
+AS -> IDP: POST /par (App_id, state, redirect_uri\n\
 code_challenge, code_challenge_method, response_type=code,\n\
 nonce, scope, acr_values)
 activate IDP
+alt #White AS Entity statement is unknown
+  IDP -> AS: GET /.well-known/openid-federation
+  AS --> IDP: 200 OK, (Entity statement)
+end
 IDP --> AS: 200 OK,\n\
 (request_uri, expires_in)
-AS --> Client: 302 Redirect (location: IDP authorization_endpoint, request_uri)
-Client -> IDP: GET /authorize (request_uri)
 group #White User Authentication and consent 
-IDP -> Client: Challenge (Consent Page)
-Client -> N: 
-N --> Client: 
-Client --> IDP: Challenge response
+AS --> AuthModul: 302 Redirect (location: IDP authorization_endpoint, request_uri)
+activate AuthModul
+AuthModul -> IDP: GET /authorize (request_uri)
+IDP -> AuthModul: Challenge (Consent page)
+AuthModul -> Nutzer: Authentication and confirmation
+Nutzer --> AuthModul: 
+AuthModul --> IDP: Challenge response
+deactivate AuthModul
 end
-IDP --> Client: 200 OK, (code, state)
-Client -> AS: POST /token (code, grant_type=authorization_code,\n\
-redirect_uri, code_verifier)
-AS -> IDP: POST /token (code, grant_type=authorization_code,\n\
-redirect_uri, code_verifier)
-IDP --> AS: 200 OK, (id_token)
-deactivate IDP
+IDP --> App: 302 Redirect, (location: /app/op-intermediary-callback, code, state)
 
+App -> App: create DPoP JWT with nonce
+App -> AS: POST /token\n\
+  DPoP: eyJ... (DPoP JWT)\n\
+  (code, state)
+AS -> AS: verify state and DPoP JWT
+AS -> IDP: POST /token\n\
+  Authorization: Basic ... (App_id + App_secret)\n\
+  (authorization_code=code, grant_type=authoriz-ation_code,\n\
+  redirect_uri, code_verifier=...)
+IDP --> AS: 200 OK, (id_token, expires_in)
+deactivate IDP
 AS -> AS: verify id_token
 AS -> AS: Create state for Identity/App/Device
-else Client has valid Refresh token
-Client -> AS: POST /token\n\
+
+else App has valid Refresh token
+App -> App: create DPoP JWT without nonce
+App -> AS: POST /token\n\
   (Refresh token and DPoP JWT)
-AS -> AS: verify Refresh token, DPoP
+AS -> AS: verify Refresh token and DPoP JWT
 AS -> AS: invalidate Refresh token
 end
 
@@ -80,24 +100,28 @@ activate PDP
 PDP --> AS: 200 OK, json body {"result": {"allow": true, ...}}
 deactivate PDP
 AS -> AS: issue Access and Refresh token with DPoP Binding
-AS --> Client: 200 OK, Access token, Refresh token, bound to DPoP
+AS --> App: 200 OK, Access token, Refresh token, bound to DPoP
 deactivate AS
-Client -> Client: Create DPoP Proof for RS
+App -> App: Create DPoP Proof for RS
 
-Client -> HP: GET /resource (Access token, DPoP Proof)
-activate HP
-HP -> HP: verify access token and\nDPoP Binding
-HP -> RS: forward GET /resource\n\
-(access token, DPoP)
+App -> Proxy: GET /resource\n\
+  Authorization: DPoP ... (Accesss token)\n\
+  DPoP: ... (DPoP token)
+activate Proxy
+Proxy -> Proxy: verify access token and\nDPoP Binding
+Proxy -> RS: forward GET //resource\n\
+  Authorization: DPoP ... (Accesss token)\n\
+  DPoP: ... (DPoP token)
 activate RS
 RS -> RS: provide\n\
 resource\n\
 access
-RS --> HP: 200 OK, resource
+RS --> Proxy: 200 OK, resource
 deactivate RS
-HP --> Client: 200 OK, resource
-deactivate HP
+Proxy --> App: 200 OK, resource
+deactivate Proxy
 deactivate RS
-deactivate Client
+deactivate App
+
 
 @enduml

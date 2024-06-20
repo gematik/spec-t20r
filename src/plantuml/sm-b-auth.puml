@@ -7,38 +7,38 @@ skinparam lengthAdjust none
 
 !pragma teoz true
 
-participant Client
 box "LEI" #GhostWhite
-    participant Konnektor as "Konnektor or\nTI-Gateway"
-    participant SMB as "SM-B"
+  participant Client
+  participant Konnektor as "Konnektor or\nTI-Gateway"
+  participant SMB as "SM-B"
 end box
 
 box "Betreiber" #TECHNOLOGY
-    box "ZT Cluster" #SandyBrown
-        participant AS as "PEP\nAuthorization Server" 
-        participant HP as "http Proxy"
-        participant PDP as "PDP"
-    endbox
-    box TI 2.0 Dienst #DarkSeaGreen
-        participant RS as "Resource Server"
-    endbox
+  box "ZT Cluster" #SandyBrown
+    participant AS as "PEP\nAuthorization Server" 
+    participant HP as "http Proxy"
+    participant PDP as "PDP"
+  endbox
+   box TI 2.0 Dienst #DarkSeaGreen
+    participant RS as "Resource Server"
+  endbox
 end box
 
 activate Client
 alt Client has no Authorization Server FQDN
-    Client -> HP: GET /resource
-    activate HP
-    HP --> Client: 401 Unauthorized; json body with Well-Known json Document (RFC8414)
-    deactivate HP
+  Client -> HP: GET /resource
+  activate HP
+  HP --> Client: 401 Unauthorized; json body with Well-Known json Document (RFC8414)
+  deactivate HP
 else Client has Authorization Server FQDN
-    Client -> HP: GET /.well-known/oauth-authorization-server 
-    activate HP
-    HP --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
-    deactivate HP
+  Client -> HP: GET /.well-known/oauth-authorization-server 
+  activate HP
+  HP --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
+  deactivate HP
 end
 
-Client -> Client: generate DPoP keypair
-alt Client has no valid refrash token
+
+alt Client has no valid refresh token
 Client -> AS: GET /nonce
 activate AS
 AS --> Client: return 200 OK new-nonce: nonce
@@ -54,18 +54,25 @@ deactivate Konnektor
 
 Client -> Client: add SM-B Signature to Client Assertion JWT\n\
 cC4h... (Client Assertion JWT)
-Client -> Client: create DPoP Proof JWT with nonce
+Client -> Client: create DPoP JWT with nonce
 Client -> AS: POST /token\n\
-  (Client Assertion JWT and DPoP JWT)
+  Content-Type: application/x-www-form-urlencoded\n\
+  DPoP: ... (DPoP JWT)\n\
+  grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer\n\
+  assertion=eyJh... (Client Assertion JWT)
 note left of AS
   RFC7523 (JWT Client Assertion), RFC9449 (DPoP)
 end note
 AS -> AS: verify Client Assertion JWT and DPoP JWT
 AS -> AS: Create state for Identity/App/Device
+
 else Client has valid Refresh token
+Client -> Client: create DPoP JWT without nonce
 Client -> AS: POST /token\n\
-  (Refresh token and DPoP JWT)
-AS -> AS: verify Refresh token, DPoP
+  DPoP: ... (DPoP JWT)\n\
+  grant_type=refresh_token\n\
+  refresh_token= ... (Refresh token)
+AS -> AS: verify Refresh token and DPoP JWT
 AS -> AS: invalidate Refresh token
 end
 
@@ -76,13 +83,16 @@ deactivate PDP
 AS -> AS: issue Access and Refresh token with DPoP Binding
 AS --> Client: 200 OK, Access token, Refresh token, bound to DPoP
 deactivate AS
-Client -> Client: Create DPoP Proof for RS
 
-Client -> HP: GET /resource (Access token, DPoP Proof)
+Client -> Client: Create DPoP Proof for RS
+Client -> HP: GET /resource\n\
+  Authorization: DPoP ... (Accesss token)\n\
+  DPoP: ... (DPoP token)
 activate HP
-HP -> HP: verify access token and\nDPoP Binding
+HP -> HP: verify Access token and DPoP Binding
 HP -> RS: forward GET /resource\n\
-(access token, DPoP)
+  Authorization: DPoP ... (Accesss token)\n\
+  DPoP: ... (DPoP token)
 activate RS
 RS -> RS: provide\n\
 resource\n\
