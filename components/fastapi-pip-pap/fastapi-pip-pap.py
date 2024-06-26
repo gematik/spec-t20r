@@ -52,7 +52,7 @@ async def options_bundle(
     label: str
 ):
     """Handle OPTIONS request for bundle endpoint."""
-    return Response(status_code=200, headers={"Allow": "GET, HEAD, OPTIONS"})
+    return Response(status_code=200, headers={"Allow": "GET, OPTIONS"})
 
 @app.get("/policies/{application}/{label}")
 async def get_bundle(
