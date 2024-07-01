@@ -1,12 +1,12 @@
 # pip-pap-service configuration file
 
-# Base path for bundle storage
-bundle_storage_path: /var/tmp/fastapi-pip-pap
+# GitHub repository for bundle storage
+github_repo: https://raw.githubusercontent.com/gem-cp/zt-opa-bundles/main
 
 # logging configuration
 logging:
   loglevel: DEBUG
   log_to_console: True
   log_to_file: True
-  # If log _to_file is True then the logfile is: <service_name>.log
+  # If log_to_file is True then the logfile is: <service_name>.log
   service_name: fastapi-pip-pap

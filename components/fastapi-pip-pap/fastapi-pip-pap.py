@@ -5,46 +5,54 @@ import coloredlogs
 import argparse
 import yaml
 import hashlib
+import requests
 from fastapi import FastAPI, HTTPException, Header, Response
 from fastapi.responses import FileResponse
 from typing import Optional
+from tempfile import NamedTemporaryFile
 
 app = FastAPI()
 
 class Bundles:
-    """Class to handle the bundle storage and retrieval."""
-    def __init__(self, bundle_storage_path, policies, application, label, filename):
+    """Class to handle the bundle storage and retrieval from GitHub."""
+    def __init__(self, github_repo, application, label, filename):
         """Initialize the Bundles class."""
-        self.bundle_storage_path = bundle_storage_path
-        self.policies = policies
+        self.github_repo = github_repo
         self.application = application
         self.label = label
         self.filename = filename
-        self.bundle_path = self.get_bundle_path()
+        self.bundle_url = self.get_bundle_url()
 
-    def get_bundle_path(self):
-        """Return the path to the bundle."""
-        return os.path.join(
-            self.bundle_storage_path,
-            self.policies,
-            self.application,
-            self.label,
-            self.filename
-        )
+    def get_bundle_url(self):
+        """Return the URL to the bundle."""
+        return f"{self.github_repo}/opa_bundles/{self.application}/{self.label}/{self.filename}"
 
-    def get_etag(self):
-      """Calculates the ETag header value based on the file content hash.
+    def download_bundle(self):
+        """Download the bundle from GitHub."""
+        response = requests.get(self.bundle_url)
+        """https://raw.githubusercontent.com/gem-cp/zt-opa-bundles/main/opa_bundles/vsdm/latest/bundle.tar.gz"""
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
 
-      Returns:
-          str: The ETag header value.
-      """
-      # Simulate reading file content
-      with open(self.bundle_path, 'rb') as f:
-        content = f.read()
-      # Calculate hash of the content
-      hasher = hashlib.sha256(content)
-      etag = hasher.hexdigest()
-      return etag
+        temp_file = NamedTemporaryFile(delete=False)
+        with open(temp_file.name, 'wb') as f:
+            f.write(response.content)
+        
+        return temp_file.name
+
+    def get_etag(self, file):
+        """Calculates the ETag header value based on the file content hash.
+        
+        Args:
+            file (str): The file to calculate the ETag for.
+
+        Returns:
+            str: The ETag header value.
+        """
+        # Calculate hash of the content
+        hasher = hashlib.sha256(file)
+        etag = hasher.hexdigest()
+        return etag
 
 @app.options("/policies/{application}/{label}")
 async def options_bundle(
@@ -60,27 +68,29 @@ async def get_bundle(
     label: str,
     if_none_match: Optional[str] = Header(None)
 ):
-
-    filename = "bundle.tar.gz"
     """Get the requested bundle."""
-    bundle_storage_path = app.state.config["bundle_storage_path"]
-    bundle = Bundles(bundle_storage_path, "policies", application, label, filename)
-    bundle_path = bundle.get_bundle_path()
+    filename = "bundle.tar.gz"
+    github_repo = app.state.config["github_repo"]
+    bundle = Bundles(github_repo, application, label, filename)
 
-    if not os.path.exists(bundle_path):
-        raise HTTPException(status_code=404, detail="The requested bundle does not exist.")
+    bundle_file = bundle.download_bundle()
 
-    etag = bundle.get_etag()
+    # Calculate ETag header value
+    etag = bundle.get_etag(bundle_file)
 
     if if_none_match == etag:
         return Response(status_code=304)
 
     # Add Content-Disposition header
-    return FileResponse(bundle_path, media_type="application/gzip", headers={
-      "ETag": etag,
-      #"Content-Disposition": f'attachment; filename="{os.path.basename(bundle_path)}"'
-      "Content-Disposition": f"attachment; filename={filename}"
+    response = FileResponse(bundle_file, media_type="application/gzip", headers={
+        "ETag": etag,
+        "Content-Disposition": f"attachment; filename={filename}"
     })
+    
+    # Clean up the temporary file after sending the response
+    response.background = lambda: os.remove(bundle_file)
+    
+    return response
 
 def load_config(filename):
     """Load the configuration from the given file."""
