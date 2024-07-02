@@ -5,9 +5,11 @@ import coloredlogs
 import argparse
 import yaml
 import hashlib
-import requests
+import httpx
+import aiofiles
 from fastapi import FastAPI, HTTPException, Header, Response
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 from typing import Optional
 from tempfile import NamedTemporaryFile
 
@@ -25,34 +27,30 @@ class Bundles:
 
     def get_bundle_url(self):
         """Return the URL to the bundle."""
-        return f"{self.github_repo}/opa_bundles/{self.application}/{self.label}/{self.filename}"
+        return f"{self.github_repo}/opa-bundles/{self.application}/{self.label}/{self.filename}"
 
-    def download_bundle(self):
-        """Download the bundle from GitHub."""
-        response = requests.get(self.bundle_url)
-        """https://raw.githubusercontent.com/gem-cp/zt-opa-bundles/main/opa_bundles/vsdm/latest/bundle.tar.gz"""
-        if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail=response.text)
+    async def download_bundle(self):
+        """Download the bundle from GitHub asynchronously."""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(self.bundle_url)
+            if response.status_code != 200:
+                raise HTTPException(status_code=response.status_code, detail=response.text)
 
-        temp_file = NamedTemporaryFile(delete=False)
-        with open(temp_file.name, 'wb') as f:
-            f.write(response.content)
-        
-        return temp_file.name
+            temp_file = NamedTemporaryFile(delete=False)
+            async with aiofiles.open(temp_file.name, 'wb') as f:
+                await f.write(response.content)
 
-    def get_etag(self, file):
-        """Calculates the ETag header value based on the file content hash.
-        
-        Args:
-            file (str): The file to calculate the ETag for.
+            return temp_file.name
 
-        Returns:
-            str: The ETag header value.
-        """
-        # Calculate hash of the content
-        hasher = hashlib.sha256(file)
+    def get_etag(self, file_path):
+        """Calculates the ETag header value based on the file content hash."""
+        hasher = hashlib.sha256()
+        with open(file_path, 'rb') as f:
+            while chunk := f.read(8192):
+                hasher.update(chunk)
         etag = hasher.hexdigest()
         return etag
+
 
 @app.options("/policies/{application}/{label}")
 async def options_bundle(
@@ -73,7 +71,18 @@ async def get_bundle(
     github_repo = app.state.config["github_repo"]
     bundle = Bundles(github_repo, application, label, filename)
 
-    bundle_file = bundle.download_bundle()
+    try:
+        bundle_file = await bundle.download_bundle()
+    except HTTPException as e:
+        # Propagate the HTTPException with the correct status code
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        # Handle unexpected errors
+        raise HTTPException(status_code=500, detail=str(e))
+
+    if bundle_file is None:
+        # Handle scenario where download_bundle() did not return a valid file path
+        raise HTTPException(status_code=500, detail="Failed to download bundle")
 
     # Calculate ETag header value
     etag = bundle.get_etag(bundle_file)
@@ -86,10 +95,10 @@ async def get_bundle(
         "ETag": etag,
         "Content-Disposition": f"attachment; filename={filename}"
     })
-    
+
     # Clean up the temporary file after sending the response
-    response.background = lambda: os.remove(bundle_file)
-    
+    response.background = BackgroundTask(os.remove, bundle_file)
+
     return response
 
 def load_config(filename):

@@ -5,7 +5,7 @@ github_repo: https://raw.githubusercontent.com/gem-cp/zt-opa-bundles/main
 
 # logging configuration
 logging:
-  loglevel: DEBUG
+  loglevel: INFO
   log_to_console: True
   log_to_file: True
   # If log_to_file is True then the logfile is: <service_name>.log
