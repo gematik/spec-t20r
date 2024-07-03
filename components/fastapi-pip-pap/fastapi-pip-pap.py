@@ -5,13 +5,20 @@ import coloredlogs
 import argparse
 import yaml
 import hashlib
-import httpx
-import aiofiles
+import requests
+import jwcrypto.jwk as jwk
 from fastapi import FastAPI, HTTPException, Header, Response
-from fastapi.responses import FileResponse
-from starlette.background import BackgroundTask
+from fastapi.responses import FileResponse, JSONResponse
 from typing import Optional
 from tempfile import NamedTemporaryFile
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import serialization
+from jwcrypto import jwk, jwt
+import tarfile
+import json
+import io
+import time
 
 app = FastAPI()
 
@@ -29,18 +36,17 @@ class Bundles:
         """Return the URL to the bundle."""
         return f"{self.github_repo}/opa-bundles/{self.application}/{self.label}/{self.filename}"
 
-    async def download_bundle(self):
-        """Download the bundle from GitHub asynchronously."""
-        async with httpx.AsyncClient() as client:
-            response = await client.get(self.bundle_url)
-            if response.status_code != 200:
-                raise HTTPException(status_code=response.status_code, detail=response.text)
+    def download_bundle(self):
+        """Download the bundle from GitHub."""
+        response = requests.get(self.bundle_url)
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
 
-            temp_file = NamedTemporaryFile(delete=False)
-            async with aiofiles.open(temp_file.name, 'wb') as f:
-                await f.write(response.content)
-
-            return temp_file.name
+        temp_file = NamedTemporaryFile(delete=False)
+        with open(temp_file.name, 'wb') as f:
+            f.write(response.content)
+        
+        return temp_file.name
 
     def get_etag(self, file_path):
         """Calculates the ETag header value based on the file content hash."""
@@ -51,6 +57,69 @@ class Bundles:
         etag = hasher.hexdigest()
         return etag
 
+    def calculate_hash(self, file_content, algorithm='SHA-256'):
+        """Calculate the hash of the file content."""
+        hasher = hashlib.new(algorithm.lower().replace("-", ""))
+        hasher.update(file_content)
+        return hasher.hexdigest()
+
+    def sign_bundle(self, file_hashes, private_key):
+        """Signs the bundle using the given private key."""
+        claims = {
+            "files": file_hashes,
+            "iat": int(time.time()),
+            "iss": "JWTSercice"
+        }
+        
+        header = {
+            "alg": "ES256",
+            "typ": "JWT",
+            "kid": "myPublicKey"
+        }
+
+        token = jwt.JWT(header=header, claims=claims)
+        token.make_signed_token(private_key)
+        return token.serialize()
+
+    def create_signed_tarball(self, original_bundle_file, signature):
+        """Creates a new tarball including the original files and the signature."""
+        signed_bundle_file = NamedTemporaryFile(delete=False)
+        
+        with tarfile.open(original_bundle_file, "r:gz") as tar:
+            with tarfile.open(signed_bundle_file.name, "w:gz") as signed_tar:
+                for member in tar.getmembers():
+                    file_data = tar.extractfile(member).read()
+                    tarinfo = tarfile.TarInfo(name=member.name)
+                    tarinfo.size = len(file_data)
+                    signed_tar.addfile(tarinfo, fileobj=io.BytesIO(file_data))
+
+                # Add signature file
+                signature_info = tarfile.TarInfo(name=".signatures.json")
+                signature_info.size = len(signature)
+                signed_tar.addfile(signature_info, io.BytesIO(signature.encode()))
+
+        return signed_bundle_file.name
+
+def generate_keys():
+    """Generate a new ECC key pair."""
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    public_key = private_key.public_key()
+    return private_key, public_key
+
+#def get_jwks(public_key):
+#    """Generate a JWKS representation of the given public key."""
+    # Create a JWK object from ECC public key
+    #jwk_key = jwk.JWK()
+    #jwk_key.import_key(public_key)
+    
+    # Create a JWKSet containing the JWK object
+    #jwks = jwk.JWKSet(keys=[jwk_key])
+    
+    # Export the JWKS as JSON string
+    #return jwks.export(private_keys=False)
+
+#private_key, public_key = generate_keys()
+#jwks = get_jwks(public_key)
 
 @app.options("/policies/{application}/{label}")
 async def options_bundle(
@@ -72,13 +141,10 @@ async def get_bundle(
     bundle = Bundles(github_repo, application, label, filename)
 
     try:
-        bundle_file = await bundle.download_bundle()
+        bundle_file = bundle.download_bundle()
     except HTTPException as e:
-        # Propagate the HTTPException with the correct status code
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except Exception as e:
-        # Handle unexpected errors
-        raise HTTPException(status_code=500, detail=str(e))
+        # Handle HTTP errors from download
+        raise e
 
     if bundle_file is None:
         # Handle scenario where download_bundle() did not return a valid file path
@@ -90,16 +156,42 @@ async def get_bundle(
     if if_none_match == etag:
         return Response(status_code=304)
 
+    # Extract files and calculate their hashes
+    file_hashes = []
+    with tarfile.open(bundle_file, "r:gz") as tar:
+        for member in tar.getmembers():
+            file_data = tar.extractfile(member).read()
+            file_hash = bundle.calculate_hash(file_data)
+            file_hashes.append({
+                "name": member.name,
+                "hash": file_hash,
+                "algorithm": "SHA-256"
+            })
+
+    # Sign the bundle
+    signature = bundle.sign_bundle(file_hashes, private_key)
+
+    # Create a new tarball including the original files and the signature
+    signed_bundle_file = bundle.create_signed_tarball(bundle_file, signature)
+
     # Add Content-Disposition header
-    response = FileResponse(bundle_file, media_type="application/gzip", headers={
+    response = FileResponse(signed_bundle_file, media_type="application/gzip", headers={
         "ETag": etag,
         "Content-Disposition": f"attachment; filename={filename}"
     })
 
-    # Clean up the temporary file after sending the response
-    response.background = BackgroundTask(os.remove, bundle_file)
+    # Clean up the temporary files after sending the response
+    if bundle_file:
+        response.background = lambda: os.remove(bundle_file)
+    if signed_bundle_file:
+        response.background = lambda: os.remove(signed_bundle_file)
 
     return response
+
+#@app.get("/jwks")
+#async def get_jwks_endpoint():
+#    """Serve the JWKS."""
+#    return JSONResponse(content=jwks)
 
 def load_config(filename):
     """Load the configuration from the given file."""
