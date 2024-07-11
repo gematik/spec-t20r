@@ -15,9 +15,9 @@ end box
 
 box "Betreiber" #TECHNOLOGY
   box "ZT Cluster" #SandyBrown
-    participant AS as "PEP\nAuthorization Server" 
-    participant HP as "http Proxy"
-    participant PDP as "PDP"
+    participant AS as "PDP\nAuthorization Server" 
+    participant HP as "PEP\nhttp Proxy"
+    participant PDP as "PDP\nPolicy Engine"
   endbox
    box TI 2.0 Dienst #DarkSeaGreen
     participant RS as "Resource Server"
