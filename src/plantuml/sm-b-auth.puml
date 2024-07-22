@@ -15,9 +15,9 @@ end box
 
 box "Betreiber" #TECHNOLOGY
   box "ZT Cluster" #SandyBrown
-    participant AS as "PDP\nAuthorization Server" 
     participant HP as "PEP\nhttp Proxy"
-    participant PDP as "PDP\nPolicy Engine"
+    participant AS as "PDP\nAuthorization Server" 
+    participant PE as "PDP\nPolicy Engine"
   endbox
    box TI 2.0 Dienst #DarkSeaGreen
     participant RS as "Resource Server"
@@ -76,11 +76,13 @@ AS -> AS: verify Refresh token and DPoP JWT
 AS -> AS: invalidate Refresh token
 end
 
-AS -> PDP: POST /v1/data/authz, json body {  "input": {...}} 
-activate PDP
-PDP --> AS: 200 OK, json body {"result": {"allow": true, ...}}
-deactivate PDP
-AS -> AS: issue Access and Refresh token with DPoP Binding
+AS -> PE: POST /v1/data/authz, json body {  "input": {...}} 
+activate PE
+PE --> AS: 200 OK, json body {"result": {"allow": true,\n\
+"access_token_attributes": {...}}
+deactivate PE
+AS -> AS: issue Access and Refresh token with DPoP Binding\n\
+  and Access token attributes
 AS --> Client: 200 OK, Access token, Refresh token, bound to DPoP
 deactivate AS
 
@@ -89,14 +91,14 @@ Client -> HP: GET /resource\n\
   Authorization: DPoP ... (Accesss token)\n\
   DPoP: ... (DPoP token)
 activate HP
-HP -> HP: verify Access token and DPoP Binding
+HP -> HP: verify Access token and DPoP Proof
+HP -> HP: additional checks according to Access token attributes
 HP -> RS: forward GET /resource\n\
   Authorization: DPoP ... (Accesss token)\n\
-  DPoP: ... (DPoP token)
+  DPoP: ... (DPoP token)\n\
+  ... (additional headers)
 activate RS
-RS -> RS: provide\n\
-resource\n\
-access
+RS -> RS: provide\nresource\naccess
 RS --> HP: 200 OK, resource
 deactivate RS
 HP --> Client: 200 OK, resource
