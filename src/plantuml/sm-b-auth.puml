@@ -92,11 +92,10 @@ Client -> HP: GET /resource\n\
   DPoP: ... (DPoP token)
 activate HP
 HP -> HP: verify Access token and DPoP Proof
-HP -> HP: additional checks according to Access token attributes
+HP -> HP: additional checks according to\n\
+Access token attributes
 HP -> RS: forward GET /resource\n\
-  Authorization: DPoP ... (Accesss token)\n\
-  DPoP: ... (DPoP token)\n\
-  ... (additional headers)
+with header and header content as json
 activate RS
 RS -> RS: provide\nresource\naccess
 RS --> HP: 200 OK, resource
