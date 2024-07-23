@@ -37,6 +37,7 @@ else Client has Authorization Server FQDN
   deactivate HP
 end
 
+Client -> Client: generate DPoP key pair
 
 alt Client has no valid refresh token
 Client -> AS: GET /nonce
