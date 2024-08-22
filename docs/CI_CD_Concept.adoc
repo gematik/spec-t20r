@@ -1,0 +1,121 @@
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+:source-style: listing
+endif::[]
+
+ifndef::env-github[:source-style: source]
+
+:imagesdir: /images/
+
+image::gematik_logo.svg[gematik,width="30%"]
+
+= CI/CD Konzept für den Zero Trust Cluster
+
+== Einleitung
+
+Die Zero Trust Komponenten PEP und PDP werden pro TI 2.0 Dienst in einem Kubernetes (K8s) Cluster betrieben. Der K8s Cluster wird im folgenden als Zero Trust (ZT) Cluster bezeichnet. Die Dienste der TI 2.0 nutzen diesen ZT Cluster als Sicherheitsleistung, sodass nur berechtigte Nutzer mit zugelassenen Apps und erlaubten Geräten auf die Ressourcen der Fachdienste zugreifen können. Um die Entwicklung des ZT Clusters und dieSicherheit und Zuverlässigkeit im Betrieb zu gewährleisten, ist eine CI/CD-Pipeline mit Quality Gates vorgesehen. In diesem Konzept wird eine mögliche Umsetzung der CI/CD Pipelines beschrieben.
+
+Die Entwicklung und Bereitstellung der ZT Cluster-Komponenten PEP und PDP erfolgt durch die gematik oder einen von der gematik beauftragten Dienstleister. Mit der hier vorgestellten CI Pipeline werden die Bereitstellung, Weiterentwicklung und weitgehend automatisierte Tests des ZT Clusters kontinuierlich ermöglicht. Über Quality Gates werden auch Sicherheitstests, wie Schwachstellenscans und Compliance-Checks, im Entwicklungsprozess integriert. 
+
+Die Aktualisierung des ZT Cluster beim Betreiber eines TI 2.0 Dienstes erfolgt über einen CD Prozess. Dazu gehören das Update von PEP und PDP (nach erfolgreichem Durchlauf der CI Pipeline), die Aktualisierung der ZT Cluster-Konfiguration sowie die Aktualisierung der Policies und Daten für den PDP sowie die Anpassung der ZT Cluster Konfiguration an den spzifischen TI 2.0 Dienst. Der CD Prozess liegt in der Verantwortung der gematik oder eines von der gematik beauftragten Dienstleisters.
+
+=== Abgrenzung
+
+Die Policies und Daten, die der PDP vom PIP und PAP Service bezieht werden in einer weiteren CI-Pipeline entwickelt, qualitätsgesichert und in einem separaten GitHub Repository öffentlich bereitgestellt. Diese CI-Pipeline ist nicht Gegenstand des vorliegenden Konzeptes.
+
+== CI/CD Konzept
+
+Als Ergebnis der Entwicklung in der CI Pipeline werden die ZT Cluster-Komponenten PEP und PDP als signierte Docker Container und die ZT Cluster-Konfiguration als K8s-Infrastruktur-Code in einem GitHub Repository öffentlich bereitgestellt. Die dienst-spezifischen ZT Cluster-Konfigurationen werden als Ergebnis der CD Pipeline in einem separaten GitHub Repository entwickelt und ebenfalls öffentlich bereitgestellt. Die Betreiber von TI 2.0 Diensten aktualisieren ihren ZT Cluster direkt aus dem GitHub Repository. Dadurch ist eine Trennung der Verantwortlichkeiten von Entwicklung des ZT Clusters (CI-Pipeline) und Betrieb (CD-Pipeline) möglich.  
+Die CI Pipeline wird durch GitHub Actions ausgelöst und überwacht. Sie beinhaltet automatisierte Tests, Builds und Bereitstellungsschritte.
+Der ZT Cluster wird in der Infrastruktur des Anbieters des Fachdienstes betrieben. Der Anbieter des Fachdienstes ist für den Betrieb des ZT Clusters verantwortlich. Die gematik hat keinen direkten Zugriff auf den ZT Cluster. Die gematik erhält Zugriff auf die Logs und Metriken des ZT Clusters, um die Leistung und Sicherheit zu überwachen.
+
+Es gibt zwei Möglichkeiten, wie der ZT Cluster betrieben werden kann.
+
+. Betrieb in Verantwortung des Fachdienst-Anbieters:
+Der Fachdienst-Anbieter stellt sicher, dass der ZT Cluster den Sicherheitsstandards der gematik entspricht und die Anforderungen des Fachdienstes erfüllt. Diese Variante setzt voraus, dass der Anbieter die notwendigen Ressourcen und Expertise für den Betrieb des ZT Clusters hat und dass die gematik dem Anbieter vertraut. Die gematik kann von sich aus nicht sicherstellen, dass der ZT Cluster den Anforderungen entspricht.
+
+. Betrieb in Verantwortung der gematik:
+Die gematik stellt sicher, dass der ZT Cluster den Sicherheitsstandards entspricht und die Anforderungen des Fachdienstes erfüllt. Diese Variante setzt voraus, dass die gematik die notwendigen Ressourcen und Expertise für den Betrieb des ZT Clusters hat.
+
+=== CI Pipeline
+
+Basis der CI-Pipeline ist ein GitHub Repository. Dort werden Source-Code, Testcases und Konfigurationsdaten gespeichert. Die Stationen der CI Pipeline werden durch GitHub Actions ausgelöst und überwacht. Zur Ausführung der Testfälle werden die Komponenten in der gcloud deployed. Beim Passieren eines Quality Gates werden Labels vergeben. Folgende Schritte sind vorgesehen:
+
+. ZT Cluster Development: Implementierung von Änderungen an PEP und PDP, einschließlich neuer Funktionen, Bugfixes und Sicherheitsupdates. Erstellung von Container-Images für die Komponenten des ZT Clusters mit Docker. Erstellung von Kubernetes-Manifesten für die ZT Cluster Komponenten (Infrastructure as Code). Überprüfung der Änderungen durch Code-Reviews. Entwicklung der Testkomponenten (Dienst und Clients) sowie der Testfälle.
+. Quality Gate Dev: Automatisierte Tests für den Anwendungscode, insbesondere Unittests.
+. Quality Gate ZT Cluster Integration: Tests der Kubernetes-Infrastruktur, inklusive Sicherheitstests und Lasttests. Die gesamte Testumgebung wird in der gematik gcloud deployed und die Testfälle dort ausgeführt.
+. Quality Gate Referenz-Integration: End-to-End-Tests mit den Referenz-Integrations-Komponenten, inklusive Sicherheitstests und ggf. Lasttests. Die gesamte Testumgebung wird in der gematik gcloud deployed und die Testfälle dort ausgeführt.
+. Build: Erstellung von Container-Images für die Komponenten des ZT Clusters mit Docker. Multistage-Builds, um sicherzustellen, dass nur die notwendigen Abhängigkeiten im finalen Image vorhanden sind. 
+. ZT Cluster PU und RU: Signierung und Überprüfung von Container-Images, um die Integrität zu gewährleisten. Label Version, reference und latest.
+
+=== CD Pipeline
+
+Die CD Pipeline knüpft an das Ergebnis der CI Pipeline an. Zweck dieser Pipeline ist es spezifische ZT Cluster Konfigurationen für die TI 2.0 Dienste zu erzeugen und durchzusetzen, dass in den dienstspezifischen ZT Cluster-Instanzen die im GitHub CD Repository freigegebene Cluster-Konfiguration der jeweiligen TI 2.0 Dienste ausgeführt wird. 
+
+Die hier beschriebene Pipeline ist optional. Wenn diese Pipeline nicht genutzt wird, erfolgt die dienstspezifische ZT-Cluster-Konfiguration direkt beim Hersteller des TI 2.0 Dienstes. Die Pipeline dort würde zusätzlich die Komponenten des Dienstes für Tests verwenden. Über git submodule werden die dienstspezifischen ZT Cluster Konfigurationen aus den GitHub Repositories der Dienst-Betreiber in das gematik CD GitHub Repository integriert, sodass die Überwachung der ZT-Cluster Konfigurationen wieder möglich ist. 
+
+Die ZT Cluster Manifeste und Terraform Scripte werden über git Submodule direkt in das GitHub CD Repository integriert.
+Neben PEP und PDP enthält der dienst-spezifische ZT Cluster eine Management-Komponente (z. B. Argo CD), die überwacht, dass immer die korrekte ZT Cluster-Konfiguration aus dem GitHub Repository verwendet wird. Die Management-Komponente überwacht auch die Integrität der Container-Images und die Konfiguration des ZT Clusters.
+
+. TI 2.0 Dienst ZT Cluster Entwicklung: Automatisierung der Bereitstellung des TI 2.0 dienst-spezifischem K8s-Cluster basierend auf den Änderungen im CI Repository.
+. Quality Gate Dev: Automatisierte Tests des dienst-spezifischem K8s-Clusters
+. Quality Gate TI 2.0 Dienst ZT Cluster Integration: Automatische Integrations-Tests mit den dienst-spezifischen Referenz-Komponenten der RU
+. TI 2.0 Dienst ZT Cluster RU: Der dienstspezifische Cluster ist damit vollständig getestet und wird dem Betreiber für seine Tests bereitgestellt.
+. Quality Gate TI 2.0 Dienst ZT Cluster Integration: Der Betreiber des TI 2.0 Dienstes führt seine Tests aus.
+. TI 2.0 Dienst ZT Cluster PU: Der dienstspezifische ZT Cluster steht für den Einsatz in der PU bereit.
+
+Die Abbildung zeigt die Pipelines und wie sie verknüpft sind.
+
+image::CI_CD_Concept/ZT_CI-CD-Pipeline.png[Zero Trust CI/CP Pipeline,width="100%"]
+
+== Rollen und Verantwortlichkeiten
+
+Im CI/CD Prozess sind verschiedene Rollen und Verantwortlichkeiten definiert. Diese umfassen:
+
+|===
+|Rolle|Beschreibung
+
+|ZT Cluster Hersteller
+|Entwickelt den PEP
+
+Erzeugt die K8s yaml Dateien für den ZT Cluster
+
+Steuert und Überwacht den Durchlauf des CI Prozesses inkl. Quality Gates
+
+Erstellt eine Installationsanleitung für den ZT Cluster inkl. Systemvoraussetzungen
+
+Ist verantwortlich für den CI Prozess
+
+Leistet Support für die entwickelte SW und die yaml Dateien für den ZT Cluster. Leistet Support für den ZT Cluster
+
+|ZT Cluster Anbieter
+|Ist verantwortlich für den CD Prozess inkl. Quality Gates
+
+Leistet Support für die dienst-spezifischen ZT Cluster Konfigurationen
+
+|ZT Cluster Betreiber
+|Ist verantwortlich für den Betrieb des ZT Clusters im Zusammenspiel mit dem TI 2.0 Dienst
+
+|===
+
+== Anhang
+
+=== Risiken beim Betrieb des ZT Clusters
+
+Die Bereitstellung und der Betrieb des ZT Clusters sind mit verschiedenen Risiken verbunden. Dazu gehören:
+
+. Sicherheitsrisiken: Schwachstellen im Code, in der Konfiguration des ZT Clusters oder in den Policies und Daten können zu Sicherheitslücken führen, die von Angreifern ausgenutzt werden können.
+. Datenschutzrisiken: Verstöße gegen den Datenschutz oder die Privatsphäre der Nutzer können zu rechtlichen Konsequenzen führen und das Vertrauen der Nutzer gefährden.
+. Betriebsrisiken: Ausfälle oder Störungen im Betrieb des ZT Clusters können zu Beeinträchtigungen der Fachdienste führen und die Verfügbarkeit der Ressourcen beeinträchtigen.
+. Partnerschaftsrisiken: Abhängigkeit von externen Dienstleistern oder Partnern für den Betrieb des ZT Clusters kann zu Risiken in Bezug auf Vertraulichkeit, Verfügbarkeit und Integrität der Daten führen.
+. Managementrisiken: Fehlende Dokumentation, Schulung und Überwachung können zu Managementproblemen führen und die Effizienz des Betriebs beeinträchtigen.
+. Budgetrisiken: Unvorhergesehene Kosten für den Betrieb des ZT Clusters können das Budget des Fachdienstes belasten und die Rentabilität des Projekts gefährden.
+. Reputationsrisiken: Sicherheitsvorfälle oder Betriebsstörungen des ZT Clusters können das Ansehen des Fachdienstes und der gematik beeinträchtigen und das Vertrauen der Nutzer gefährden.
+. Technologierisiken: Veraltete Technologien oder fehlende Updates können die Leistung und Sicherheit des ZT Clusters beeinträchtigen und die Skalierbarkeit des Systems einschränken.
+. Innovationsrisiken: Fehlende Innovation und Weiterentwicklung des ZT Clusters können die Wettbewerbsfähigkeit des Fachdienstes beeinträchtigen und die Attraktivität des Angebots für die Nutzer verringern.
+. Personalrisiken: Fehlende Expertise oder Ressourcen für den Betrieb des ZT Clusters können zu Personalengpässen führen und die Effizienz des Betriebs beeinträchtigen.
+. Wettbewerbsrisiken: Konkurrenzdruck und Marktentwicklungen können die Rentabilität des ZT Clusters beeinträchtigen und die Position des Fachdienstes am Markt gefährden.
