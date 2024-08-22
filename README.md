@@ -1,2 +1,0 @@
-# Zero Trust API Dokumentation
-
