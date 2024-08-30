@@ -1,18 +1,30 @@
+# OAuth 2.0 Authorization Server API Documentation
 
-# OAuth 2.0 Authorization Server API Dokumentation
+## Inhaltsverzeichnis
+- [OAuth 2.0 Authorization Server API Documentation](#oauth-20-authorization-server-api-documentation)
+  - [Inhaltsverzeichnis](#inhaltsverzeichnis)
+  - [1. Einleitung](#1-einleitung)
+  - [2. Well-Known Endpoint](#2-well-known-endpoint)
+  - [3. Authorization Endpoint](#3-authorization-endpoint)
+  - [4. Token Endpoint](#4-token-endpoint)
+  - [5. JWKS Endpoint](#5-jwks-endpoint)
+  - [6. Client Registration Endpoint](#6-client-registration-endpoint)
+    - [a) Create (Registrierung eines neuen Clients)](#a-create-registrierung-eines-neuen-clients)
+    - [b) Read (Abfrage eines registrierten Clients)](#b-read-abfrage-eines-registrierten-clients)
+    - [c) Update (Aktualisierung eines registrierten Clients)](#c-update-aktualisierung-eines-registrierten-clients)
 
-## Übersicht
+## 1. Einleitung
+Diese API-Dokumentation beschreibt die Endpunkte eines OAuth 2.0 Authorization Servers, der OpenID Connect (OIDC) und den Authorization Code Flow mit Proof Key for Code Exchange (PKCE), Pushed Authorization Requests (PAR) und DPoP unterstützt.
 
-Diese API bietet Endpunkte zur Unterstützung der OAuth 2.0 und OpenID Connect (OIDC) Protokolle. Die API unterstützt mehrere Authentifizierungs- und Autorisierungsmechanismen, einschließlich Authorization Code Flow mit Proof Key for Code Exchange (PKCE), Pushed Authorization Requests (PAR), und Demonstration of Proof-of-Possession (DPoP). Sie bietet außerdem Client-Registrierungsoptionen für verschiedene Geräte und Authentifizierungsmethoden.
+---
 
-## Endpunkte
-
-### 1. Well-Known Dokument
+## 2. Well-Known Endpoint
 
 **Pfad:** `/.well-known/oauth-authorization-server`
 
-- **Beschreibung:** Dieser Endpunkt ermöglicht die Abfrage des Well-Known Dokuments, das Konfigurationsdetails des Authorization Servers bereitstellt.
+- **Beschreibung:** Ermöglicht die Abfrage des OAuth 2.0 Authorization Server Metadata.
 - **Methoden:** `GET`
+
 - **Beispiel Request:**
 
   ```http
@@ -22,127 +34,85 @@ Diese API bietet Endpunkte zur Unterstützung der OAuth 2.0 und OpenID Connect (
 
 - **Beispiel Response:**
 
+  **Erfolg:**
+
   ```json
   {
     "issuer": "https://auth.example.com",
     "authorization_endpoint": "https://auth.example.com/auth",
     "token_endpoint": "https://auth.example.com/token",
     "jwks_uri": "https://auth.example.com/jwks",
-    "response_types_supported": ["code", "id_token", "token"],
-    "grant_types_supported": ["authorization_code", "refresh_token"],
-    "subject_types_supported": ["public"],
-    "id_token_signing_alg_values_supported": ["RS256"]
+    "response_types_supported": ["code", "token", "id_token"],
+    "subject_types_supported": ["public"]
   }
   ```
 
-- **Relevanter RFC:** [RFC 8414 - OAuth 2.0 Authorization Server Metadata](https://datatracker.ietf.org/doc/html/rfc8414)
+---
 
-### 2. Authorization Endpoint
+## 3. Authorization Endpoint
 
 **Pfad:** `/auth`
 
-- **Beschreibung:** Dieser Endpunkt unterstützt den OpenID Connect (OIDC) Flow und den OAuth 2.0 Authorization Code Flow mit PKCE und Pushed Authorization Requests (PAR). Er unterstützt auch Client Assertion JWTs und DPoP für die sichere Token-Anfrage. Nach erfolgreicher Authentifizierung erstellt der Server Access- und Refresh-Tokens.
+- **Beschreibung:** Dieser Endpunkt unterstützt OIDC, den Authorization Code Flow mit PKCE, Pushed Authorization Requests und DPoP. Nach erfolgreicher Authentifizierung erstellt er Access- und Refresh-Tokens.
 - **Methoden:** `GET`, `POST`
-- **Unterstützte Flows:**
-  - **Authorization Code Flow mit PKCE**
-  - **OpenID Connect (OIDC)**
-  - **Pushed Authorization Requests (PAR)**
-
-- **Authentifizierung:**
+- **Unterstützte Verfahren:**
   - **Client Assertion JWT**
-  - **DPoP (Demonstration of Proof-of-Possession)**
+  - **DPoP**
 
-- **Beispiel Request:**
+- **Beispiel Request (Authorization Code Flow):**
 
   ```http
-  GET /auth?response_type=code&client_id=your-client-id&redirect_uri=https%3A%2F%2Fclient.example.com%2Fcallback&scope=openid%20profile%20email&state=xyzABC123&code_challenge=challenge&code_challenge_method=S256 HTTP/1.1
+  GET /auth?response_type=code&client_id=s6BhdRkqt3&redirect_uri=https://client.example.com/cb&scope=openid&state=af0ifjsldkj HTTP/1.1
   Host: auth.example.com
   ```
 
-- **Beispiel Response:**
-
-  **Erfolg:**
+- **Beispiel Response (Erfolg):**
 
   ```http
   HTTP/1.1 302 Found
-  Location: https://client.example.com/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=xyzABC123
+  Location: https://client.example.com/cb?code=SplxlOBeZQQYbYS6WxSbIA&state=af0ifjsldkj
   ```
 
-  **Fehler:**
+---
 
-  ```http
-  HTTP/1.1 400 Bad Request
-  Content-Type: application/json
-
-  {
-    "error": "invalid_request",
-    "error_description": "Missing required parameter: redirect_uri"
-  }
-  ```
-
-- **Relevante RFCs und Standards:**
-  - [RFC 6749 - Authorization Code Flow](https://datatracker.ietf.org/doc/html/rfc6749)
-  - [RFC 7636 - PKCE](https://datatracker.ietf.org/doc/html/rfc7636)
-  - [RFC 9126 - PAR](https://datatracker.ietf.org/doc/html/rfc9126)
-  - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
-
-### 3. Token Endpoint
+## 4. Token Endpoint
 
 **Pfad:** `/token`
 
-- **Beschreibung:** Ermöglicht den Tausch eines Refresh-Tokens gegen ein neues Access- und Refresh-Token. Unterstützt auch Client Assertion JWTs und DPoP.
+- **Beschreibung:** Dieser Endpunkt ermöglicht den Austausch eines Authorization Codes oder Refresh Tokens in ein neues Access- und Refresh-Token.
 - **Methoden:** `POST`
-- **Anfragetypen:** `application/x-www-form-urlencoded`
-- **Erforderliche Parameter:**
-  - **grant_type (string, erforderlich):** Der Typ des Antrags, hier `refresh_token`.
-  - **refresh_token (string, erforderlich):** Das aktuelle Refresh-Token, das getauscht werden soll.
-  - **client_assertion (string, optional):** JWT, das den Client für die Anfrage authentifiziert.
-  - **client_assertion_type (string, optional):** Der Typ des JWT-Assertions, in der Regel `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`.
-  - **dpop (string, optional):** DPoP-Proof JWT, das die Bindung eines Tokens an ein spezifisches HTTP-Anforderungsobjekt beweist.
 
-- **Beispiel Request:**
+- **Beispiel Request (Exchange mit Refresh Token):**
 
   ```http
   POST /token HTTP/1.1
   Host: auth.example.com
   Content-Type: application/x-www-form-urlencoded
 
-  grant_type=refresh_token&refresh_token=tGzv3JOkF0XG5Qx2TlKWIA&client_assertion=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
+  grant_type=refresh_token&refresh_token=tGzv3JOkF0XG5Qx2TlKWIA&client_id=s6BhdRkqt3
   ```
 
-- **Beispiel Response:**
-
-  **Erfolg:**
+- **Beispiel Response (Erfolg):**
 
   ```json
   {
     "access_token": "mF_9.B5f-4.1JqM",
     "token_type": "Bearer",
     "expires_in": 3600,
-    "refresh_token": "tGzv3JOkF0XG5Qx2TlKWIA"
+    "refresh_token": "tGzv3JOkF0XG5Qx2TlKWIA",
+    "scope": "openid"
   }
   ```
 
-  **Fehler:**
+---
 
-  ```json
-  {
-    "error": "invalid_request",
-    "error_description": "Invalid refresh token"
-  }
-  ```
-
-- **Relevante RFCs:**
-  - [RFC 6749 - OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749)
-  - [RFC 7523 - Client Assertion JWT](https://datatracker.ietf.org/doc/html/rfc7523)
-  - [DPoP Entwurf](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-dpop)
-
-### 4. JWKS Endpoint
+## 5. JWKS Endpoint
 
 **Pfad:** `/jwks`
 
-- **Beschreibung:** Dieser Endpunkt ermöglicht die Abfrage der öffentlichen Signaturschlüssel, die vom Authorization Server verwendet werden, um Tokens zu signieren.
+- **Beschreibung:** Dieser Endpunkt ermöglicht die Abfrage der Signatur-Zertifikate (JWKS).
 - **Methoden:** `GET`
+
 - **Beispiel Request:**
 
   ```http
@@ -152,52 +122,31 @@ Diese API bietet Endpunkte zur Unterstützung der OAuth 2.0 und OpenID Connect (
 
 - **Beispiel Response:**
 
+  **Erfolg:**
+
   ```json
   {
     "keys": [
       {
         "kty": "RSA",
-        "kid": "1b94c",
         "use": "sig",
-        "n": "vrjOf1NJr...5IQ",
+        "kid": "1b94c",
         "e": "AQAB",
-        "alg": "RS256"
+        "n": "wgg4_Gnrx1..."
       }
     ]
   }
   ```
 
-- **Relevanter RFC:** [RFC 7517 - JSON Web Key (JWK)](https://datatracker.ietf.org/doc/html/rfc7517)
+---
 
-### 5. Nonce Endpoint
-
-**Pfad:** `/nonce`
-
-- **Beschreibung:** Dieser Endpunkt ermöglicht die Abfrage einer neuen Nonce, die für sicherheitsrelevante Transaktionen genutzt werden kann.
-- **Methoden:** `GET`
-- **Beispiel Request:**
-
-  ```http
-  GET /nonce HTTP/1.1
-  Host: auth.example.com
-  ```
-
-- **Beispiel Response:**
-
-  ```json
-  {
-    "nonce": "n-0S6_WzA2Mj"
-  }
-  ```
-
-
-### 6. Client Registration Endpoint
+## 6. Client Registration Endpoint
 
 **Pfad:** `/clientreg`
 
-- **Beschreibung:** Dieser Endpunkt ermöglicht die Verwaltung von OAuth 2.0 Clients. Er unterstützt die Registrierung, Abfrage, Aktualisierung und Löschung von Clients mittels sicherer Authentifizierungsverfahren.
+- **Beschreibung:** Dieser Endpunkt ermöglicht die Verwaltung von OAuth 2.0 Clients. Er unterstützt die Registrierung, Abfrage, Aktualisierung und Löschung von Clients mittels sicherer Authentifizierungsverfahren. Clients werden nach dem Schema `ClientInstance` registriert.
 
-#### a) Create (Registrierung eines neuen Clients)
+### a) Create (Registrierung eines neuen Clients)
 
 - **Methoden:** `POST`
 - **Unterstützte Verfahren:**
@@ -215,10 +164,28 @@ Diese API bietet Endpunkte zur Unterstützung der OAuth 2.0 und OpenID Connect (
   Content-Type: application/json
 
   {
-    "client_name": "MyApp",
-    "redirect_uris": ["https://myapp.example.com/callback"],
-    "grant_types": ["authorization_code", "refresh_token"],
-    "client_assertion": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "name": "MyClientInstance",
+    "client_id": "s6BhdRkqt3",
+    "product_id": "com.example.myapp",
+    "product_name": "MyApp",
+    "product_version": "1.0.0",
+    "manufacturer_id": "com.example",
+    "manufacturer_name": "Example Inc.",
+    "owner": {
+      "id": "user-123",
+      "gesundheitsid": "1234567890"
+    },
+    "owner_mail": "user@example.com",
+    "registration_timestamp": 1625465461,
+    "platform": "Android",
+    "posture": {
+      "integrity": "high",
+      "encryption": "AES-256"
+    },
+    "attestation": {
+      "type": "AndroidKey",
+      "certificate": "MIICmzCCAi..."
+    }
   }
   ```
 
@@ -242,7 +209,7 @@ Diese API bietet Endpunkte zur Unterstützung der OAuth 2.0 und OpenID Connect (
   }
   ```
 
-#### b) Read (Abfrage eines registrierten Clients)
+### b) Read (Abfrage eines registrierten Clients)
 
 - **Methoden:** `GET`
 - **Beschreibung:** Ruft die Details eines registrierten Clients ab.
@@ -262,10 +229,28 @@ Diese API bietet Endpunkte zur Unterstützung der OAuth 2.0 und OpenID Connect (
 
   ```json
   {
+    "name": "MyClientInstance",
     "client_id": "s6BhdRkqt3",
-    "client_name": "MyApp",
-    "redirect_uris": ["https://myapp.example.com/callback"],
-    "grant_types": ["authorization_code", "refresh_token"]
+    "product_id": "com.example.myapp",
+    "product_name": "MyApp",
+    "product_version": "1.0.0",
+    "manufacturer_id": "com.example",
+    "manufacturer_name": "Example Inc.",
+    "owner": {
+      "id": "user-123",
+      "gesundheitsid": "1234567890"
+    },
+    "owner_mail": "user@example.com",
+    "registration_timestamp": 1625465461,
+    "platform": "Android",
+    "posture": {
+      "integrity": "high",
+      "encryption": "AES-256"
+    },
+    "attestation": {
+      "type": "AndroidKey",
+      "certificate": "MIICmzCCAi..."
+    }
   }
   ```
 
@@ -278,7 +263,7 @@ Diese API bietet Endpunkte zur Unterstützung der OAuth 2.0 und OpenID Connect (
   }
   ```
 
-#### c) Update (Aktualisierung eines registrierten Clients)
+### c) Update (Aktualisierung eines registrierten Clients)
 
 - **Methoden:** `PUT`
 - **Beschreibung:** Aktualisiert die Metadaten eines registrierten Clients.
@@ -295,108 +280,9 @@ Diese API bietet Endpunkte zur Unterstützung der OAuth 2.0 und OpenID Connect (
 
   {
     "client_id": "s6BhdRkqt3",
-    "client_name": "UpdatedMyApp",
-    "redirect_uris": ["https://updatedmyapp.example.com/callback"],
-    "grant_types": ["authorization_code", "refresh_token"],
-    "client_assertion": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-  ```
-
-- **Beispiel Response:**
-
-  **Erfolg:**
-
-  ```json
-  {
-    "client_id": "s6BhdRkqt3",
-    "client_name": "UpdatedMyApp",
-    "redirect_uris": ["https://updatedmyapp.example.com/callback"],
-    "grant_types": ["authorization_code", "refresh_token"]
-  }
-  ```
-
-  **Fehler:**
-
-  ```json
-  {
-    "error": "invalid_client_assertion",
-    "error_description": "The client assertion is invalid or expired."
-  }
-  ```
-
-#### d) Delete (Löschung eines registrierten Clients)
-
-- **Methoden:** `DELETE`
-- **Beschreibung:** Löscht einen registrierten Client.
-- **Parameter:**
-  - **client_id (string, erforderlich):** Die eindeutige Kennung des Clients.
-  - **client_assertion (string, erforderlich):** JWT zur Authentifizierung des Clients.
-
-- **Beispiel Request:**
-
-  ```http
-  DELETE /clientreg?client_id=s6BhdRkqt3 HTTP/1.1
-  Host: auth.example.com
-  Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
-  ```
-
-- **Beispiel Response:**
-
-  **Erfolg:**
-
-  ```json
-  {
-    "status": "client_deleted",
-    "client_id": "s6BhdRkqt3"
-  }
-  ```
-
-  **Fehler:**
-
-  ```json
-  {
-    "error": "client_not_found",
-    "error_description": "The specified client could not be found or has already been deleted."
-  }
-  ```
-
-#### e) Interner Endpoint zur Abfrage von Client-Daten
-
-**Pfad:** `/clientreg/internal`
-
-- **Beschreibung:** Dieser interne Endpunkt ermöglicht es dem HTTP-Proxy, Client-Daten basierend auf der `cid` (Client ID) abzufragen.
-- **Methoden:** `GET`
-- **Parameter:**
-  - **cid (string, erforderlich):** Die Client ID, für die die Daten abgefragt werden sollen.
-
-- **Beispiel Request:**
-
-  ```http
-  GET /clientreg/internal?cid=s6BhdRkqt3 HTTP/1.1
-  Host: auth.example.com
-  ```
-
-- **Beispiel Response:**
-
-  **Erfolg:**
-
-  ```json
-  {
-    "cid": "s6BhdRkqt3",
-    "client_name": "MyApp",
-    "redirect_uris": ["https://myapp.example.com/callback"],
-    "grant_types": ["authorization_code", "refresh_token"]
-  }
-  ```
-
-  **Fehler:**
-
-  ```json
-  {
-    "error": "client_not_found",
-    "error_description": "The specified client could not be found."
-  }
-  ```
-
-- **Hinweis:** Dieser Endpunkt ist nur für interne Systeme bestimmt und sollte nicht öffentlich zugänglich gemacht werden.
-
+    "name": "UpdatedMyClientInstance",
+    "product_id": "com.example.myapp",
+    "product_name": "MyUpdatedApp",
+    "product_version": "1.1.0",
+    "manufacturer_id": "com.example",
+    "manufacturer_name": "Example
