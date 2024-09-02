@@ -1,4 +1,6 @@
 # Schema for client instance information used by the zero trust components
+$schema: "http://json-schema.org/draft-07/schema#"
+ClientInstance:
 type: object
 properties:
   name:
