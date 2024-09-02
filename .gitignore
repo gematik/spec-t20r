@@ -1,0 +1,7 @@
+.vscode
+*.log
+*.tar.gz
+*.pyc
+__pycache__/
+var/
+console

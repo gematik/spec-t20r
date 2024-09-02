@@ -1,0 +1,127 @@
+@startuml "Mobile_Auth_with_DPoP"
+autonumber "(00)"
+skinparam defaultFontSize 10
+skinparam defaultFontName Helvetica
+skinparam DefaultMonospacedFontName Courier
+skinparam lengthAdjust none
+
+!pragma teoz true
+
+actor Nutzer as "Nutzer"
+box Mobiles Gerät #GhostWhite
+  participant App as "App" #DarkSeaGreen
+  participant AuthModul as "Authenticator\nModul"
+endbox
+participant IDP as "IDP"
+box "Betreiber" #TECHNOLOGY
+  box "ZT Cluster" #SandyBrown
+    participant AS as "PEP\nAuthorization Server" 
+    participant Proxy as "PEP\nhttp Proxy"
+    participant PDP as "PDP"
+  endbox
+  box TI 2.0 Dienst #DarkSeaGreen
+    participant RS as "Resource Server"
+  endbox
+end box
+
+Nutzer -> App
+activate App
+alt App has no Authorization Server FQDN
+  App -> Proxy: GET /resource
+  activate Proxy
+  Proxy --> App: 401 Unauthorized; json body with Well-Known json Document (RFC8414)
+  deactivate Proxy
+else App has Authorization Server FQDN
+  App -> Proxy: GET /.well-known/oauth-authorization-server 
+  activate Proxy
+  Proxy --> App: 200 OK; json body with Well-Known json Document (RFC8414)
+  deactivate Proxy
+end
+
+alt App has no DPoP key pair
+App -> App: generate DPoP key pair
+end
+
+alt App has no valid refresh token
+App -> App: Retrieve IDP list (from /idp.app.ti-dienste.de/directory/fed_idp_list)
+App -> App: Select IDP
+App -> AS: GET /nonce
+activate AS
+AS --> App: return 200 OK new-nonce: nonce
+App -> App: Create DPoP JWT with nonce
+App -> AS: GET /auth (selected_idp)\n\
+  DPoP: ... (DPoP JWT)
+AS -> IDP: POST /par (App_id, state, redirect_uri\n\
+code_challenge, code_challenge_method, response_type=code,\n\
+nonce, scope, acr_values)
+activate IDP
+alt #White AS Entity statement is unknown
+  IDP -> AS: GET /.well-known/openid-federation
+  AS --> IDP: 200 OK, (Entity statement)
+end
+IDP --> AS: 200 OK,\n\
+(request_uri, expires_in)
+group #White User Authentication and consent 
+AS --> AuthModul: 302 Redirect (location: IDP authorization_endpoint, request_uri)
+activate AuthModul
+AuthModul -> IDP: GET /authorize (request_uri)
+IDP -> AuthModul: Challenge (Consent page)
+AuthModul -> Nutzer: Authentication and confirmation
+Nutzer --> AuthModul: 
+AuthModul --> IDP: Challenge response
+deactivate AuthModul
+end
+IDP --> App: 302 Redirect, (location: /app/op-intermediary-callback, code, state)
+
+App -> App: create DPoP JWT with nonce
+App -> AS: POST /token\n\
+  DPoP: eyJ... (DPoP JWT)\n\
+  (code, state)
+AS -> AS: verify state and DPoP JWT
+AS -> IDP: POST /token\n\
+  Authorization: Basic ... (App_id + App_secret)\n\
+  (authorization_code=code, grant_type=authoriz-ation_code,\n\
+  redirect_uri, code_verifier=...)
+IDP --> AS: 200 OK, (id_token, expires_in)
+deactivate IDP
+AS -> AS: verify id_token
+AS -> AS: Create state for Identity/App/Device
+
+else App has valid Refresh token
+App -> App: create DPoP JWT without nonce
+App -> AS: POST /token\n\
+  (Refresh token and DPoP JWT)
+AS -> AS: verify Refresh token and DPoP JWT
+AS -> AS: invalidate Refresh token
+end
+
+AS -> PDP: POST /v1/data/authz, json body {  "input": {...}} 
+activate PDP
+PDP --> AS: 200 OK, json body {"result": {"allow": true, ...}}
+deactivate PDP
+AS -> AS: issue Access and Refresh token with DPoP Binding
+AS --> App: 200 OK, Access token, Refresh token, bound to DPoP
+deactivate AS
+App -> App: Create DPoP Proof for RS
+
+App -> Proxy: GET /resource\n\
+  Authorization: DPoP ... (Accesss token)\n\
+  DPoP: ... (DPoP token)
+activate Proxy
+Proxy -> Proxy: verify access token and\nDPoP Binding
+Proxy -> RS: forward GET //resource\n\
+  Authorization: DPoP ... (Accesss token)\n\
+  DPoP: ... (DPoP token)
+activate RS
+RS -> RS: provide\n\
+resource\n\
+access
+RS --> Proxy: 200 OK, resource
+deactivate RS
+Proxy --> App: 200 OK, resource
+deactivate Proxy
+deactivate RS
+deactivate App
+
+
+@enduml

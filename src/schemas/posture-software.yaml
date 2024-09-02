@@ -1,0 +1,16 @@
+# Posture schema for generic software clients
+type: object
+properties:
+  os:
+    type: string
+    description: Operating system name
+  os_version:
+    type: string
+    description: Operating system version
+  arch:
+    type: string
+    description: Hardware Architecture
+required:
+  - os
+  - os_version
+  - arch

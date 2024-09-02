@@ -1,4 +1,4 @@
-= Telemeatikinfrastruktur
+= Telematikinfrastruktur
 
 Hier sind die Festlegungen zur Telematikinfrastruktur dokumentiert. Es werden insbesondere die Komponenten der anwendungsübergreifenden Telematikinfrastruktur sowie deren Schnittstellen dargestellt und erläutert.
 

@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  fastapi-pip-pap:
+    container_name: fastapi-pip-pap
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.yaml:/app/config.yaml  # Mount the config file
+    environment:
+      - PYTHONPATH=/app
