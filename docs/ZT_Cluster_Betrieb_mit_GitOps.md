@@ -8,7 +8,7 @@ GitOps ist eine Methode zur Verwaltung von Anwendungen und Infrastruktur in Kube
 - **Automatisierte Synchronisierung**: Ein GitOps-Tool (z.B. ArgoCD, Flux) überwacht kontinuierlich das Git-Repository und stellt sicher, dass der Kubernetes-Cluster immer den gewünschten Zustand widerspiegelt. Änderungen an der Konfiguration werden automatisch angewendet.
 - **Versionierung und Rückverfolgbarkeit**: Jede Änderung an der Konfiguration wird als Commit im Git-Repository gespeichert, was eine vollständige Versionierung und Historie aller Änderungen ermöglicht. Es ist möglich, zu früheren Versionen zurückzukehren.
 
-## Wer macht was im ZT Cluster GitOps CD Prozess
+## Wer macht was im ZT Cluster GitOps CD Prozess?
 
 - **Entwicklung der Docker Images** Die Entwicklung aller Docker Images des ZT Clusters sowie aller Testkomponenten und Testfälle erfolgt durch den **Hersteller Zero Trust** (Auftragnehmer der Zero Trust Ausschreibung). Zusätzlich werden Kubernetes (K8s) Manifeste für eine ZT Cluster Konfiguration sowie Terraform Scripte für ein automatisches Deployment als Templates bereitgestellt. Alle Artefakte werden in einem CI Prozess qualitätsgesichert und in einem git Repository der Gematik bereitgestellt.
 - **Bereitstellung signierter Docker Images** In einer Container-Registry der **gematik** werden die Docker Images signiert und bereitgestellt.
