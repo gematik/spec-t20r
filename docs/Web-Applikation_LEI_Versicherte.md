@@ -1,6 +1,6 @@
 # Web-Applikation für LEI und Versicherte
 
-Ja, Trusted Platform Modules (TPMs) können eine wichtige Rolle dabei spielen, die Sicherheit von Browser-Anwendungen in einem Zero-Trust-Kontext zu verbessern. Hier sind einige Ansätze, wie TPMs eingesetzt werden können, um die Sicherheit von Browser-Anwendungen zu stärken:
+Trusted Platform Modules (TPMs) können eine wichtige Rolle dabei spielen, die Sicherheit von Browser-Anwendungen in einem Zero-Trust-Kontext zu verbessern. Hier sind einige Ansätze, wie TPMs eingesetzt werden können, um die Sicherheit von Browser-Anwendungen zu stärken:
 
 ### 1. **Secure Boot und Messungen im TPM**
    - **Zweck**: Sicherstellen, dass das Betriebssystem und die Browser-Umgebung in einem vertrauenswürdigen Zustand sind.
