@@ -1,5 +1,5 @@
-@startuml "GitOps CD Process for ZT Cluster"
-title GitOps CD Process for ZT Cluster
+@startuml "ZT_Cluster_GitOps_CD_Process"
+title ZT Cluster GitOps CD Process
 
 actor "Zero Trust Developer" as ZT
 actor "Gematik" as GEM

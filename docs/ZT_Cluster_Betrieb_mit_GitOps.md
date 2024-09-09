@@ -1,6 +1,6 @@
 # Betrieb des ZT Cluster mit GitOps
 
-<img title="gematik Telematikinfrastruktur" alt="gematik Telematikinfrastruktur" src="/images/gematik_logo.svg">
+![gematik Telematikinfrastruktur](/images/gematik_logo.svg "gematik Telematikinfrastruktur")
 
 ## Was ist  GitOps CD?
 
@@ -18,7 +18,7 @@ GitOps ist eine Methode zur Verwaltung von Anwendungen und Infrastruktur in Kube
 - **Konsistenzprüfung der ZT Cluster Konfiguration** Die **gematik** prüft zusätzlich zum Betreiber des TI 2.0 Dienstes die Konsistenz der ZT Cluster Konfiguration und führt automatisierte Prüfungen der Konfiguration durch. Die Prüfung umfasst die Validierung der K8s Manifeste, die Prüfung auf Konformität mit den gematik Vorgaben und die Prüfung auf Sicherheitsaspekte. Bei erfolgreicher Prüfung wird die Konfiguration in ein Verzeichnis übernommen, aus dem der Cluster Management Service des ZT Clusters die Manifest-Dateien bezieht. Das git Repository der gematik wird so betrieben, dass es auch für einen Admin nicht möglich ist, allein die Konfiguration direkt zu ändern. Jede Änderung ist über git Mechanismen nachvollziehbar und kann rückgängig gemacht werden. Es können verschiedene Umgebungen (z.B. Test, Staging, Produktion) durch unterschiedliche Branches oder Tags abgebildet werden.
 - **Deployment der ZT Cluster Konfiguration** Die Übernahme der ZT Cluster Konfiguration in den ZT Cluster erfolgt durch den **Cluster-Management Service** des ZT Clusters. Der Cluster-Management Service übernimmt die Konfiguration aus dem git Repository und wendet sie im ZT Cluster an. Der Cluster-Management Service überwacht den Zustand des ZT Clusters und führt bei Bedarf Anpassungen durch und verhindert Änderungen durch lokale Administratoren.
 
-<img title="GitOps CD Process for ZT Cluster" alt="GitOps CD Process for ZT Cluster" src="/images/GitOps CD Process for ZT Cluster.svg">
+![GitOps CD Process for ZT Cluster](/images/ZT_Cluster_GitOps_CD_Process.svg "GitOps CD Process for ZT Cluster")
 
 ## Begründung für GitOps
 
