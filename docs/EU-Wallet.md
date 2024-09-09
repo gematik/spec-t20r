@@ -1,8 +1,6 @@
 # EU-Wallet
 
-**Hinweis: ChatGPT Antwort muss geprüft werden**
-
-Ja, die Identität und die zugehörigen Authentifizierungsdaten in der EU-Wallet werden in der Regel auf dem Mobilgerät des Nutzers gespeichert. Die EU-Wallet fungiert als digitale Brieftasche, die digitale Identitätsdokumente und -nachweise sicher auf dem mobilen Gerät verwaltet. Hier sind einige wesentliche Punkte dazu, wie die EU-Wallet Identität auf dem Mobilgerät des Nutzers gespeichert wird und wie das mit der Authentifizierung über OAuth 2.0 zusammenhängt:
+Die Identität und die zugehörigen Authentifizierungsdaten in der EU-Wallet werden in der Regel auf dem Mobilgerät des Nutzers gespeichert. Die EU-Wallet fungiert als digitale Brieftasche, die digitale Identitätsdokumente und -nachweise sicher auf dem mobilen Gerät verwaltet. Hier sind einige wesentliche Punkte dazu, wie die EU-Wallet Identität auf dem Mobilgerät des Nutzers gespeichert wird und wie das mit der Authentifizierung über OAuth 2.0 zusammenhängt:
 
 ### 1. **Speicherung und Verwaltung der Identität in der EU-Wallet**
 
