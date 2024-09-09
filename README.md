@@ -1,8 +1,10 @@
-= Telematikinfrastruktur
+# Telematikinfrastruktur
+
+<img title="gematik Telematikinfrastruktur" alt="gematik Telematikinfrastruktur" src="/images/gematik_logo.svg">
 
 Hier sind die Festlegungen zur Telematikinfrastruktur dokumentiert. Es werden insbesondere die Komponenten der anwendungsübergreifenden Telematikinfrastruktur sowie deren Schnittstellen beschrieben.
 
-== Branch Modell
+## Branch Modell
 
 In diesem Repository werden Branches verwendet um den Status der Weiterentwicklung und das Review von Änderungen abzubilden.
 
@@ -15,7 +17,7 @@ Folgende Branches werden verwendet
 - *concept/<name>* (in feature branches werden neue Konzepte entwickelt; basiert auf develop; dient der Abstimmung mit Dritten; es erfolgt kein merge; wird nach Bedarf gelöscht)
 - *misc/<name>* (nur für internen Gebrauch der gematik; es erfolgt kein merge; wird nach Bedarf gelöscht)
 
-== Lizenzbedingungen
+## Lizenzbedingungen
 
 Copyright (c) 2022 gematik GmbH
 
