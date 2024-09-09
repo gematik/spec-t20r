@@ -10,22 +10,20 @@ rectangle "Container Registry" as REG
 rectangle "CI Pipeline" as CI
 rectangle "Kubernetes Cluster" as K8S
 
-ZT --> CI: develops and\nprovides
+ZT --> CI: develops and provides
 GEM --> REG: operates
-TSP --> GIT: configures
+TSP --> GIT: provides\nManifests
 GEM --> GIT: operates and\nvalidates
 TSP --> K8S: operates
 
-CI --> GIT: Manifest Templates
+CI --> GIT: Manifest\nTemplates
 CI --> REG : Docker Images
 GIT --> K8S : Manifests
 REG --> K8S : Signed Images
 
-note right of K8S: Deploys Changed Manifests\nMonitors Cluster State\nApplies Changes\nPrevents Manual Changes
-
+note right of K8S: Deploys Changed Manifests\nApplies Changes\nMonitors Cluster State\nPrevents Manual Changes
 note left of GIT: Single Source of Truth\nVersioned Configurations
-
-note bottom of REG: signs Images
-
+note bottom of REG: Signs Images
 note top of GIT: Executes Automatic\nDeployments and Tests
+
 @enduml
