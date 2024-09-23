@@ -1,0 +1,62 @@
+# Schema for the user-session json object.
+# The PDP authorization server stores the state of the user-session for
+# authenticated user.
+UserSession:
+  type: object
+  properties:
+    sub:
+      type: string
+      description: "Unique ID of the user."
+    cid:
+      type: string
+      description: "Unique ID of the client."
+    access_token:
+      type: object
+      properties:
+        token:
+          type: string
+          description: "The encrypted access token."
+        iat:
+          type: integer
+          description: "Timestamp of the token issuance."
+        exp:
+          type: integer
+          description: "Timestamp of the token expiration."
+        aud:
+          type: array
+          items:
+            type: string
+          description: "List of allowed resources."
+        scope:
+          type: string
+          description: "Access rights of the token."
+    refresh_token:
+      type: object
+      properties:
+        token:
+          type: string
+          description: "The encrypted refresh token."
+        exp:
+          type: integer
+          description: "Timestamp of the refresh token expiration."
+    session_expiry:
+      type: integer
+      description: "Timestamp of the session expiration."
+    last_activity:
+      type: integer
+      description: "Timestamp of the user's last activity."
+    ip_address:
+      type: string
+      description: "User's IP address (optional)."
+    revoked_tokens:
+      type: array
+      items:
+        type: string
+      description: "List of revoked refresh tokens (optional)."
+  required:
+    - sub
+    - cid
+    - access_token
+    - refresh_token
+    - session_expiry
+    - last_activity
