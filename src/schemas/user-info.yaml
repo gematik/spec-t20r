@@ -1,33 +1,23 @@
 # Schema for the user-info json object.
 # The PDP authorization server stores user-info records for all authenticated
-# user. The PEP can request user-info records for a user by sending a request.
+# user. 
+# The PEP can request user-info records for a user by sending a request.
+#
 $schema: "http://json-schema.org/draft-07/schema#"
 UserInfo:
   type: object
   properties:
-    sub:
+    subject:
       type: string
-      description: "User id. Assigned by the Authorization Server and used in the access token."
-    given_name:
+      description: "User id. Assigned by the Authorization Server."
+    identifier:
       type: string
-      description: "Given name of the user"
-    family_name:
-      type: string
-      description: "Family name of the user"
-    organizationName:
-      type: string
-      description: "Organization name"
+      description: "Telematik-ID, KVNR or other unique identifier"
     professionOID:
       type: string
       description: "Profession identifier (OID)"
-    idNumber:
-      type: string
-      description: "Telematik-ID, KVNR or alternative identifier"
-    organizationIK:
-      type: string
-      description: "Organizations number (Institutionskennzeichen)"
   required:
-    - sub
-    - organizationName
+    - subject
+    - identifier
     - professionOID
-    - idNumber
+  additionalProperties: true

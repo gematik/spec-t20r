@@ -14,15 +14,15 @@ AccessToken:
       items:
         type: string
       description: "The intended recipients (audiences) of the token."
-    sub:
+    jti:
       type: string
-      description: "The subject identifier of the token, typically the user ID."
+      description: "The JWT ID."
     scope:
       type: string
       description: "The permissions that this token grants."
-    cid:
+    sub:
       type: string
-      description: "The Client ID."
+      description: "The subject identifier of the token, typically the client ID."
   required:
     - exp
     - iat
