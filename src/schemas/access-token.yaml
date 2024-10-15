@@ -23,6 +23,18 @@ AccessToken:
     sub:
       type: string
       description: "The subject identifier of the token, typically the client ID."
+    cid:
+      type: string
+      description: "The client ID associated with this token."
+    cnf:
+      type: object
+      description: "The confirmation claim binding the token to the public key."
+      properties:
+        jkt:
+          type: string
+          description: "SHA-256 hash of the public key used in the DPoP proof."
+    - required:
+        - jkt
   required:
     - exp
     - iat
@@ -30,3 +42,4 @@ AccessToken:
     - sub
     - scope
     - cid
+    - cnf
