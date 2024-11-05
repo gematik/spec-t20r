@@ -1,6 +1,6 @@
-# Schema for the AccessToken json object. Issuer is a PDP authorization server.
+# Schema for the RefrshToken json object. Issuer is a PDP authorization server.
 $schema: "http://json-schema.org/draft-07/schema#"
-AccessToken:
+RefreshToken:
   type: object
   properties:
     jti:
@@ -15,14 +15,6 @@ AccessToken:
     iat:
       type: integer
       description: "Issued at time of the token as a Unix timestamp."
-    aud:
-      type: array
-      items:
-        type: string
-      description: "The intended recipients (audiences) of the token."
-    scope:
-      type: string
-      description: "The permissions that this token grants."
     cnf:
       type: object
       description: "The confirmation claim binding the token to the public key."
@@ -37,6 +29,4 @@ AccessToken:
     - iss
     - exp
     - iat
-    - aud
-    - scope
     - cnf
