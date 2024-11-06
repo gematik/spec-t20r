@@ -1,0 +1,35 @@
+@startuml "Beziehungen zwischen Session-, Nutzer- und Client-Daten sowie Token"
+
+entity "Session" as Session {
+  * accesstoken_jti : String
+  * refreshtoken_jti : String
+  * subject : String
+  * client_id : String
+  ...
+}
+
+entity "User" as User {
+  * subject : String
+  ...
+}
+
+entity "Client" as Client {
+  * client_id : String
+  ...
+}
+
+entity "Access Token" as AccessToken {
+  * jti : String
+  ...
+}
+
+entity "Refresh Token" as RefreshToken {
+  * jti : String
+  ...
+}
+
+Session -- AccessToken : "accesstoken_jti ↔ jti"
+Session -- RefreshToken : "refreshtoken_jti ↔ jti"
+Session -- User : "subject ↔ subject"
+Session -- Client : "client_id ↔ client_id"
+@enduml
