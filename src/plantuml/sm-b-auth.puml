@@ -25,13 +25,13 @@ box "Betreiber" #TECHNOLOGY
 end box
 
 activate Client
-alt Client has no Authorization Server FQDN
-  Client -> HP: GET /resource
+alt Client has no Authorization Server FQDN (AS-FQDN) but Resource Server FQDN (RS-FQDN)
+  Client -> HP: GET /.well-known/oauth-protected-resource Host: RS-FQDN
   activate HP
-  HP --> Client: 401 Unauthorized; json body with Well-Known json Document (RFC8414)
+  HP --> Client: Client: 200 OK; json body with Well-Known json Document (RFC8414)
   deactivate HP
 else Client has Authorization Server FQDN
-  Client -> HP: GET /.well-known/oauth-authorization-server 
+  Client -> HP: GET /.well-known/oauth-authorization-server Host: AS-FQDN
   activate HP
   HP --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
   deactivate HP
