@@ -1,0 +1,70 @@
+# Schema for the OAuth protected resource server .well-known json object
+$schema: "http://json-schema.org/draft-07/schema#"
+type: object
+properties:
+  resource:
+    type: string
+    description: The protected resource's resource identifier, as defined in Section 1.2. This is a URL that uses the https scheme and has no fragment component. It is RECOMMENDED to not include a query component as well, though it is recognized that there are cases that make a query component a useful and necessary part of a resource identifier. 
+    format: uri
+  authorization_servers:
+    type: array
+    description: JSON array containing a list of OAuth authorization server issuer identifiers, as defined in [RFC8414], for authorization servers that can be used with this protected resource. Protected resources MAY choose not to advertise some supported authorization servers even when this parameter is used. In some use cases, the set of authorization servers will not be enumerable, in which case this metadata parameter would not be used.
+    items:
+      type: string
+      format: uri
+  jwks_uri:
+    type: string
+    description: URL of the protected resource's JSON Web Key (JWK) Set [JWK] document. This contains public keys belonging to the protected resource, such as signing key(s) that the resource server uses to sign resource responses. This URL MUST use the https scheme. When both signing and encryption keys are made available, a use (public key use) parameter value is REQUIRED for all keys in the referenced JWK Set to indicate each key's intended usage.
+    format: uri
+  scopes_supported:
+    type: array
+    description: JSON array containing a list of the OAuth 2.0 [RFC6749] scope values that are used in authorization requests to request access to this protected resource. Protected resources MAY choose not to advertise some scope values supported even when this parameter is used.
+    items:
+      type: string
+  bearer_methods_supported:
+    type: array
+    description: JSON array containing a list of the supported methods of sending an OAuth 2.0 Bearer Token [RFC6750] to the protected resource. Defined values are ["header", "body", "query"], corresponding to Sections 2.1, 2.2, and 2.3 of RFC 6750. The empty array [] can be used to indicate that no Bearer methods are supported. If this entry is omitted, no default Bearer methods supported are implied, nor does its absence indicate that they are not supported.
+    items:
+      type: string
+      enum: [header, body, query]
+  resource_signing_alg_values_supported:
+    type: array
+    description: JSON array containing a list of the JWS [JWS] signing algorithms (alg values) [JWA] supported by the protected resource for signing resource responses, for instance, as described in [FAPI.MessageSigning]. No default algorithms are implied if this entry is omitted. The value none MUST NOT be used.
+    items:
+      type: string
+  resource_name:
+    type: string
+    description: Human-readable name of the protected resource intended for display to the end-user. It is RECOMMENDED that protected resource metadata includes this field. The value of this field MAY be internationalized, as described in Section 2.1.
+  resource_documentation:
+    type: string
+    description: URL of a page containing human-readable information that developers might want or need to know when using the protected resource. The value of this field MAY be internationalized, as described in Section 2.1.
+    format: uri
+  resource_policy_uri:
+    type: string
+    description: URL of a page containing human-readable information about the protected resource's requirements on how the client can use the data provided by the protected resource. The value of this field MAY be internationalized, as described in Section 2.1.
+    format: uri
+  resource_tos_uri:
+    type: string
+    description: URL of a page containing human-readable information about the protected resource's terms of service. The value of this field MAY be internationalized, as described in Section 2.1.
+    format: uri
+  tls_client_certificate_bound_access_tokens:
+    type: boolean
+    description: Boolean value indicating protected resource support for mutual-TLS client certificate-bound access tokens [RFC8705]. If omitted, the default value is false.
+  authorization_details_types_supported:
+    type: array
+    description: A JSON array containing a list of the authorization details type values supported by the resource server when the authorization_details request parameter [RFC9396] is used.
+    items:
+      type: string
+  dpop_signing_alg_values_supported:
+    type: array
+    description: A JSON array containing a list of the JWS alg values (from the "JSON Web Signature and Encryption Algorithms" registry [IANA.JOSE]) supported by the resource server for validating DPoP proof JWTs [RFC9449].
+    items:
+      type: string
+  dpop_bound_access_tokens_required:
+    type: boolean
+    description: A boolean value specifying whether the protected resource always requires the use of DPoP-bound access tokens [RFC9449]. If omitted, the default value is false.
+  signed_metadata:
+    type: string
+    description: A JWT containing metadata parameters about the protected resource as claims. This is a string value consisting of the entire signed JWT. A signed_metadata parameter SHOULD NOT appear as a claim in the JWT; it is RECOMMENDED to reject any metadata in which this occurs. 
+required:
+  - resource
