@@ -26,4 +26,4 @@ paths:
 components:
   schemas:
     ProtectedResourceMetadata:
-      $ref: "/src/schemas/prs-well-known.yaml"
+      $ref: "../schemas/prs-well-known.yaml"

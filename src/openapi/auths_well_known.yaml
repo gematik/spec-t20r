@@ -21,4 +21,4 @@ paths:
 components:
   schemas:
     AuthorizationServerMetadata:
-      $ref: '/src/schemas/as-well-known.yaml'
+      $ref: '../schemas/as-well-known.yaml'
