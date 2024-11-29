@@ -1,0 +1,69 @@
+openapi: 3.0.0
+info:
+  title: OAuth 2.0 Pushed Authorization Request Endpoint (RFC 8628 Section 3)
+  version: 1.0.0
+servers:
+  - url: https://as.example.com
+paths:
+  /par:
+    post:
+      summary: Push authorization request payload
+      description: Enables clients to push the payload of an OAuth 2.0 authorization request to the authorization server via a direct request and provides them with a request URI that is used as reference to the data in a subsequent call to the authorization endpoint. 
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                response_type:
+                  type: string
+                  description: The requested response type. Must be set to "code" for requesting an authorization code.
+                  enum: [code]
+                client_id:
+                  type: string
+                  description: The client identifier issued to the client during the registration process.
+                redirect_uri:
+                  type: string
+                  description: The URI to which the authorization server redirects the user-agent after authorization.
+                  format: uri
+                scope:
+                  type: string
+                  description: The scope of the access request.
+                state:
+                  type: string
+                  description: An opaque value used by the client to maintain state between the request and callback.
+                # ... all other applicable authorization request parameters and client authentication parameters
+              required:
+                - response_type
+                - client_id
+                - redirect_uri
+      responses:
+        201:
+          description: Successful response with request URI.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_uri:
+                    type: string
+                    description: The request URI corresponding to the posted authorization request.
+                  expires_in:
+                    type: integer
+                    description: The lifetime in seconds of the request URI.
+        400:
+          description: Invalid request, such as missing parameters or invalid client credentials.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: An error code.
+                  error_description:
+                    type: string
+                    description: A human-readable description of the error.
+                  error_uri:
+                    type: string
+                    description: A URI pointing to a web page with more information about the error.
