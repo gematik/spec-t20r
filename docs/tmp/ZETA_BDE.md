@@ -62,6 +62,7 @@ Die Erfassung der Betriebsdaten dient sowohl der **Betriebsüberwachung** als au
 2. **Erfasste Attribute**:
    - **IP-Adresse**: Optional, zur Zuordnung von Anfragen.
    - **Zeitstempel**: Historisierung und Korrelation.
+   - **Zweite Policy Engine**: Optional, zur Analyse von Policy-Entscheidungen.
 
 ---
 
@@ -70,6 +71,15 @@ Die Erfassung der Betriebsdaten dient sowohl der **Betriebsüberwachung** als au
    - **Sicherheitsanalyse**: Identifikation von sicherheitsrelevanten Ereignissen.
 2. **Erfasste Attribute**:
    - **Alert-Daten**: Abhängig von der Struktur des SIEM-Systems (z. B. ID, Typ, Beschreibung).
+   - **Zeitstempel**: Historisierung.
+
+---
+
+### **Notification Management**
+1. **Zweck**:
+   - **Betriebsüberwachung**: Nachvollziehbarkeit von Notification Konfiguration und Versand.
+2. **Erfasste Attribute**:
+   - **Notification-Daten**: noch offen (z. B. Verwaltung der Notification Konfiguration, Versendete Notification-Events).
    - **Zeitstempel**: Historisierung.
 
 ---
