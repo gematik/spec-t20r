@@ -6,7 +6,7 @@ Die Erfassung der Betriebsdaten dient sowohl der **Betriebsüberwachung** als au
 
 ---
 
-### **HTTP Request-Daten (PEP, PDP, Auth Server, Client-Registry)**
+### **HTTP Request-Daten (PEP, PDP (Auth Server, Client-Registry, Policy Engine))**
 1. **Zweck**:
    - **Betriebsüberwachung**: Identifikation von Bottlenecks, Fehlkonfigurationen und Auswertungen der Lastverteilung.
    - **Sicherheitsanalyse**: Erkennung unautorisierter Zugriffe, Anomalien und potenzieller Angriffe.
@@ -96,6 +96,16 @@ Die Erfassung der Betriebsdaten dient sowohl der **Betriebsüberwachung** als au
    - **Protokoll**: Sicherer Transport über HTTPS mit TLS 1.2 oder höher.
    - **Authentifizierung**: Zugriff auf den BDE-Server nur durch autorisierte Komponenten, z. B. mit OAuth2 Client-Zertifikaten.
    - **Batch-Verarbeitung**: Daten können periodisch gesammelt und gebündelt an den Server gesendet werden, um die Netzwerkbelastung zu minimieren.
+
+---
+
+---
+
+## Offene Punkte
+
+- Soll auch ZETA Guard interne Kommunikation für BDE aufbereitet werden? Policy Decision ja; Zugriff auf DBs noch nicht geklärt.
+- Es soll auch Kommunikation von Moonitoring und SIEM des Anbieters zu ZETA Guard Komponenten für BDE aufbereitet werden
+- Es sollen Daten vom Cluster Management Service zum Zustand des Clusters an BDE geliefert werden (start und stop von Pods z. B.)
 
 ---
 
