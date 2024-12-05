@@ -1,0 +1,48 @@
+# Schema for HTTP Error Responses with Additional Information
+$schema: "http://json-schema.org/draft-07/schema#"
+title: HTTP Error Response
+description: Schema for transmitting additional error information for HTTP error responses.
+type: object
+properties:
+  http_status_code:
+    type: integer
+    description: The HTTP status code (e.g., 400, 404, 500).
+    minimum: 100
+    maximum: 599
+  error_type:
+    type: string
+    description: A high-level classification of the error (e.g., "Validation Error", "Database Error", "Authentication Error").
+  message:
+    type: string
+    description: A human-readable message providing a concise explanation of the error.
+  details:
+    type: array
+    description: An array of detailed error objects providing specific information about the errors that occurred.
+    items:
+      type: object
+      properties:
+        field:
+          type: string
+          description: The specific field or parameter associated with the error (if applicable).
+        code:
+          type: string
+          description: A unique error code for more precise error handling.
+        reason:
+          type: string
+          description: A more detailed explanation of the specific error.
+      required:
+        - code
+        - reason
+  timestamp:
+    type: string
+    format: date-time
+    description: The timestamp indicating when the error occurred (ISO 8601 format).
+  trace_id:
+    type: string
+    description:  A unique identifier that can be used to trace the error through various systems and logs (helpful for debugging).
+
+required:
+  - http_status_code
+  - error_type
+  - message
+  - timestamp

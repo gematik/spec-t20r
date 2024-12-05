@@ -6,11 +6,19 @@ Die Erfassung der Betriebsdaten dient sowohl der **Betriebsüberwachung** als au
 
 ---
 
-### **HTTP Request-Daten (PEP, PDP (Auth Server, Client-Registry, Policy Engine, Notification Service))**
-1. **Zweck**:
+### **HTTP Request-Daten**
+1. **Komponenten**
+   - PEP
+   - PDP
+     - Auth Server
+     - Client-Registry
+     - Policy Engine
+   - Notification Service
+   - Cluster Management Service
+2. **Zweck**:
    - **Betriebsüberwachung**: Identifikation von Bottlenecks, Fehlkonfigurationen und Auswertungen der Lastverteilung.
    - **Sicherheitsanalyse**: Erkennung unautorisierter Zugriffe, Anomalien und potenzieller Angriffe.
-2. **Erfasste Attribute**:
+3. **Erfasste Attribute**:
    - **Method**: Analyse der genutzten HTTP-Methoden.
    - **URL**: Optional, konfigurierbar (z. B. ob Parameter eingeschlossen werden), zur Analyse angefragter Ressourcen.
    - **Host**: Identifikation der Zielkomponenten.
