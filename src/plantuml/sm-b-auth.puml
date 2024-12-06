@@ -31,10 +31,10 @@ alt Client has no Authorization Server FQDN (AS-FQDN) but Resource Server FQDN (
   HP --> Client: Client: 200 OK; json body with Well-Known json Document (RFC8414)
   deactivate HP
 else Client has Authorization Server FQDN
-  Client -> HP: GET /.well-known/oauth-authorization-server Host: AS-FQDN
-  activate HP
-  HP --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
-  deactivate HP
+  Client -> AS: GET /.well-known/oauth-authorization-server Host: AS-FQDN
+  activate AS
+  AS --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
+  deactivate AS
 end
 
 Client -> Client: generate DPoP key pair

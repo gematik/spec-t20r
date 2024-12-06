@@ -1,0 +1,23 @@
+@startuml "Client_Assertion_JWT_Authentication"
+participant Client
+participant AS
+participant RS
+
+Client -> AS: Clientregistrierung (mit public key)
+activate AS
+AS --> Client: client_id
+deactivate AS
+
+Client -> AS: Token Request mit JWT client_assertion und DPoP Header
+activate AS
+note right: Client Authentifizierung\n mit JWT und Benutzerinformationen
+AS --> Client: Access Token (DPoP gebunden)
+deactivate AS
+
+Client -> RS: Zugriff auf Ressource mit Access Token und DPoP Header
+activate RS
+note right: Zugriffsschutz\n mit DPoP
+RS --> Client: Ressource
+deactivate RS
+
+@enduml
