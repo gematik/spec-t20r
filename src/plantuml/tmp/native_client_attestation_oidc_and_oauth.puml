@@ -48,8 +48,8 @@ box "Anbieter B" #TECHNOLOGY
     end box
 end box
 participant "Attestation\nService" as AttService
-participant "Federation \nMaster" as FedMaster
 participant "IDP" as IDP
+participant "Federation \nMaster" as FedMaster
 
 == Client Registration with Resource Server A (with Client Attestation and Email) ==
 
