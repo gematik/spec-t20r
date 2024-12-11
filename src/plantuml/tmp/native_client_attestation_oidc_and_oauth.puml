@@ -1,0 +1,229 @@
+@startuml "native_client_attestation_oidc_and_oauth"
+
+skinparam sequence {
+  ParticipantBorderColor black
+  ParticipantBackgroundColor white
+  ActorBorderColor black
+  ActorBackgroundColor white
+  ArrowColor black
+  LifeLineBorderColor black
+  LifeLineBackgroundColor #F0F0F0
+  NoteBorderColor black
+  NoteBackgroundColor #FEFECE
+}
+
+participant "User Agent" as UserAgent
+participant "Client" as Client
+participant "Android TEE/iOS Secure Enclave" as SecureEnclave
+participant "AS A" as ASA
+participant "AS B" as ASB
+participant "Attestation Service" as AttService
+participant "Federation Master" as FedMaster
+participant "Resource Server A" as RSA
+participant "Resource Server B" as RSB
+participant "IDP" as IDP
+
+== Client Registration with Resource Server A (with Client Attestation) ==
+
+Client -> SecureEnclave: Generate Key Pair for Attestation
+activate SecureEnclave
+note right: Using Android TEE or iOS Secure Enclave
+SecureEnclave --> Client: Public Key
+deactivate SecureEnclave
+Client -> AttService: Request Attestation Challenge
+activate AttService
+AttService --> Client: Attestation Challenge
+deactivate AttService
+Client -> SecureEnclave: Sign Challenge with Attestation Key
+activate SecureEnclave
+note right: Using Android SafetyNet/Play Integrity or\niOS DeviceCheck/App Attest API
+SecureEnclave --> Client: Attestation Statement
+deactivate SecureEnclave
+Client -> ASA: Client Registration Request (Resource Server A)
+activate ASA
+note right: Includes attestation statement, public key,\nand potentially software statement
+ASA -> AttService: Verify Client Attestation
+activate AttService
+note right: AS A forwards attestation data to Attestation Service
+AttService -> AttService: Validate Attestation Statement
+note right: e.g. Check signature, validity period,\nand device/app integrity status
+AttService --> ASA: Attestation Verification Result
+deactivate AttService
+ASA -> UserAgent: Request Email Confirmation
+activate UserAgent
+UserAgent -> ASA: User Email
+ASA -> ASA: Send Confirmation Email
+UserAgent -> ASA: User Clicks Confirmation Link
+ASA -> ASA: Verify Email Confirmation
+ASA -> ASA: Generate Email Confirmation JWT\nand sign with AS_A's private key\n(used for single confirmation\non multiple client registrations)
+note right: JWT Claims:\n - iss: AS_A_ID\n - sub: user_id\n - aud: AS_B_ID (or all AS)\n - exp: (short time)\n - iat: (now)\n - email_verified: true\n - verification_timestamp: (now)
+ASA -> Client: Client Registration Response (with JWT)
+deactivate ASA
+
+== OAuth 2.0 Authorization Code Flow with PAR, PKCE and DPoP (Resource Server A) ==
+Client -> Client: Generate PKCE Code Verifier
+Client -> Client: Generate PKCE Code Challenge
+Client -> Client: Generate DPoP Key Pair
+Client -> ASA: PAR Request
+activate ASA
+note right: Authorization Code Request\n(inkl. DPoP Proof, code_challenge, code_challenge_method, redirect_uri)
+ASA -> ASA: Validate DPoP Proof
+ASA --> Client: Request URI
+deactivate ASA
+
+Client -> UserAgent: Navigate to Request URI
+activate UserAgent
+UserAgent -> ASA: Authorization Request (with Request URI)
+activate ASA
+ASA -> IDP: Authentication Request (OpenID Connect)
+activate IDP
+note right: AS A acts as Relying Party\n for the IDP
+IDP --> UserAgent: Authentication Prompt
+UserAgent -> IDP: User Credentials
+IDP --> ASA: Authentication Response (ID Token, Access Token)
+deactivate IDP
+ASA -> ASA: Validate ID Token & Access Token
+ASA --> UserAgent: Authorization Code
+UserAgent -> Client: Redirect with Authorization Code
+deactivate UserAgent
+activate Client
+deactivate Client
+
+Client -> Client: Generate DPoP Key Pair
+Client -> ASA: Token Request (Authorization Code Grant)
+activate ASA
+note right: Enthält Authorization Code, DPoP Proof,\nClient Assertion (JWT, RFC7523),\nredirect_uri, code_verifier
+ASA -> ASA: Validate Client Assertion (JWT)
+ASA -> ASA: Validate DPoP Proof
+ASA -> ASA: Validate PKCE Code Verifier
+ASA -> IDP: Validate Token (Optional)
+activate IDP
+IDP --> ASA: Validation Result
+deactivate IDP
+ASA --> Client: Access Token (JWT), Refresh Token, ID Token
+note left: Access Token bound to\nclient's DPoP public key
+deactivate ASA
+
+Client -> Client: Generate DPoP Key Pair
+Client -> RSA: Access Protected Resource (with Access Token)
+activate RSA
+note right: Access Token, DPoP Proof
+RSA -> ASA: Validate Access Token
+activate ASA
+note right: includes DPoP Proof validation
+ASA --> RSA: Validation Result
+deactivate ASA
+RSA --> Client: Resource Data
+deactivate RSA
+
+== Client Registration with Resource Server B (with Client Attestation and JWT) ==
+
+Client -> SecureEnclave: Generate Key Pair for Attestation
+activate SecureEnclave
+note right: Using Android TEE or iOS Secure Enclave
+SecureEnclave --> Client: Public Key
+deactivate SecureEnclave
+Client -> AttService: Request Attestation Challenge
+activate AttService
+AttService --> Client: Attestation Challenge
+deactivate AttService
+Client -> SecureEnclave: Sign Challenge with Attestation Key
+activate SecureEnclave
+note right: Using Android SafetyNet/Play Integrity or\niOS DeviceCheck/App Attest API
+SecureEnclave --> Client: Attestation Statement
+deactivate SecureEnclave
+Client -> ASB: Client Registration Request (Resource Server B, with JWT)
+activate ASB
+note right: Includes attestation statement, public key,\nand potentially software statement
+ASB -> AttService: Verify Client Attestation
+activate AttService
+note right: AS B forwards attestation data to Attestation Service
+AttService -> AttService: Validate Attestation Statement
+AttService --> ASB: Attestation Verification Result
+deactivate AttService
+ASB -> ASB: Extract "iss" from JWT (AS_A_ID)
+ASB -> FedMaster: Get Entity Statement for AS A
+activate FedMaster
+FedMaster --> ASB: Entity Statement for AS A (including Public Keys)
+deactivate FedMaster
+ASB -> ASB: Verify JWT Signature (using AS A's Public Key)
+ASB -> ASB: Validate JWT Claims (iss, aud, exp, iat, email_verified)
+alt JWT Valid
+    ASB -> RSB: Complete Client Registration
+    activate RSB
+    RSB --> ASB: Confirmation
+    deactivate RSB
+    ASB --> Client: Client Registration Success
+else JWT Invalid or Expired
+    ASB -> UserAgent: Request Email Confirmation
+    activate UserAgent
+    UserAgent -> ASB: User Email
+    ASB -> ASB: Send Confirmation Email
+    UserAgent -> ASB: User Clicks Confirmation Link
+    ASB -> ASB: Verify Email Confirmation
+    ASB -> RSB: Complete Client Registration
+    activate RSB
+    RSB --> ASB: Confirmation
+    deactivate RSB
+    ASB --> Client: Client Registration Success
+
+end
+deactivate ASB
+
+== OAuth 2.0 Authorization Code Flow with PAR, PKCE and DPoP (Resource Server B) ==
+Client -> Client: Generate PKCE Code Verifier
+Client -> Client: Generate PKCE Code Challenge
+Client -> Client: Generate DPoP Key Pair
+Client -> ASB: PAR Request
+activate ASB
+note right: Authorization Code Request\n(inkl. DPoP Proof, code_challenge, code_challenge_method, redirect_uri)
+ASB -> ASB: Validate DPoP Proof
+ASB --> Client: Request URI
+deactivate ASB
+
+Client -> UserAgent: Navigate to Request URI
+activate UserAgent
+UserAgent -> ASB: Authorization Request (with Request URI)
+activate ASB
+ASB -> IDP: Authentication Request (OpenID Connect)
+activate IDP
+note right: AS B acts as Relying Party\n for the IDP
+IDP --> UserAgent: Authentication Prompt
+UserAgent -> IDP: User Credentials
+IDP --> ASB: Authentication Response (ID Token, Access Token)
+deactivate IDP
+ASB -> ASB: Validate ID Token & Access Token
+ASB --> UserAgent: Authorization Code
+UserAgent -> Client: Redirect with Authorization Code
+deactivate UserAgent
+activate Client
+deactivate Client
+
+Client -> Client: Generate DPoP Key Pair
+Client -> ASB: Token Request (Authorization Code Grant)
+activate ASB
+note right: Enthält Authorization Code, DPoP Proof,\nClient Assertion (JWT, RFC7523),\nredirect_uri, code_verifier
+ASB -> ASB: Validate Client Assertion (JWT)
+ASB -> ASB: Validate DPoP Proof
+ASB -> ASB: Validate PKCE Code Verifier
+ASB -> IDP: Validate Token (Optional)
+activate IDP
+IDP --> ASB: Validation Result
+deactivate IDP
+ASB --> Client: Access Token (JWT), Refresh Token, ID Token
+note left: Access Token bound to\nclient's DPoP public key
+deactivate ASB
+
+Client -> Client: Generate DPoP Key Pair
+Client -> RSB: Access Protected Resource (with Access Token)
+activate RSB
+note right: Access Token, DPoP Proof
+RSB -> ASB: Validate Access Token
+activate ASB
+note right: includes DPoP Proof validation
+ASB --> RSB: Validation Result
+deactivate ASB
+RSB --> Client: Resource Data
+deactivate RSB
+
+@enduml
