@@ -13,15 +13,15 @@ box "LEI" #GhostWhite
   participant SMB as "SM-B"
 end box
 
-box "Betreiber" #TECHNOLOGY
-  box "ZT Cluster" #SandyBrown
+box "Anbieter" #TECHNOLOGY
+  box "ZETA Guard" #SandyBrown
     participant HP as "PEP\nhttp Proxy"
     participant AS as "PDP\nAuthorization Server" 
     participant PE as "PDP\nPolicy Engine"
-  endbox
-   box TI 2.0 Dienst #DarkSeaGreen
-    participant RS as "Resource Server"
-  endbox
+  end box
+    box TI 2.0 Dienst #DarkSeaGreen
+      participant RS as "Resource Server"
+    end box
 end box
 
 activate Client
