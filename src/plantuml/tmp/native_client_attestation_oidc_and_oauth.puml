@@ -74,9 +74,8 @@ activate ASA
 note right: Includes attestation statement, public key,\nUser Email and potentially software statement
 ASA -> AttService: Verify Client Attestation
 activate AttService
-note right: AS A forwards attestation data to Attestation Service
+note right: AS A forwards attestation data\nto Attestation Service
 AttService -> AttService: Validate Attestation\nStatement
-note right: e.g. Check signature, validity period,\nand device/app integrity status
 AttService --> ASA: Attestation Verification Result
 deactivate AttService
 ASA -> PEA: Request Client\nRegistration Decision
@@ -188,7 +187,7 @@ activate ASB
 note right: Includes attestation statement, public key,\nUser Email and potentially software statement
 ASB -> AttService: Verify Client Attestation
 activate AttService
-note right: AS B forwards attestation data to Attestation Service
+note right: AS B forwards attestation data\nto Attestation Service
 AttService -> AttService: Validate Attestation\nStatement
 AttService --> ASB: Attestation Verification Result
 deactivate AttService
