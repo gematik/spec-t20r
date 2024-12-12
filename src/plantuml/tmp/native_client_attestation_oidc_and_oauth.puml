@@ -103,7 +103,7 @@ deactivate ASA
 Client -> Client: Generate PKCE\nCode Verifier
 Client -> Client: Generate PKCE\nCode Challenge
 Client -> Client: Generate DPoP Key Pair
-Client -> ASA: PAR Request
+Client -> ASA: PAR Request\n(client_id, redirect_uri, scope, etc., dpop_jkt)
 activate ASA
 note right: Authorization Code Request\n(inkl. DPoP Proof, code_challenge, code_challenge_method, redirect_uri)
 ASA -> ASA: Validate DPoP Proof
@@ -133,22 +133,23 @@ deactivate IDP
     UserAgent -> Client: Redirect with Authorization Code
 deactivate UserAgent
 
+Client -> Client: Generate\nDPoP Proof JWT
 Client -> ASA: Token Request (Authorization Code Grant)
 note right: Enthält Authorization Code, DPoP Proof,\nclient_id, redirect_uri, code_verifier
-ASA -> ASA: Validate Client\nAssertion (JWT)
+ASA -> ASA: Validate\nAuthorization Code
 ASA -> ASA: Validate DPoP Proof
 ASA -> ASA: Validate PKCE\nCode Verifier
-ASA -> PEA: Request Token\nIssuance Decision
+ASA -> PEA: Request Token Issuance Decision
 activate PEA
 note right: AS A sends input data to Policy Engine A\nfor token request
 PEA -> PEA: Evaluate Policy based\non Input Data
-PEA --> ASA: Token Issuance\nDecision (Permit/Deny)
+PEA --> ASA: Token Issuance Decision (Permit/Deny)
 deactivate PEA
     ASA --> Client: Access Token, Refresh Token
 note left: Access Token bound to\nclient's DPoP public key
 deactivate ASA
 
-Client -> Client: Generate DPoP Key Pair
+Client -> Client: Generate DPoP Token
 Client -> PEP_A: Access Protected Resource\n(with Access Token and DPoP Proof)
 activate PEP_A
 PEP_A -> PEP_A: Validate Access Token\nand DPoP Proof
