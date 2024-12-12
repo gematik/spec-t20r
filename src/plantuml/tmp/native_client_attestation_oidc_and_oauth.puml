@@ -70,8 +70,8 @@ note right: Using Android SafetyNet/Play Integrity or\niOS DeviceCheck/App Attes
 SecureEnclave --> Client: Attestation Statement
 deactivate SecureEnclave
 Client -> ASA: Client Registration Request
+note right: client_instance.yaml\nIncludes attestation statement, public key,\nUser Email and software statement
 activate ASA
-note right: Includes attestation statement, public key,\nUser Email and potentially software statement
 ASA -> AttService: Verify Client Attestation
 activate AttService
 note right: AS A forwards attestation data\nto Attestation Service
@@ -84,26 +84,19 @@ note right: AS A sends input data to Policy Engine A\nfor registration request
 PEA -> PEA: Evaluate Policy based\non Input Data
 PEA --> ASA: Client Registration\nDecision (Permit/Deny)
 deactivate PEA
-ASA -> ASA: Generate Email\nConfirmation Token
-ASA -> Client: Client Registration Response\n(with Email Confirmation Token)
-note right: AS A sends Email Confirmation Token to client,\nwhich will be included in Email to User
-deactivate ASA
-Client -> MUA: Send Confirmation\nEmail
+ASA -> ASA: Generate Confirmation\nLink and send Email
 activate MUA
-note right: Client sends Email including\nEmail Confirmation Token to User
-User -> MUA:
-MUA -> ASA: User Clicks Confirmation Link in Email
+MUA -> MUA: Receive Email
+User -> MUA: Click Confirmation\nLink in Email 
+MUA -> UserAgent: Open\nConfirmation\nLink
+activate UserAgent
 deactivate MUA
-activate ASA
-ASA -> ASA: Verify Email\nConfirmation Token
-ASA -> PEA: Request Email\nConfirmation Decision
-activate PEA
-PEA -> PEA: Evaluate Policy based\non Input Data
-PEA --> ASA: Email Confirmation\nDecision (Permit/Deny)
-deactivate PEA
+UserAgent -> ASA: Email Confirmation\nRequest
+deactivate UserAgent
+ASA -> ASA: Verify Email\nConfirmation\nRequest
 ASA -> ASA: Generate Email\nConfirmation JWT
-note right: JWT Claims:\n - iss: AS_A_ID\n - sub: User_id\n - aud: AS_B_ID (or all AS)\n - exp: (short time)\n - iat: (now)\n - Email_verified: true\n - verification_timestamp: (now)
-ASA -> Client: Client Registration Response\n(with Email Confirmation JWT)
+note right: JWT Claims:\n - iss: AS_A_ID\n - sub: User_id\n - aud: (all AS)\n - exp: (Policy Engine decision)\n - iat: (now)\n - Email_verified: true
+ASA --> Client: Client Registration Response\n(client_id, Email Confirmation JWT)
 deactivate ASA
 
 == OAuth 2.0 Authorization Code Flow with PAR, PKCE and DPoP (Resource Server A) ==
@@ -114,12 +107,6 @@ Client -> ASA: PAR Request
 activate ASA
 note right: Authorization Code Request\n(inkl. DPoP Proof, code_challenge, code_challenge_method, redirect_uri)
 ASA -> ASA: Validate DPoP Proof
-ASA -> PEA: Request Authorization\nCode Decision
-activate PEA
-note right: AS A sends input data to Policy Engine A\nfor authorization code request
-PEA -> PEA: Evaluate Policy based\non Input Data
-PEA --> ASA: Authorization Code\nDecision (Permit/Deny)
-deactivate PEA
 ASA --> Client: Request URI
 deactivate ASA
 
@@ -127,22 +114,27 @@ Client -> UserAgent: Navigate to Request URI
 activate UserAgent
 UserAgent -> ASA: Authorization Request (with Request URI)
 activate ASA
-ASA -> IDP: Authentication Request (OpenID Connect)
+    ASA -> IDP: PAR Request (OpenID Connect), redirect_uri
 activate IDP
 note right: AS A acts as Relying Party\n for the IDP
-IDP --> UserAgent: Authentication Prompt
-UserAgent -> IDP: User Credentials
+    IDP --> ASA: PAR Response, request_uri, expires_in
+    ASA --> UserAgent: Redirect to IDP, request_uri
+    UserAgent -> IDP: Navigate to request_uri
+    IDP --> UserAgent: Authentication Prompt, consent
+    UserAgent -> IDP: User Credentials, consent
+    IDP --> UserAgent: Redirect to ASA, auth_code, redirect_uri
+    UserAgent -> ASA: Redirect to ASA, auth_code, redirect_uri
+    ASA -> IDP: Token Request (Authorization Code Grant), auth_code
+    IDP -> IDP: Validate\nAuthorization\nCode
 IDP --> ASA: Authentication Response (ID Token)
 deactivate IDP
-ASA -> ASA: Validate ID Token
-ASA --> UserAgent: Authorization Code
-UserAgent -> Client: Redirect with Authorization Code
+    ASA -> ASA: Validate\nID Token
+    ASA --> UserAgent: Authorization Code
+    UserAgent -> Client: Redirect with Authorization Code
 deactivate UserAgent
 
-Client -> Client: Generate DPoP Key Pair
 Client -> ASA: Token Request (Authorization Code Grant)
-activate ASA
-note right: Enthält Authorization Code, DPoP Proof,\nClient Assertion (JWT, RFC7523),\nredirect_uri, code_verifier
+note right: Enthält Authorization Code, DPoP Proof,\nclient_id, redirect_uri, code_verifier
 ASA -> ASA: Validate Client\nAssertion (JWT)
 ASA -> ASA: Validate DPoP Proof
 ASA -> ASA: Validate PKCE\nCode Verifier
@@ -152,7 +144,7 @@ note right: AS A sends input data to Policy Engine A\nfor token request
 PEA -> PEA: Evaluate Policy based\non Input Data
 PEA --> ASA: Token Issuance\nDecision (Permit/Deny)
 deactivate PEA
-ASA --> Client: Access Token (JWT), Refresh Token
+    ASA --> Client: Access Token, Refresh Token
 note left: Access Token bound to\nclient's DPoP public key
 deactivate ASA
 
