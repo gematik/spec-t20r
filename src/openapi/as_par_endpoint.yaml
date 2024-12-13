@@ -1,14 +1,14 @@
 openapi: 3.0.0
 info:
-  title: OAuth 2.0 Pushed Authorization Request Endpoint (RFC 8628 Section 3)
+  title: OAuth 2.0 Pushed Authorization Requests (PAR) Endpoint (RFC 9126)
   version: 1.0.0
 servers:
   - url: https://as.example.com
 paths:
   /par:
     post:
-      summary: Push authorization request payload
-      description: Enables clients to push the payload of an OAuth 2.0 authorization request to the authorization server via a direct request and provides them with a request URI that is used as reference to the data in a subsequent call to the authorization endpoint. 
+      summary: Submit an authorization request to the PAR endpoint
+      description: This endpoint allows clients to push the payload of an OAuth 2.0 authorization request directly to the authorization server.
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -17,29 +17,35 @@ paths:
               properties:
                 response_type:
                   type: string
-                  description: The requested response type. Must be set to "code" for requesting an authorization code.
-                  enum: [code]
+                  description: REQUIRED. OAuth 2.0 Response Type value.
                 client_id:
                   type: string
-                  description: The client identifier issued to the client during the registration process.
+                  description: REQUIRED. The client identifier as described in Section 2.2 of RFC 6749.
                 redirect_uri:
                   type: string
-                  description: The URI to which the authorization server redirects the user-agent after authorization.
-                  format: uri
+                  description: OPTIONAL. As described in Section 3.1.2 of RFC 6749.
                 scope:
                   type: string
-                  description: The scope of the access request.
+                  description: OPTIONAL. The scope of the access request as described by Section 3.3 of RFC 6749.
                 state:
                   type: string
-                  description: An opaque value used by the client to maintain state between the request and callback.
-                # ... all other applicable authorization request parameters and client authentication parameters
+                  description: RECOMMENDED. An opaque value used by the client to maintain state between the request and callback.
+                code_challenge:
+                  type: string
+                  description: OPTIONAL. PKCE code challenge as described in RFC 7636.
+                code_challenge_method:
+                  type: string
+                  description: OPTIONAL. PKCE code challenge method as described in RFC 7636.
+                request:
+                  type: string
+                  description: OPTIONAL. JWT-encoded request object as defined in RFC 9101.
               required:
                 - response_type
                 - client_id
-                - redirect_uri
+
       responses:
         201:
-          description: Successful response with request URI.
+          description: The authorization request has been successfully processed.
           content:
             application/json:
               schema:
@@ -47,7 +53,7 @@ paths:
                 properties:
                   request_uri:
                     type: string
-                    description: The request URI corresponding to the posted authorization request.
+                    description: The request URI that can be used to reference the pushed authorization request at the authorization endpoint.
                   expires_in:
                     type: integer
                     description: The lifetime in seconds of the request URI.
@@ -67,3 +73,11 @@ paths:
                   error_uri:
                     type: string
                     description: A URI pointing to a web page with more information about the error.
+        401:
+          description: Unauthorized. Client authentication failed.
+        405:
+          description: Method Not Allowed. The method is not POST.
+        413:
+          description: Payload Too Large. The request size exceeds the allowed limit.
+        429:
+          description: Too Many Requests. The client has exceeded the allowed request rate.

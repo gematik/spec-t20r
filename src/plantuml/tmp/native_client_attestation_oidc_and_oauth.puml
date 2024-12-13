@@ -1,0 +1,290 @@
+@startuml "native_client_attestation_oidc_and_oauth"
+
+skinparam defaultFontSize 10
+skinparam DefaultMonospacedFontName Courier
+skinparam lengthAdjust none
+
+skinparam sequence {
+  ParticipantBorderColor black
+  ParticipantBackgroundColor white
+  ActorBorderColor black
+  ActorBackgroundColor white
+  ArrowColor black
+  LifeLineBorderColor black
+  LifeLineBackgroundColor #F0F0F0
+  NoteBorderColor black
+  NoteBackgroundColor #FEFECE
+}
+
+!pragma teoz true
+
+Actor User
+box "Mobile Device" #GhostWhite
+    participant UserAgent as "User Agent"
+    participant MUA as "Mail\nUser Agent"
+    participant Client as "Client"
+    participant SecureEnclave as "Android TEE or\niOS Secure Enclave"
+end box
+
+box "Anbieter A" #TECHNOLOGY
+    box "ZETA Guard" #SandyBrown
+        participant ASA as "PDP\nAuthS"
+        participant PEP_A as "PEP\nHTTP Proxy"
+        participant PEA as "PDP\nPolicy Engine"
+    end box
+    box "TI 2.0\nDienst" #DarkSeaGreen
+        participant RSA as "Resource\nServer"
+    end box
+end box
+
+box "Anbieter B" #TECHNOLOGY
+    box "ZETA Guard" #SandyBrown
+        participant ASB as "PDP\nAuthS"
+        participant PEP_B as "PEP\nHTTP Proxy"
+        participant PEB as "PDP\nPolicy Engine"
+    end box
+    box "TI 2.0\nDienst" #DarkSeaGreen
+        participant RSB as "Resource\nServer"
+    end box
+end box
+participant "Attestation\nService" as AttService
+participant "IDP" as IDP
+participant "Federation \nMaster" as FedMaster
+
+== Client Registration with Resource Server A (with Client Attestation and Email) ==
+
+User -> Client: User Starts Registration
+activate Client
+Client -> SecureEnclave: Generate Key Pair\nfor Attestation
+activate SecureEnclave
+note right: Using Android TEE or iOS Secure Enclave
+SecureEnclave --> Client: Public Key
+deactivate SecureEnclave
+Client -> AttService: Request Attestation Challenge
+activate AttService
+AttService --> Client: Attestation Challenge
+deactivate AttService
+Client -> SecureEnclave: Sign Challenge with\nAttestation Key
+activate SecureEnclave
+note right: Using Android SafetyNet/Play Integrity or\niOS DeviceCheck/App Attest API
+SecureEnclave --> Client: Attestation Statement
+deactivate SecureEnclave
+Client -> ASA: Client Registration Request
+note right: client_instance.yaml\nIncludes attestation statement, public key,\nUser Email and software statement
+activate ASA
+ASA -> AttService: Verify Client Attestation
+activate AttService
+note right: AS A forwards attestation data\nto Attestation Service
+AttService -> AttService: Validate Attestation\nStatement
+AttService --> ASA: Attestation Verification Result
+deactivate AttService
+ASA -> PEA: Request Client\nRegistration Decision
+activate PEA
+note right: AS A sends input data to Policy Engine A\nfor registration request
+PEA -> PEA: Evaluate Policy based\non Input Data
+PEA --> ASA: Client Registration\nDecision (Permit/Deny)
+deactivate PEA
+ASA -> ASA: Generate Confirmation\nLink and send Email
+activate MUA
+MUA -> MUA: Receive Email
+User -> MUA: Click Confirmation\nLink in Email 
+MUA -> UserAgent: Open\nConfirmation\nLink
+activate UserAgent
+deactivate MUA
+UserAgent -> ASA: Email Confirmation\nRequest
+deactivate UserAgent
+ASA -> ASA: Verify Email\nConfirmation\nRequest
+ASA -> ASA: Generate Email\nConfirmation JWT
+note right: JWT Claims:\n - iss: AS_A_ID\n - sub: User_id\n - aud: (all AS)\n - exp: (Policy Engine decision)\n - iat: (now)\n - Email_verified: true
+ASA --> Client: Client Registration Response\n(client_id, Email Confirmation JWT)
+deactivate ASA
+
+== OAuth 2.0 Authorization Code Flow with PAR, PKCE and DPoP (Resource Server A) ==
+Client -> Client: Generate PKCE\nCode Verifier
+Client -> Client: Generate PKCE\nCode Challenge
+Client -> Client: Generate DPoP Key Pair
+Client -> ASA: PAR Request\n(client_id, redirect_uri, scope, etc., dpop_jkt)
+activate ASA
+note right: Authorization Code Request\n(inkl. DPoP Proof, code_challenge, code_challenge_method, redirect_uri)
+ASA -> ASA: Validate DPoP Proof
+ASA --> Client: Request URI
+deactivate ASA
+
+Client -> UserAgent: Navigate to Request URI
+activate UserAgent
+UserAgent -> ASA: Authorization Request (with Request URI)
+activate ASA
+    ASA -> IDP: PAR Request (OpenID Connect), redirect_uri
+activate IDP
+note right: AS A acts as Relying Party\n for the IDP
+    IDP --> ASA: PAR Response, request_uri, expires_in
+    ASA --> UserAgent: Redirect to IDP, request_uri
+    UserAgent -> IDP: Navigate to request_uri
+    IDP --> UserAgent: Authentication Prompt, consent
+    UserAgent -> IDP: User Credentials, consent
+    IDP --> UserAgent: Redirect to ASA, auth_code, redirect_uri
+    UserAgent -> ASA: Redirect to ASA, auth_code, redirect_uri
+    ASA -> IDP: Token Request (Authorization Code Grant), auth_code
+    IDP -> IDP: Validate\nAuthorization\nCode
+IDP --> ASA: Authentication Response (ID Token)
+deactivate IDP
+    ASA -> ASA: Validate\nID Token
+    ASA --> UserAgent: Authorization Code
+    UserAgent -> Client: Redirect with Authorization Code
+deactivate UserAgent
+
+Client -> Client: Generate\nDPoP Proof JWT
+Client -> ASA: Token Request (Authorization Code Grant)
+note right: Enthält Authorization Code, DPoP Proof,\nclient_id, redirect_uri, code_verifier
+ASA -> ASA: Validate\nAuthorization Code
+ASA -> ASA: Validate DPoP Proof
+ASA -> ASA: Validate PKCE\nCode Verifier
+ASA -> PEA: Request Token Issuance Decision
+activate PEA
+note right: AS A sends input data to Policy Engine A\nfor token request
+PEA -> PEA: Evaluate Policy based\non Input Data
+PEA --> ASA: Token Issuance Decision (Permit/Deny)
+deactivate PEA
+    ASA --> Client: Access Token, Refresh Token
+note left: Access Token bound to\nclient's DPoP public key
+deactivate ASA
+
+Client -> Client: Generate DPoP Token
+Client -> PEP_A: Access Protected Resource\n(with Access Token and DPoP Proof)
+activate PEP_A
+PEP_A -> PEP_A: Validate Access Token\nand DPoP Proof
+PEP_A -> RSA: Forward Request to\nResource Server A
+activate RSA
+RSA --> PEP_A: Resource Data
+PEP_A --> Client: Resource Data
+deactivate PEP_A
+deactivate RSA
+
+== Client Registration with Resource Server B (with Client Attestation and JWT) ==
+Client -> SecureEnclave: Generate Key Pair\nfor Attestation
+activate SecureEnclave
+note right: Using Android TEE or\niOS Secure Enclave
+SecureEnclave --> Client: Public Key
+deactivate SecureEnclave
+Client -> AttService: Request Attestation Challenge
+activate AttService
+AttService --> Client: Attestation Challenge
+deactivate AttService
+Client -> SecureEnclave: Sign Challenge with\nAttestation Key
+activate SecureEnclave
+note right: Using Android SafetyNet/Play Integrity or\niOS DeviceCheck/App Attest API
+SecureEnclave --> Client: Attestation Statement
+deactivate SecureEnclave
+Client -> ASB: Client Registration Request (Resource Server B, with Email Confirmation JWT)
+activate ASB
+note right: Includes attestation statement, public key,\nUser Email and potentially software statement
+ASB -> AttService: Verify Client Attestation
+activate AttService
+note right: AS B forwards attestation data\nto Attestation Service
+AttService -> AttService: Validate Attestation\nStatement
+AttService --> ASB: Attestation Verification Result
+deactivate AttService
+ASB -> PEB: Request Client\nRegistration Decision
+activate PEB
+note right: AS B sends input data to Policy Engine B\nfor registration request
+PEB -> PEB: Evaluate Policy based\non Input Data
+PEB --> ASB: Client Registration\nDecision (Permit/Deny)
+deactivate PEB
+ASB -> FedMaster: Get Entity Statement from Federation Master
+activate FedMaster
+FedMaster --> ASB: Entity Statement from Federation Master
+deactivate FedMaster
+ASB -> ASB: Extract "iss" (AS_A_ID)\nand "aud" from JWT
+ASB -> ASB: Get Entity Statement\nURL for AS A\nfrom Federation Master\nEntity Statement
+ASB -> ASA: Get AS A's Entity Statement
+activate ASA
+ASA --> ASB: AS A's Entity Statement
+deactivate ASA
+ASB -> ASB: Verify JWT Signature\n(using AS A's Public Key\nfrom Entity Statement)
+ASB -> ASB: Validate JWT Claims\n(iss, aud, exp,\niat, Email_verified)
+alt JWT Valid
+    ASB -> Client: Client Registration Response\n(without Email Confirmation JWT)
+else JWT Invalid or Expired
+    ASB -> ASB: Generate Email\nConfirmation Token
+    ASB -> Client: Client Registration Response (with Email Confirmation Token)
+    note right: AS B sends Email Confirmation Token to client,\nwhich will be included in Email to User
+    Client -> MUA: Send Confirmation\nEmail
+    activate MUA
+    note right: Client sends Email including\nEmail Confirmation Token to User
+    User -> MUA:
+    MUA -> ASB: User Clicks Confirmation Link in Email
+    deactivate MUA
+    activate ASB
+    ASB -> ASB: Verify Email\nConfirmation Token
+    ASB -> PEB: Request Email\nConfirmation Decision
+    activate PEB
+    PEB -> PEB: Evaluate Policy based\non Input Data
+    PEB --> ASB: Email Confirmation\nDecision (Permit/Deny)
+    deactivate PEB
+    ASB -> Client: Client Registration Response (with Email Confirmation JWT)
+end
+deactivate ASB
+
+== OAuth 2.0 Authorization Code Flow with PAR, PKCE and DPoP (Resource Server B) ==
+Client -> Client: Generate PKCE\nCode Verifier
+Client -> Client: Generate PKCE\nCode Challenge
+Client -> Client: Generate DPoP Key Pair
+Client -> ASB: PAR Request
+activate ASB
+note right: Authorization Code Request\n(inkl. DPoP Proof, code_challenge, code_challenge_method, redirect_uri)
+ASB -> ASB: Validate DPoP Proof
+ASB -> PEB: Request Authorization\nCode Decision
+activate PEB
+note right: AS B sends input data to Policy Engine B\nfor authorization code request
+PEB -> PEB: Evaluate Policy based\non Input Data
+PEB --> ASB: Authorization Code\nDecision (Permit/Deny)
+deactivate PEB
+ASB --> Client: Request URI
+deactivate ASB
+
+Client -> UserAgent: Navigate to Request URI
+activate UserAgent
+UserAgent -> ASB: Authorization Request (with Request URI)
+activate ASB
+ASB -> IDP: Authentication Request (OpenID Connect)
+activate IDP
+note right: AS B acts as Relying Party\n for the IDP
+IDP --> UserAgent: Authentication Prompt
+UserAgent -> IDP: User Credentials
+IDP --> ASB: Authentication Response (ID Token)
+deactivate IDP
+ASB -> ASB: Validate ID Token
+ASB --> UserAgent: Authorization Code
+UserAgent -> Client: Redirect with Authorization Code
+deactivate UserAgent
+
+Client -> Client: Generate DPoP Key Pair
+Client -> ASB: Token Request (Authorization Code Grant)
+activate ASB
+note right: Enthält Authorization Code, DPoP Proof,\nClient Assertion (JWT, RFC7523),\nredirect_uri, code_verifier
+ASB -> ASB: Validate Client\nAssertion (JWT)
+ASB -> ASB: Validate DPoP Proof
+ASB -> ASB: Validate PKCE\nCode Verifier
+ASB -> PEB: Request Token\nIssuance Decision
+activate PEB
+note right: AS B sends input data to Policy Engine B\nfor token request
+PEB -> PEB: Evaluate Policy based\non Input Data
+PEB --> ASB: Token Issuance\nDecision (Permit/Deny)
+deactivate PEB
+ASB --> Client: Access Token (JWT), Refresh Token
+note left: Access Token bound to\nclient's DPoP public key
+deactivate ASB
+
+Client -> Client: Generate DPoP Key Pair
+Client -> PEP_B: Access Protected Resource\n(with Access Token and DPoP Proof)
+activate PEP_B
+PEP_B -> PEP_B: Validate Access Token\nand DPoP Proof
+PEP_B -> RSB: Forward Request to\nResource Server B
+activate RSB
+RSB --> PEP_B: Resource Data
+PEP_B --> Client: Resource Data
+deactivate PEP_B
+deactivate RSB
+deactivate Client
+
+@enduml

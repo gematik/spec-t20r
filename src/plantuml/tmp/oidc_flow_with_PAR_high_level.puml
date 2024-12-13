@@ -1,0 +1,42 @@
+@startuml "oidc_flow_with_PAR_high_level"
+participant cl as "Client"
+participant AuthS as "Authorization Server"
+participant IDP
+participant ua as "User Agent"
+participant rs as "Resource Server"
+
+cl -> AuthS: PAR-Anfrage (POST) mit \nClient-ID, Antworttyp, \nWeiterleitungs-URI, Scope, \nStatus, Code Challenge, \nCode Challenge Method
+activate AuthS
+AuthS -> cl: Request URI (JSON)
+deactivate AuthS
+
+cl -> ua: Weiterleitung mit Request URI
+activate ua
+ua -> AuthS: Autorisierungsanfrage (GET) \nmit Client-ID und Request URI
+activate AuthS
+AuthS -> ua: Weiterleitung zum IDP (302)
+deactivate AuthS
+ua -> IDP: Authentifizierungsanfrage
+activate IDP
+ua <-> IDP: Benutzerauthentifizierung
+IDP -> ua: Weiterleitung zum Authorization Server \nmit Authentifizierungsinformationen
+deactivate IDP
+ua -> AuthS: Authentifizierungsinformationen
+activate AuthS
+AuthS -> ua: Zugriff erlauben/verweigern 
+ua <-> AuthS: Zugriff erlauben/verweigern
+AuthS -> ua: Weiterleitung mit Code (302)
+deactivate AuthS
+ua -> cl: Weiterleitung mit Code (302)
+deactivate ua
+
+cl -> AuthS: Token-Anfrage (POST) mit \nCode, Code Verifier, \nClient-ID, Client Secret, \nWeiterleitungs-URI
+activate AuthS
+AuthS -> cl: ID Token, Access Token (JSON)
+deactivate AuthS
+
+cl -> rs: Zugriffsanfrage mit Access Token
+activate rs
+rs -> cl: Ressourcenzugriff
+deactivate rs
+@enduml
