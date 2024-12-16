@@ -8,7 +8,7 @@ skinparam lengthAdjust none
 !pragma teoz true
 
 box "LEI" #GhostWhite
-  participant Client
+  participant Client as "ZETA\nClient"
   participant Konnektor as "Konnektor or\nTI-Gateway"
   participant SMB as "SM-B"
 end box
