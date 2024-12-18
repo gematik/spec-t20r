@@ -24,6 +24,7 @@ box "Mobile Device" #GhostWhite
     participant MUA as "Mail\nUser Agent"
     participant Client as "Client"
     participant AndroidTEE as "Android TEE"
+    participant Authenticator as "Authenticator"
 end box
 
 box "Anbieter" #TECHNOLOGY
@@ -120,21 +121,28 @@ deactivate AuthS
 Client -> UserAgent: Navigate to Request URI
 activate UserAgent
 UserAgent -> AuthS: Authorization Request (with Request URI)
+
 activate AuthS
-    AuthS -> IDP: PAR Request (OpenID Connect), redirect_uri, client_id_idpsek
+group OIDC user authentication with confidential client
+    AuthS -> IDP: PAR Request (OpenID Connect), redirect_uri, client_id_idpsek\nsee https://gemspec.gematik.de/docs/gemSpec/gemSpec_IDP_Sek/latest/#7.1.2
 activate IDP
 note right: AS A acts as Relying Party\n for the IDP\n(client_id_idpsek)
-    IDP --> AuthS: PAR Response, request_uri, expires_in
-    AuthS --> UserAgent: Redirect to IDP, request_uri
-    UserAgent -> IDP: Navigate to request_uri
-    IDP --> UserAgent: Authentication Prompt, consent
-    UserAgent -> IDP: User Credentials, consent
-    IDP --> UserAgent: Redirect to AuthS, auth_code, redirect_uri
-    UserAgent -> AuthS: Redirect to AuthS, auth_code, redirect_uri
+    IDP --> AuthS: URI-PAR Response, request_uri, expires_in
+    AuthS --> Client: Redirect URI-PAR to IDP, request_uri
+    Client --> Authenticator: Redirect URI-PAR to IDP, request_uri
+activate Authenticator
+    Authenticator -> IDP: Navigate to URI-PAR, request_uri
+    IDP --> Authenticator: Authentication Prompt, consent
+    Authenticator -> IDP: User Credentials, consent
+    IDP --> Authenticator: Redirect to AuthS, auth_code, redirect_uri
+    Authenticator -> Client: Redirect to AuthS, auth_code, redirect_uri
+deactivate Authenticator
+    Client-> AuthS: Redirect to AuthS, auth_code, redirect_uri
     AuthS -> IDP: Token Request (Authorization Code Grant), auth_code
     IDP -> IDP: Validate\nAuthorization\nCode
 IDP --> AuthS: Authentication Response (ID Token)
 deactivate IDP
+end
     AuthS -> AuthS: Validate\nID Token
     AuthS --> UserAgent: Authorization Code
     UserAgent -> Client: Redirect with Authorization Code
