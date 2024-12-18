@@ -72,7 +72,7 @@ Wenn der PDP im eigentlichen Zugriffsprozess entfernt wird, entsteht eine strikt
 
 ### Ausgangslage
 
-*   **Kein PDP:** Es gibt keinen separaten PDP, der komplexe Zugriffsentscheidungen trifft.
+*   **Keine Anfrage des PEP beim PDP:** Es gibt keinen separaten PDP, der komplexe Zugriffsentscheidungen trifft.
 *   **PEP-Rolle:** Der PEP ist primär für die Token-Validierung und Scope-Prüfung zuständig. Er ist der "einfache Wächter" und entscheidet nur basierend auf dem Vorhandensein des erforderlichen Scopes im Access Token.
 *   **Access Token als zentrales Berechtigungsartefakt:** Der Scope im Access Token ist der **einzige** Mechanismus, um Zugriffsrechte zu kontrollieren.
 *   **Step-up erfordert neuen Scope:** Eine höhere Authentifizierungsstufe führt *immer* zu einem neuen Access Token mit einem erweiterten Scope.
