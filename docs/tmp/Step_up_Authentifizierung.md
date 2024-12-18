@@ -14,7 +14,7 @@ In diesem Dokument wird das Zusammenspiel von Step-up-Authentifizierung, Zero Tr
 ### Ablauf mit Step-up-Authentifizierung und Zero Trust
 
 1. **Nutzer stellt Anfrage:** Der Nutzer versucht, auf eine "besser geschützte Ressource" auf dem RS zuzugreifen (z.B. eine sensible Datenbank, eine kritische Funktion).
-2. **PEP fängt Anfrage ab:** Der PEP (z.B. ein API-Gateway oder ein Middleware-Dienst vor dem RS) fängt die Anfrage ab.
+2. **PEP fängt Anfrage ab:** Der PEP (HTTP Proxy vor dem RS) fängt die Anfrage ab.
 3. **PEP wertet Access Token aus:** Der PEP validiert das Access Token, um sicherzustellen, dass es vom AS ausgestellt wurde und noch gültig ist.
 4. **PEP fragt PDP:** Der PEP sendet eine Anfrage an den PDP, um zu entscheiden, ob der Zugriff erlaubt werden soll. Die Anfrage enthält:
     * Informationen über den Nutzer (aus dem Access Token).
