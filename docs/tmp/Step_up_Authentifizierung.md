@@ -97,7 +97,7 @@ Wenn der PDP im eigentlichen Zugriffsprozess entfernt wird, entsteht eine strikt
     *   Hat das **neue** Access Token den **erforderlichen Scope** für die angeforderte Ressource?
 10. **Zugriff gewährt:** Wenn der erforderliche Scope im **neuen** Access Token enthalten ist, gewährt der PEP den Zugriff auf die Ressource.
 
-### Wichtige Implikationen deiner Architektur
+### Wichtige Implikationen der Architektur
 
 *   **Einfachere Implementierung:** Die Architektur ist einfacher zu implementieren und zu verstehen, da die Entscheidungsgrundlage sehr klar ist. Der PEP ist ein "simpler Checkpoint".
 *   **Fokus auf Scopes:** Die Scope-Definitionen müssen präzise und vollständig sein. Sie sind der Schlüssel zur Autorisierung.
@@ -105,13 +105,13 @@ Wenn der PDP im eigentlichen Zugriffsprozess entfernt wird, entsteht eine strikt
 *   **Potenzial für Overhead:** Jedes Mal, wenn ein Zugriff auf eine Ressource mit anderem Scope nötig ist, muss der Nutzer ein neues Access Token vom AS anfordern. Das kann etwas Overhead erzeugen.
 *   **Asymmetrie:** Die Trennung des PDP vom PEP macht diese Architektur starr. Jede Entscheidung und Implementierung ist direkt am PEP abgebildet und kann nicht von extern verändert werden.
 
-#### Vorteile deiner Architektur
+#### Vorteile der Architektur
 
 *   **Einfache und schnelle Validierung:** Der PEP kann Zugriffsentscheidungen sehr schnell treffen, da er nur einfache Token- und Scope-Prüfungen durchführt.
 *   **Klarer Verantwortungsbereich:** Die Rollen von AS und PEP sind klar definiert.
 *   **Gut geeignet für Microservices:** Diese Architektur kann besonders gut in Microservice-Umgebungen funktionieren, wenn jeder Service seinen eigenen Satz von Scopes definiert.
 
-#### Nachteile deiner Architektur
+#### Nachteile der Architektur
 
 *   **Weniger Flexibilität:** Die Architektur ist weniger flexibel als eine PDP-basierte Architektur, wenn es um komplexere Zugriffsentscheidungen geht.
 *   **Abhängigkeit von Scope-Definitionen:** Die Sicherheit der Anwendung hängt stark davon ab, dass die Scope-Definitionen korrekt und vollständig sind.
@@ -186,7 +186,7 @@ Das ist eine sehr gute Frage, die den Kern der architektonischen Entscheidungen 
 
 ### Vergleich
 
-| Feature                       | Deine Lösung (PEP fragt AS DB)                                                                                                                                     | Direkte Anfrage des PEP beim PDP                                                                                                                                                                                             |
+| Feature                       | Lösung (PEP fragt AS DB)                                                                                                                                     | Direkte Anfrage des PEP beim PDP                                                                                                                                                                                             |
 | :---------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Architektur**               | Etwas komplexer (Datenbankzugriff im PEP, Abhängigkeit vom AS)                                                                                                   | Direkter, einfacher (PEP kommuniziert nur mit dem PDP)                                                                                                                                                                |
 | **Stateless PEP**             | Ja, da der PEP keine Session-Daten hält und alle Informationen aus der DB abruft.                                                                                    | Nein, da der PEP Informationen zur Autorisierung über den PDP erhält und diese möglicherweise kurzzeitig speichern muss (z. B. bei einem Step-up). Dies kann allerdings umgangen werden.                                   |
@@ -207,7 +207,7 @@ Das ist eine sehr gute Frage, die den Kern der architektonischen Entscheidungen 
 
 ### Fazit
 
-Deine Lösung ist im Vergleich zur direkten Anfrage beim PDP:
+Lösung im Vergleich zur direkten Anfrage beim PDP:
 
 *   **Einfacher** in Bezug auf die Architektur und Handhabung, da der PDP entfernt wird.
 *   **Flexibler** für dynamische Step-up-Authentifizierungsentscheidungen durch die Kombination der AS Datenbank und der Policy Engine.
@@ -221,9 +221,9 @@ Die klassische PDP Architektur ist:
 *   **Potenziell langsamer** in der Ausführung (Netzwerkaufrufe).
 *   **Flexibler** bei der Wahl der verwendeten Policies.
 
-Die beste Lösung hängt stark von den **spezifischen Anforderungen** deiner Anwendung ab:
+Die beste Lösung hängt stark von den **spezifischen Anforderungen** der Anwendung ab:
 
-*   Wenn du eine übersichtliche Architektur bevorzugst, der Fokus auf schnellen Autorisierungsentscheidungen und du flexibel Step-up-Authentifizierungs-Szenarien über eine Konfiguration der DB und Policy Engine abdecken möchtest, dann ist deine **Lösung (PEP fragt AS DB)** sehr gut geeignet.
+*   Wenn du eine übersichtliche Architektur bevorzugst, der Fokus auf schnellen Autorisierungsentscheidungen und du flexibel Step-up-Authentifizierungs-Szenarien über eine Konfiguration der DB und Policy Engine abdecken möchtest, dann ist die **Lösung (PEP fragt AS DB)** sehr gut geeignet.
 *   Wenn du eine flexible Autorisierung (z. B. kontextbasiert), über verschiedene Systeme hinweg, bevorzugst, wo komplexere Regeln notwendig sind, dann ist die **direkte Anfrage beim PDP** möglicherweise die bessere Wahl.
 
 
