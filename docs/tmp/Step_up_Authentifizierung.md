@@ -124,48 +124,46 @@ Wenn dein System keine komplexen Zugriffsrichtlinien benötigt und eine klare, S
 
 ## Erweiterte Architektur mit dezentraler PDP-Funktionalität
 
-### Erweiterte Architektur mit Datenbankabfrage im PEP
+### Erweiterte Architektur mit Datenbankabfrage des PEP
 
-*   **Zentraler Datenspeicher im AS:** Der AS speichert User-, Session- und Client-Daten in einer redundanten In-Memory-Datenbank (z.B. ValKey).
-*   **PEP als Datenabrufer:** Der PEP verwendet den `jti` (JWT ID) Claim aus dem Access Token, um die entsprechenden Daten aus der Datenbank des AS abzufragen.
-*   **Ergänzung im Request Header:** Die abgerufenen Daten werden im Request Header an den RS weitergegeben.
-*   **Step-up-Informationen in DB:** Die Datenbank enthält auch Informationen darüber, ob für bestimmte Ressourcen eine Step-up-Authentifizierung erforderlich ist.
-*   **Policy Engine im AS:** Der AS fragt die Policy Engine vor der Ausstellung eines Access Tokens ab. Die Policy Engine gibt die Regeln für die Step-up-Authentifizierung zurück.
+*   **Zentraler Datenspeicher des PDP:** Der AS speichert User-, Session- und Client-Daten in einer redundanten In-Memory-Datenbank (z.B. ValKey).
+*   **Policy Engine und AS:** Der AS fragt die Policy Engine vor der Ausstellung eines Access Tokens ab. Die Policy Engine gibt die Entscheidung und die Vorgaben für die Step-up-Authentifizierung zurück. Diese Informationen werden in der Datenbank des PDP gespeichert.
+*   **Step-up-Informationen in PDP DB:** Die Datenbank enthält nun Informationen darüber, ob für bestimmte Ressourcen eine Step-up-Authentifizierung erforderlich ist.
+*   **PEP als Datenabrufer:** Der PEP verwendet den `jti` (JWT ID) Claim aus dem Access Token, um die entsprechenden Daten aus der Datenbank des PDP abzufragen.
+*   **PEP setzt Vorgaben aus PDP DB durch:** Die abgerufenen Daten werden vom PEP ausgewertet und ggf. wird eine Step-up-Authentifizierung ausgelöst.
 *   **Kein direkter PDP (aber implizite Entscheidung):** Ein expliziter PDP ist immer noch nicht vorhanden, die Policy Engine nimmt aber eine implizite Entscheidungsrolle ein und steuert, wann Step-Up Authentifizierung erforderlich ist.
 
 ### Bewertung der Lösung
 
 #### Vorteile
 
-1.  **Stateless PEP:** Der PEP wird durch die Datenbankabfrage tatsächlich stateless. Dies erhöht seine Skalierbarkeit und Ausfallsicherheit, da keine Session-Daten im PEP selbst gespeichert werden müssen. Das ist ein sehr wichtiger Punkt, wenn man an Microservices-Umgebungen denkt.
+1.  **Stateless PEP:** Der PEP wird durch die Datenbankabfrage stateless. Dies erhöht seine Skalierbarkeit und Ausfallsicherheit, da keine Session-Daten im PEP selbst gespeichert werden müssen. Das ist ein sehr wichtiger Punkt, wenn man an Microservices-Umgebungen denkt.
 2.  **Flexiblere Autorisierung:** Die Datenbank enthält jetzt Informationen über benötigte Step-up-Authentifizierungen pro Ressource. Dies erlaubt es dir, die Autorisierungslogik dynamisch zu konfigurieren, ohne den PEP selbst zu ändern.
-3.  **Zentrale Benutzerdaten:** Alle relevanten Benutzerdaten sind an einer Stelle (im AS) gespeichert. Das vereinfacht die Administration und Konsistenz.
+3.  **Zentrale Benutzerdaten:** Alle relevanten Benutzerdaten sind an einer Stelle (in der PDP DB) gespeichert. Das vereinfacht die Administration und Konsistenz.
 4.  **Einfachere Integration des RS:** Der RS bekommt alle notwendigen Informationen über den Request Header, ohne das Token selbst analysieren zu müssen.
-5.  **Gleichförmiger Informationsfluss:** Der PEP kann die Informationen für den RS aus der DB immer auf die gleiche Weise holen, egal welche Policy-Engine verwendet wird.
-6. **Implizite PDP-Entscheidungen:** Die Policy Engine und die damit verbundenen Informationen in der DB des AS ermöglichen im Endeffekt die Implementierung einer impliziten PDP-Entscheidung.
+5.  **Gleichförmiger Informationsfluss:** Der PEP kann die Informationen für den RS aus der PDP DB immer auf die gleiche Weise holen, egal welche Policy-Engine verwendet wird.
+6. **Implizite PDP-Entscheidungen:** Die Policy Engine und die damit verbundenen Informationen in der PDP DB ermöglichen im Endeffekt die Implementierung einer impliziten PDP-Entscheidung.
 7.  **Gute Performance:** Die Verwendung einer In-Memory-Datenbank mit ValKey sorgt für geringe Latenz und schnelle Antwortzeiten.
 
 #### Nachteile/Überlegungen
 
-1.  **Abhängigkeit vom AS:** Der PEP ist nun von der Verfügbarkeit des AS abhängig, da er ständig die Datenbank des AS abfragen muss. Das ist ein Punkt, der gut überwacht werden muss. Aus diesem Grund ist die redundante Datenbank wichtig.
+1.  **Abhängigkeit vom AS:** Der PEP ist von der Verfügbarkeit der Datenbank abhängig, da er ständig die Datenbank abfragen muss. Das ist ein Punkt, der gut überwacht werden muss. Aus diesem Grund ist eine redundante Datenbank wichtig.
 2.  **Zusätzlicher Overhead:** Die Abfrage der Datenbank im PEP führt zu zusätzlichem Overhead im Vergleich zu einem reinen Token-basierten Ansatz. Jedoch sollte eine gut skalierbare In-Memory Datenbank diesen Overhead gering halten können.
 3.  **Komplexere Architektur:** Die Architektur ist komplexer als ein reines Token-basiertes System.
-4.  **Notwendigkeit für "Sicherheitsgrenze":** Da der PEP die Datenbank des AS anfragt, muss sichergestellt werden, dass dieser Zugang zu dieser Datenbank geschützt und authentifiziert ist.
+4.  **Notwendigkeit für "Sicherheitsgrenze":** Da der PEP die Datenbank des PDP anfragt, muss sichergestellt werden, dass dieser Zugang zu dieser Datenbank geschützt und authentifiziert ist.
 5.  **Skalierbarkeit der Datenbank:** Die Datenbank sollte auch mit großer Last (viele Zugriffe durch die PEPs) gut skalieren können.
 6. **Verteilte Policy-Entscheidungen:** Die Policy-Engine trifft die Entscheidung für die Step-Up Authentifizierung auf der AS Seite. Dies impliziert, dass der PEP für diese Entscheidung der Policy-Engine vertrauen muss.
 7. **Potenzielle Race Conditions:** Es ist essenziell, dass keine Race Conditions bei der Anfrage der Daten auf der Datenbank entstehen.
 
 #### Zu beachten
 
-*   **Monitoring:** Implementiere ein umfassendes Monitoring für die Datenbank des AS und den PEP, um sicherzustellen, dass beide gut performen.
+*   **Monitoring:** Implementiere ein umfassendes Monitoring für die Datenbank des PDP und den PEP, um sicherzustellen, dass beide gut performen.
 *   **Sicherheitsaspekte:** Stelle sicher, dass die Verbindungen zwischen PEP und Datenbank und zwischen der Policy Engine und AS abgesichert sind.
 *   **Skalierbarkeit:** Plane die In-Memory-Datenbank entsprechend des erwarteten Lastaufkommens.
 *   **Fehlerbehandlung:** Definiere gut, wie Fehler bei der Datenbankabfrage des PEP behandelt werden sollen (z.B. Retry-Logik).
 *   **Testen:** Gründliche Tests sind essenziell, um sicherzustellen, dass alles korrekt funktioniert, insbesondere im Hinblick auf Race Conditions.
 
 ## Vergleich der Lösungen
-
-Das ist eine sehr gute Frage, die den Kern der architektonischen Entscheidungen berührt. Vergleichen wir die von dir vorgeschlagene Lösung (PEP fragt Datenbank des AS) mit einer direkten Anfrage des PEP beim PDP:
 
 ### Direkte Anfrage des PEP beim PDP
 
@@ -180,16 +178,16 @@ Das ist eine sehr gute Frage, die den Kern der architektonischen Entscheidungen 
 
 *   **Ablauf:**
     1.  PEP fängt Request ab.
-    2.  PEP fragt DB des AS anhand des `jti` ab und erhält alle benötigten Daten des Nutzers und Session.
-    3.  PEP prüft anhand der Daten in der DB und dem Scope im Access Token, ob ein Zugriff erlaubt ist und ggf. eine Step-up-Authentifizierung benötigt wird.
+    2.  PEP fragt PDP DB anhand des `jti` ab und erhält alle benötigten Daten des Nutzers und Session.
+    3.  PEP prüft anhand der Daten in der PDP DB und dem Scope im Access Token, ob ein Zugriff erlaubt ist und ggf. eine Step-up-Authentifizierung benötigt wird.
     4.  PEP gewährt oder verweigert Zugriff.
 
 ### Vergleich
 
-| Feature                       | Lösung (PEP fragt AS DB)                                                                                                                                     | Direkte Anfrage des PEP beim PDP                                                                                                                                                                                             |
+| Feature                       | Lösung (PEP fragt PDP DB)                                                                                                                                     | Direkte Anfrage des PEP beim PDP                                                                                                                                                                                             |
 | :---------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Architektur**               | Etwas komplexer (Datenbankzugriff im PEP, Abhängigkeit vom AS)                                                                                                   | Direkter, einfacher (PEP kommuniziert nur mit dem PDP)                                                                                                                                                                |
-| **Stateless PEP**             | Ja, da der PEP keine Session-Daten hält und alle Informationen aus der DB abruft.                                                                                    | Nein, da der PEP Informationen zur Autorisierung über den PDP erhält und diese möglicherweise kurzzeitig speichern muss (z. B. bei einem Step-up). Dies kann allerdings umgangen werden.                                   |
+| **Stateless PEP**             | Ja, da der PEP keine Session-Daten hält und alle Informationen aus der PDP DB abruft.                                                                                    | Nein, da der PEP Informationen zur Autorisierung über den PDP erhält und diese möglicherweise kurzzeitig speichern muss (z. B. bei einem Step-up). Dies kann allerdings umgangen werden.                                   |
 | **Flexibilität**              | Sehr flexibel durch dynamische Konfiguration (Step-up-Informationen) in der Datenbank. Die Policy Engine bietet eine zusätzliche flexible Ebene bei der Entscheidung.    | Flexibler, durch umfassende Policy-Auswertung im PDP (z.B. kontextbasierte Entscheidungen, komplexe Zugriffsregeln).                                                                                                        |
 | **Performance**               | Potenziell hohe Performance durch In-Memory-Datenbank, jedoch mit zusätzlichem Overhead durch die Datenbankabfrage im PEP.                                       | Potenzielle Latenz durch Netzwerkaufrufe zum PDP, kann aber durch gute Caching-Strategien verbessert werden.                                                                                                                |
 | **Zentrale Datenquelle**      | Ja, der AS ist die zentrale Datenquelle für alle User-, Session- und Client-Daten.                                                                              | Nein, der PDP hat seine eigene Datenquellen für die Policy-Entscheidungen (oder muss auf andere Services zugreifen). Die Daten sind verteilt.                                                                                |
@@ -197,12 +195,12 @@ Das ist eine sehr gute Frage, die den Kern der architektonischen Entscheidungen 
 | **Abhängigkeit**             | Der PEP ist abhängig vom AS, insbesondere von der Verfügbarkeit der Datenbank.                                                                                    | Der PEP ist vom PDP abhängig, was eine Herausforderung sein kann, wenn der PDP eine kritische Komponente darstellt.                                                                                                       |
 | **Komplexität der Policies**    | Einfachere Policies, da die Entscheidungen im Endeffekt auf den Scope, die Daten aus der DB und den Response der Policy Engine basieren.                         | Ermöglicht komplexere Policies (kontextbasiert, attributbasiert), die sich auch dynamisch über das System verteilen lassen (z. B. als Microservice).                                                                               |
 | **Testbarkeit**               | Gut testbar, da die Logik des PEP isoliert und die Funktionalität der DB und AS testbar ist.                                                                       | Gut testbar, aber die Integrationstests der Kommunikation zwischen PEP und PDP sind essenziell.                                                                                                                           |
-| **Verwaltbarkeit**              | Relativ einfach zu verwalten, da sich alles auf die Konfiguration der AS Datenbank und der Policy Engine fokussiert. Die Policy-Engine und DB sind zusammen verwaltbar. | PDP muss separat verwaltet werden. (Konfiguration der Policies).                                                                                                                           |
-| **Integration mit bestehender Infrastruktur** | Gut, da sich der PEP als weiterer Daten-Client zum AS verhält. | Ermöglicht sehr einfache Integration in bestehende Infrastruktur (API basierter Service) |
+| **Verwaltbarkeit**              | Relativ einfach zu verwalten, da sich alles auf die Konfiguration der AS Datenbank und der Policy Engine fokussiert. Die Policy-Engine und PDP DB sind zusammen verwaltbar. | PDP muss separat verwaltet werden. (Konfiguration der Policies).                                                                                                                           |
+| **Integration mit bestehender Infrastruktur** | Gut, da sich der PEP als weiterer Daten-Client zur PDP DB verhält. | Ermöglicht sehr einfache Integration in bestehende Infrastruktur (API basierter Service) |
 
 ### Bewertung
 
-*   **Die Lösung (PEP fragt AS DB):** Ist eine pragmatische Lösung, die gut für Szenarien geeignet ist, in denen **schnelle und einfache Autorisierungsentscheidungen** ausreichen. Die Datenbank ist sehr schnell und kann mit weiteren Daten zu User, Session, Policies und Client versehen werden. Die Idee mit der Datenbankabfrage des PEP ist sehr gelungen und bietet eine sehr gute Lösung für eine statless API. Die Implizite PDP-Funktionalität durch die Policy-Engine ist ein starkes Feature.
+*   **Die Lösung (PEP fragt PDP DB):** Ist eine pragmatische Lösung, die gut für Szenarien geeignet ist, in denen **schnelle und einfache Autorisierungsentscheidungen** ausreichen. Die Datenbank ist sehr schnell und kann mit weiteren Daten zu User, Session, Policies und Client versehen werden. Die Idee mit der Datenbankabfrage des PEP ist sehr gelungen und bietet eine sehr gute Lösung für eine statless API. Die Implizite PDP-Funktionalität durch die Policy-Engine ist ein starkes Feature.
 *   **Direkte Anfrage des PEP beim PDP:** Ist die klassische Variante und ideal, wenn **komplexe und dynamische Autorisierungsrichtlinien** benötigt werden, die über einfache Scope-basierte Entscheidungen und Kontextdaten hinausgehen. Auch ist sie sehr gut geeignet, wenn ein zentraler PDP genutzt wird.
 
 ### Fazit
@@ -223,7 +221,7 @@ Die klassische PDP Architektur ist:
 
 Die beste Lösung hängt stark von den **spezifischen Anforderungen** der Anwendung ab:
 
-*   Wenn du eine übersichtliche Architektur bevorzugst, der Fokus auf schnellen Autorisierungsentscheidungen und du flexibel Step-up-Authentifizierungs-Szenarien über eine Konfiguration der DB und Policy Engine abdecken möchtest, dann ist die **Lösung (PEP fragt AS DB)** sehr gut geeignet.
+*   Wenn du eine übersichtliche Architektur bevorzugst, der Fokus auf schnellen Autorisierungsentscheidungen und du flexibel Step-up-Authentifizierungs-Szenarien über eine Konfiguration der PDP DB und Policy Engine abdecken möchtest, dann ist die **Lösung (PEP fragt PDP DB)** sehr gut geeignet.
 *   Wenn du eine flexible Autorisierung (z. B. kontextbasiert), über verschiedene Systeme hinweg, bevorzugst, wo komplexere Regeln notwendig sind, dann ist die **direkte Anfrage beim PDP** möglicherweise die bessere Wahl.
 
 
