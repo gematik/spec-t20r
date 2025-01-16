@@ -60,7 +60,7 @@ Die **Open Policy Agent (OPA)** Policy Engine bietet eine flexible und leistungs
 ### 6. **Deployment und Distribution**
 - Policies können auf verschiedene Arten bereitgestellt werden:
   - Direkt in OPA geladen (z. B. durch das OPA-CLI oder REST-API).
-  - Dynamisches Laden von Policies aus externen Quellen wie einer URL oder einer Datei.
+  - Dynamisches Laden von Policies aus externen Quellen wie einer URL (so erfolgt das Deployment in den ZETA Guard OPA).
 - OPA unterstützt **Bundle Deployment**, bei dem Policies und Daten gebündelt und automatisch aktualisiert werden.
 
 ### 7. **Policy Evaluation**
