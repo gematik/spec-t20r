@@ -87,10 +87,6 @@ Die **Open Policy Agent (OPA)** Policy Engine bietet eine flexible und leistungs
 
 Mit OPA kann das Policy Management zentralisiert und konsistent für unterschiedliche Systeme durchgeführt werden, was insbesondere in Zero Trust Architekturen nützlich ist.
 
-Wenn sich die **Revision** eines Policy-Bundles ändert und ein Update ausgelöst wird, führt der **Open Policy Agent (OPA)** mehrere Schritte aus, um das Update zu validieren und anzuwenden. Der Ablauf ist gut strukturiert, um sicherzustellen, dass nur gültige Policies und Daten bereitgestellt werden. Hier sind die Details:
-
----
-
 ## **Ablauf eines Updates bei OPA**
 
 ### **1. Abruf des neuen Bundles**
@@ -151,6 +147,5 @@ Wenn das Bundle erfolgreich validiert wurde:
     time="2025-01-16T12:01:00Z" level=error msg="Bundle validation failed: syntax error in policy.rego"
     ```
 - Telemetriedaten können gesammelt werden, um die Anzahl und Erfolgsrate von Updates zu überwachen.
-
 
 Dieses robuste Vorgehen stellt sicher, dass keine ungültigen Policies in die Policy Engine gelangen und der Dienst stabil bleibt.
