@@ -1,6 +1,6 @@
 # Schema for the ProofOfPatientPresenceToken json object. Issuer is a PoPP server.
 $schema: "http://json-schema.org/draft-07/schema#"
-ProofOfPatientPresenceToken:
+proof_of_patient_presence_token:
   type: object
   properties:
     sub:
