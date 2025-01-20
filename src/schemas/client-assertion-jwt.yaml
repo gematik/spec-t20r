@@ -1,0 +1,44 @@
+# Schema for the client assertion jwt object. Issuer is a ZETA Client.
+$schema: "http://json-schema.org/draft-07/schema#"
+client_assertion_jwt:
+  type: object
+  properties:
+    nonce:
+      type: string
+      description: Nonce from the authorization server.
+    iss:
+      type: string
+      description: Unique identifier of the issuer (e.g., Telematik ID).
+    sub:
+      type: string
+      description: The client ID of the OAuth client.
+    aud:
+      type: string
+      description: The URL of the authorization server.
+    iat:
+      type: integer
+      description: The timestamp when the JWT was issued.
+    exp:
+      type: integer
+      description: The expiration time of the JWT.
+    cnf:
+      type: object
+      description: Confirmation information.
+      properties:
+        jkt:
+          type: string
+          description: The thumbprint of the DPoP key.
+      required:
+        - jkt
+    "urn:telematik:client-self-assessment":
+      description: Information about the client instance.
+      $ref: "./client-instance.yaml#/client_instance"
+  required:
+    - nonce
+    - iss
+    - sub
+    - aud
+    - iat
+    - exp
+    - cnf
+    - "urn:telematik:client-self-assessment"

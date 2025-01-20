@@ -1,0 +1,49 @@
+{
+    "nonce": "...Nonce from the AS...",
+    "iss":"urn:telematik:telematik-id:9-123456789",
+    "sub":"...Client ID...",
+    "aud":"https://as.example.com",
+    "iat":1562262611,
+    "exp":1562266216,
+    "cnf": {
+        "jkt":"..thumbprint of the DPoP key..."
+    },
+     "urn:telematik:client-self-assessment": {
+        "name": "MeinTestClient",
+        "client_id": "...Client ID...",
+        "product_id": "PS-000",
+        "product_name": "TestApp",
+        "product_version": "0.5.0",
+        "manufacturer_id": "HRST-001",
+        "manufacturer_name": "TestHersteller",
+        "owner": {
+           "sub": "0XkIBtL3XhZ9qncbFmkYbLkj4vjkES4T3dgSgTfl2s5WyZgDkl7WW1HakMyi9iN6kLEGu7ssw1S52uW521gn9vLeNFLaIBlDJbbo55xQFJIqfPqUWYarCL253hQL2uIB4A",
+            "urn:telematik:claims:id": "T020821918",
+           "urn:telematik:claims:organization": "101575519",
+            "amr": [
+                "urn:telematik:auth:other"
+             ],
+            "iss": "https://...",
+            "urn:telematik:claims:display_name": "Juliane Mustermann",
+            "nonce": "WEgmvoUcr5EUAB7x41fmbXRqBdnr4gio",
+            "aud": "https://...",
+            "acr": "gematik-ehealth-loa-high",
+            "urn:telematik:claims:profession": "1.2.276.0.76.4.49",
+            "auth_time": 1710409161,
+            "exp": 1710409463,
+            "iat": 1710409163
+         },
+        "owner_mail": "test@example.com",
+        "registration_timestamp": 1678886400,
+        "platform": "software",
+	"posture": {
+           "os": "Microsoft Windows",
+           "os_version": "10.0.19045.4291",
+           "arch": "x86"
+        },
+       "attestation": {
+        "method": "none",
+        "timestamp": 1678886400
+        }
+    }
+}

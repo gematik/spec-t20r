@@ -1,0 +1,75 @@
+{
+    "name": "MeinTestClient",
+    "client_id": "unique-client-id-123",
+    "product_id": "product-id-456",
+    "product_name": "TestApp",
+    "product_version": "1.0.0",
+    "manufacturer_id": "manufacturer-789",
+    "manufacturer_name": "TestHersteller",
+     "owner": {
+          "sub": "0XkIBtL3XhZ9qncbFmkYbLkj4vjkES4T3dgSgTfl2s5WyZgDkl7WW1HakMyi9iN6kLEGu7ssw1S52uW521gn9vLeNFLaIBlDJbbo55xQFJIqfPqUWYarCL253hQL2uIB4A",
+          "urn:telematik:claims:id": "T020821918",
+          "urn:telematik:claims:organization": "101575519",
+          "amr": [
+              "urn:telematik:auth:other"
+          ],
+          "iss": "https://...",
+          "urn:telematik:claims:display_name": "Juliane Mustermann",
+          "nonce": "WEgmvoUcr5EUAB7x41fmbXRqBdnr4gio",
+          "aud": "https://...",
+          "acr": "gematik-ehealth-loa-high",
+          "urn:telematik:claims:profession": "1.2.276.0.76.4.49",
+          "auth_time": 1710409161,
+          "exp": 1710409463,
+          "iat": 1710409163
+      },
+    "owner_mail": "test@example.com",
+    "registration_timestamp": 1678886400,
+    "platform": "android",
+    "platform_product_id": {
+      "namespace": "android_app",
+      "package_name": "com.test.app",
+      "sha256_cert_fingerprints": [
+        "AABBCCDD..."
+      ]
+    },
+    "posture": {
+      "build": {
+          "version": {
+              "sdk_init": 30,
+              "security_patch": "2023-04-05"
+           },
+          "manufacturer": "Google",
+          "product": "Pixel",
+          "model": "Pixel 5",
+      "board": "sunfish"
+  
+        },
+      "ro": {
+          "crypto": {
+              "state": true
+           },
+      "product": {
+          "first_api_level": 29
+             }
+        },
+       "packageManager": {
+            "feature_verified_boot": true,
+            "mainline_patch_level": "2023-08-01"
+        },
+      "keyguardManager": {
+          "isDeviceSecure": true
+      },
+      "biometricManager": {
+          "deviceCredential": true,
+          "biometricStrong": true
+      },
+      "devicePolicyManager": {
+          "passwordComplexity": 2
+      }
+    },
+    "attestation": {
+      "method": "android-key-id-attestation",
+      "timestamp": 1678886400
+    }
+  }

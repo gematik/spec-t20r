@@ -1,7 +1,7 @@
 # Schema for the user-session json object.
 # The PDP authorization server stores the state of the user-session for
 # authenticated user.
-UserSession:
+user_session:
   type: object
   properties:
     session_id:
