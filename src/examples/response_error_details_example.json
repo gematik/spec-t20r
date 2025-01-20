@@ -1,0 +1,14 @@
+{
+    "http_status_code": 400,
+    "error_type": "Validation Error",
+    "message": "Invalid request data",
+    "details": [
+      {
+        "field": "HEADER:PoPP",
+        "code": "MISSING_HEADER",
+        "reason": "The required 'PoPP' header is missing"
+      }
+    ],
+    "timestamp": "2023-10-27T10:30:45Z",
+    "trace_id": "abc-123-xyz"
+  }

@@ -8,33 +8,33 @@ skinparam lengthAdjust none
 !pragma teoz true
 
 box "LEI" #GhostWhite
-  participant Client
+  participant Client as "ZETA\nClient"
   participant Konnektor as "Konnektor or\nTI-Gateway"
   participant SMB as "SM-B"
 end box
 
-box "Betreiber" #TECHNOLOGY
-  box "ZT Cluster" #SandyBrown
+box "Anbieter" #TECHNOLOGY
+  box "ZETA Guard" #SandyBrown
     participant HP as "PEP\nhttp Proxy"
     participant AS as "PDP\nAuthorization Server" 
     participant PE as "PDP\nPolicy Engine"
-  endbox
-   box TI 2.0 Dienst #DarkSeaGreen
-    participant RS as "Resource Server"
-  endbox
+  end box
+    box TI 2.0 Dienst #DarkSeaGreen
+      participant RS as "Resource Server"
+    end box
 end box
 
 activate Client
-alt Client has no Authorization Server FQDN
-  Client -> HP: GET /resource
+alt Client has no Authorization Server FQDN (AS-FQDN) but Resource Server FQDN (RS-FQDN)
+  Client -> HP: GET /.well-known/oauth-protected-resource Host: RS-FQDN
   activate HP
-  HP --> Client: 401 Unauthorized; json body with Well-Known json Document (RFC8414)
+  HP --> Client: Client: 200 OK; json body with Well-Known json Document (RFC8414)
   deactivate HP
 else Client has Authorization Server FQDN
-  Client -> HP: GET /.well-known/oauth-authorization-server 
-  activate HP
-  HP --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
-  deactivate HP
+  Client -> AS: GET /.well-known/oauth-authorization-server Host: AS-FQDN
+  activate AS
+  AS --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
+  deactivate AS
 end
 
 Client -> Client: generate DPoP key pair
