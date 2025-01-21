@@ -21,9 +21,6 @@ properties:
     items:
       type: object
       properties:
-        field:
-          type: string
-          description: The specific field or parameter associated with the error (if applicable).
         code:
           type: string
           description: A unique error code for more precise error handling.
