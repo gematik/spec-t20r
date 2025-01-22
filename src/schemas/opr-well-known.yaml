@@ -65,7 +65,14 @@ properties:
     description: A boolean value specifying whether the protected resource always requires the use of DPoP-bound access tokens [RFC9449]. If omitted, the default value is false.
   signed_metadata:
     type: string
-    description: A JWT containing metadata parameters about the protected resource as claims. This is a string value consisting of the entire signed JWT. A signed_metadata parameter SHOULD NOT appear as a claim in the JWT; it is RECOMMENDED to reject any metadata in which this occurs. 
+    description: A JWT containing metadata parameters about the protected resource as claims. This is a string value consisting of the entire signed JWT. A signed_metadata parameter SHOULD NOT appear as a claim in the JWT; it is RECOMMENDED to reject any metadata in which this occurs.
+  zeta_asl_support:
+    type: string
+    description: Indicates the level of support for ZETA/ASL.
+    enum:
+    - not_supported
+    - required 
 required:
   - resource
   - authorization_servers
+  - zeta_asl_support
