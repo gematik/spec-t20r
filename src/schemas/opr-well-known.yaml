@@ -68,3 +68,4 @@ properties:
     description: A JWT containing metadata parameters about the protected resource as claims. This is a string value consisting of the entire signed JWT. A signed_metadata parameter SHOULD NOT appear as a claim in the JWT; it is RECOMMENDED to reject any metadata in which this occurs. 
 required:
   - resource
+  - authorization_servers

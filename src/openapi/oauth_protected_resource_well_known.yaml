@@ -1,27 +1,26 @@
 openapi: 3.0.0
 
 info:
-  title: OAuth 2.0 Protected Resource Metadata Endpunkt
-
+  title: OAuth 2.0 Protected Resource Metadata Endpoint
   version: 1.0.0
 
 paths:
   /.well-known/oauth-protected-resource:
     get:
-      summary: Abrufen der Metadaten der geschützten Ressource
-      description: Dieser Endpunkt gibt ein JSON-Dokument zurück, das Metadaten über die Konfiguration der geschützten Ressource enthält.
+      summary: Retrieve the metadata of the protected resource
+      description: This endpoint returns a JSON document containing metadata about the configuration of the protected resource.
 
       responses:
         "200":
-          description: Erfolgreiche Antwort mit den Metadaten der geschützten Ressource.
+          description: Successful response with the metadata of the protected resource.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProtectedResourceMetadata"
         "400":
-          description: Ungültige Anforderung.
+          description: Invalid request.
         "500":
-          description: Interner Serverfehler.
+          description: Internal server error.
 
 components:
   schemas:
