@@ -32,7 +32,7 @@ paths:
           type: string
       - name: label
         in: path
-        description: label of the policy and/or data bundle.tar.gz
+        description: Label of the policy and/or data bundle.tar.gz
         required: true
         example: latest
         schema:
@@ -60,8 +60,8 @@ paths:
                    given application and label.
                    The service compares the value of the If-None-Match header
                    with the current revision of the bundle.
-                   If the bundle has not changed since the last update
-                   the server replys with HTTP 304 Not Modified.
+                   If the bundle has not changed since the last update,
+                   the server replies with HTTP 304 Not Modified.
       responses:
         '200':
           description: OK
