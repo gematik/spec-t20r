@@ -29,7 +29,7 @@ paths:
                   description: OPTIONAL. The scope of the access request as described by Section 3.3 of RFC 6749.
                 state:
                   type: string
-                  description: RECOMMENDED. An opaque value used by the client to maintain state between the request and callback.
+                  description: RECOMMENDED. The client uses an opaque value to maintain state between the request and callback.
                 code_challenge:
                   type: string
                   description: OPTIONAL. PKCE code challenge as described in RFC 7636.

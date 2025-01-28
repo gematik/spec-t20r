@@ -19,7 +19,7 @@ paths:
             enum: [code, token]
         - name: client_id
           in: query
-          description: The client identifier issued to the client during the registration process described by Section 2.2.
+          description: The client identifier is issued to the client during the registration process described by Section 2.2.
           required: true
           schema:
             type: string
@@ -37,7 +37,7 @@ paths:
             type: string
         - name: state
           in: query
-          description: An opaque value used by the client to maintain state between the request and callback. The authorization server includes this value when redirecting the user-agent back to the client. The parameter SHOULD be used for preventing cross-site request forgery as described in Section 10.12
+          description: The client uses an opaque value to maintain state between the request and callback. The authorization server includes this value when redirecting the user-agent back to the client. The parameter SHOULD be used for preventing cross-site request forgery as described in Section 10.12
           schema:
             type: string
       responses:
