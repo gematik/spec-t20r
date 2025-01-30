@@ -245,86 +245,421 @@ Here's an example of how you might represent performance data for several HTTP r
 
 This comprehensive example helps you understand how you can represent OpenTelemetry performance data in JSON format, even though it's not the standard way OpenTelemetry transmits data. Remember to use OTLP if you can. Use this JSON representation for compatibility with systems that need it.
 
-# OpenTelemetry in Kubernetes
+## Dokumentation: OpenTelemetry Monitoring für Resource Server in Zero-Trust-Architektur
 
-Using OpenTelemetry in Kubernetes involves instrumenting your applications to generate telemetry data (traces, metrics, and logs), deploying the OpenTelemetry Collector to gather and process that data, and exporting it to backend systems for analysis. Here's a comprehensive guide on how to do this:
+### 1. Einführung
 
-**1. Instrumentation**
+Diese Dokumentation beschreibt, wie OpenTelemetry verwendet werden kann, um wichtige Betriebsdaten eines Resource Servers zu erfassen, der durch eine Zero-Trust-Architektur mit Policy Decision Point (PDP) und Policy Enforcement Point (PEP) geschützt ist.  Der Fokus liegt auf der Erfassung von Performance- und Lastmetriken sowie der Erkennung und Erfassung von Fehlermeldungen. Die Daten werden über OpenTelemetry erfasst, verarbeitet und an eine zentrale Stelle zur Analyse und Visualisierung weitergeleitet.
 
-*   **Choose Libraries:** Select the appropriate OpenTelemetry SDK for the programming language(s) used in your microservices (e.g., Java, Python, Go, Node.js, .NET).
-*   **Add Dependencies:** Include the necessary OpenTelemetry libraries in your application's dependencies (e.g., using Maven, Gradle, pip, npm).
-*   **Initialize the SDK:**
-    *   Set up a `TracerProvider` to create tracers.
-    *   Set up an `Exporter` to define where to send the telemetry data (e.g., to the OpenTelemetry Collector).
-    *   Set up a `BatchSpanProcessor` to batch spans before sending them. This is essential for performance.
-    *   Configure resource attributes to identify your service in the cluster (e.g., service name, namespace, pod name). You can often automatically get Kubernetes attributes using the `opentelemetry-resource-detector-kubernetes` library.
-*   **Instrument Code:**
-    *   Create spans to represent operations within your code. You'll want to create spans for incoming/outgoing requests, database calls, and other significant operations.
-    *   Use OpenTelemetry's automatic instrumentation libraries if available for your language and frameworks. These libraries automatically create spans for common operations (e.g., HTTP requests, database queries) without requiring manual instrumentation.
-    *   Add attributes to spans to provide more context (e.g., HTTP status code, error messages).
-    *   Create metrics (counters, gauges, histograms) to track quantitative data (e.g., request count, latency, error rate).
-    *   Propagate context (trace ID, span ID) across service boundaries by extracting context from incoming requests and injecting it into outgoing requests. This allows you to stitch together traces across multiple services.
+### 2. Architekturübersicht
 
-**Example (Python with Flask and OTLP exporter):**
-
-```python
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.flask import FlaskInstrumentor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.sdk.resources import Resource, get_aggregated_resources
-
-from opentelemetry_resourcedetector_kubernetes import KubernetesResourceDetector
-
-from flask import Flask, request
-
-# --- OpenTelemetry Configuration ---
-# Detect Kubernetes specific attributes (pod name, namespace etc.)
-resource = get_aggregated_resources([
-    KubernetesResourceDetector(),
-])
-
-# Or manually set resource attributes:
-# resource = Resource.create(attributes={
-#     "service.name": "my-flask-app",
-#     "service.namespace": "my-namespace",
-#     "k8s.pod.name": os.environ.get("HOSTNAME"),
-# })
-
-# Set up the tracer provider
-trace.set_tracer_provider(TracerProvider(resource=resource))
-
-# Configure the OTLP exporter to send data to the OpenTelemetry Collector
-otlp_exporter = OTLPSpanExporter(endpoint="opentelemetry-collector.monitoring.svc.cluster.local:4317", insecure=True) # Replace with your collector address
-
-# Use batch span processor to send spans in batches
-span_processor = BatchSpanProcessor(otlp_exporter)
-trace.get_tracer_provider().add_span_processor(span_processor)
-
-# --- Flask App ---
-app = Flask(__name__)
-
-# Automatically instrument Flask and Requests
-FlaskInstrumentor().instrument_app(app)
-RequestsInstrumentor().instrument()
-
-tracer = trace.get_tracer("my-flask-app-tracer")
-
-@app.route("/")
-def hello():
-    with tracer.start_as_current_span("handle-root-request") as span:
-        span.set_attribute("http.method", request.method)
-        span.set_attribute("http.url", request.url)
-        # ... your application logic ...
-        return "Hello from Flask!"
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0")
+```
+[Client] --> [PEP] --> [Resource Server]
+             ^
+             |
+             [OpenTelemetry Agent (PEP)] --> [ZETA Guard OpenTelemetry Collector]
+                                             |
+                                             v 
+                                             [BDE OpenTelemetry Collector]
+                                             |
+                                             v 
+                                             [Backend (z.B. DB, Prometheus, Jaeger)]
 ```
 
-**2. OpenTelemetry Collector Deployment**
+* **Client:**  Der Benutzer oder die Anwendung, die auf den Resource Server zugreifen möchte.
+* **PEP (Policy Enforcement Point):**  Der PEP ist der vorgeschaltete Gateway zum Resource Server. Er setzt die vom PDP definierten Zugriffsrichtlinien durch. In dieser Architektur ist der PEP der ideale Punkt, um OpenTelemetry zu integrieren, da er jeden Request und Response passieren sieht.
+* **Resource Server:** Der eigentliche Server, der die geschützten Ressourcen bereitstellt.
+* **OpenTelemetry Agent (PEP):**  Ein OpenTelemetry Agent wird am PEP installiert. Dieser Agent instrumentiert den PEP (z.B. durch Auto-Instrumentation für HTTP-Server-Bibliotheken) oder wird manuell instrumentiert, um Telemetriedaten zu erfassen.
+* **ZETA Guard OpenTelemetry Collector:**  Der Collector empfängt die von den Agents gesammelten Daten, verarbeitet sie (z.B. Batching, Sampling, Anreicherung) und exportiert sie an den BDE OpenTelemetry Collector.
+* **Backend (z.B. DB, Grafana, Prometheus):**  Ein Speichersystem und Visualisierungswerkzeug für die Telemetriedaten. Prometheus ist ideal für Metriken.
+
+### 3. Datenerfassung durch OpenTelemetry am PEP
+
+OpenTelemetry erfasst Rohdaten zu Requests und Responses auf folgende Weise:
+
+* **Auto-Instrumentation (Empfohlen):**  OpenTelemetry bietet Auto-Instrumentation-Bibliotheken für gängige Programmiersprachen und Frameworks (z.B. für Java, Python, Node.js, Go). Diese Bibliotheken instrumentieren automatisch HTTP-Server-Bibliotheken, die im PEP verwendet werden. Dadurch werden Spans für eingehende HTTP-Requests und ausgehende HTTP-Responses erzeugt, ohne Code-Änderungen im PEP selbst.
+* **Manuelle Instrumentation (Optional):**  Falls Auto-Instrumentation nicht ausreichend ist oder spezifische Anpassungen benötigt werden, kann der PEP-Code manuell mit OpenTelemetry SDKs instrumentiert werden. Dies erfordert Code-Änderungen, bietet aber maximale Flexibilität.
+
+**Erfasste Rohdaten (pro Request/Response Span):**
+
+* **Request:**
+    * **Startzeitpunkt:**  Zeitpunkt, zu dem der Request am PEP eintrifft.
+    * **HTTP-Methode:**  GET, POST, PUT, DELETE, etc.
+    * **Pfad (Path):**  Der angefragte Pfad des Resource Servers (z.B. `/api/produkte`).
+    * **Request-Header:**  Alle Request-Header, die der Client gesendet hat (werden für die Metrikberechnung **nicht direkt** verwendet, können aber für detailliertere Analysen erfasst werden).
+* **Response:**
+    * **Endzeitpunkt:**  Zeitpunkt, zu dem die Response vom Resource Server am PEP eintrifft (und an den Client zurückgesendet wird).
+    * **HTTP-Statuscode:**  200, 404, 500, etc.
+    * **Response-Header:**  Alle Response-Header, die der Resource Server gesendet hat, inklusive des **`ZETA-Cause`** Headers im Fehlerfall.
+
+### 4. Berechnung von Performance und Last Metriken
+
+OpenTelemetry nutzt die erfassten Rohdaten, um automatisch Metriken zu berechnen:
+
+* **Performance (Latenz pro Endpunkt):**
+    * **Berechnung:**  Die Latenz für einen Request wird als die Differenz zwischen dem `Endzeitpunkt` des Responses und dem `Startzeitpunkt` des Requests berechnet.  Dies repräsentiert die **End-to-End-Latenz** aus Sicht des PEP (und somit annähernd aus Client-Sicht).
+    * **Metrik-Typ:**  **Histogramm** oder **Summary**. Diese Metriktypen sind ideal, um die Verteilung der Latenzzeiten über verschiedene Requests hinweg darzustellen (z.B. Durchschnitt, Perzentile).
+    * **Attribute:**
+        * `http.method`: HTTP-Methode des Requests (z.B. `GET`, `POST`).
+        * `http.route`: Der **geroutete Pfad** des Endpunkts (wichtig, um ähnliche Pfade zu gruppieren, z.B. `/api/produkte/{produktId}` wird zu `/api/produkte/{produktId}`).  OpenTelemetry Instrumentierungen extrahieren oft automatisch die Route.
+        * `http.status_code`: HTTP-Statuscode des Responses.
+
+* **Last (Anzahl der Requests pro Zeiteinheit):**
+    * **Berechnung:**  Die Last wird als die **Anzahl der Requests** über einen bestimmten Zeitraum (z.B. pro Minute, pro 5 Minuten) gezählt.
+    * **Metrik-Typ:**  **Counter**. Ein Counter wird bei jedem eingehenden Request inkrementiert.
+    * **Attribute:**
+        * `http.method`: HTTP-Methode des Requests.
+        * `http.route`: Der geroutete Pfad des Endpunkts.
+        * `http.status_code`: HTTP-Statuscode des Responses (um z.B. erfolgreiche und fehlerhafte Requests separat zu zählen).
+
+### 5. Erfassung von Fehlermeldungen (ZETA-Cause Header)
+
+Der `ZETA-Cause` Header im Response enthält Fehlerinformationen. OpenTelemetry kann diese Informationen extrahieren und für Metriken und ggf. Logs nutzen:
+
+* **Extraktion des Headers:**  Über OpenTelemetry Processors (siehe Konfiguration) oder in manueller Instrumentation kann der `ZETA-Cause` Header aus dem Response extrahiert werden.
+* **Fehlerzählung:**
+    * **Metrik-Typ:**  **Counter**. Ein separater Counter für Fehlerfälle.
+    * **Bedingung:**  Inkrementiere den Counter, wenn der `ZETA-Cause` Header im Response vorhanden ist **oder** der HTTP-Statuscode im Fehlerbereich liegt (z.B. 4xx oder 5xx).
+    * **Attribute:**
+        * `zeta.cause.code`:  Fehlernummer aus dem `ZETA-Cause` Header.
+        * `zeta.cause.description`: Kurzbeschreibung aus dem `ZETA-Cause` Header.
+        * `http.status_code`:  HTTP-Statuscode des Responses.
+        * `http.route`: Der geroutete Pfad des Endpunkts.
+
+* **Logs (Optional):**  Für detailliertere Fehleranalyse können Fehlerereignisse auch als Logs erfasst werden, inklusive der extrahierten `ZETA-Cause` Informationen und des gesamten Response-Headers. Dies ist hilfreich für Debugging, sollte aber sparsam eingesetzt werden, um die Menge an Logdaten zu begrenzen.
+
+### 6. Zusätzliche Metriken
+
+Zusätzlich zu den Kernmetriken (Performance, Last, Fehler) könnten folgende Metriken nützlich sein:
+
+* **HTTP Status Code Verteilung:**
+    * **Metrik-Typ:**  Counter.  Separate Counter für jeden wichtigen HTTP Statuscode-Bereich (z.B. `http.status_code: 2xx`, `http.status_code: 4xx`, `http.status_code: 5xx`).
+    * **Zweck:**  Überblick über die Art der Responses (Erfolg, Client-Fehler, Server-Fehler).
+* **Request-Größe und Response-Größe:**
+    * **Metrik-Typ:** Histogramm oder Gauge.
+    * **Zweck:**  Analyse des Datenvolumens, Bandbreitenverbrauch, potentielle Engpässe.
+* **Anzahl abgelehnter Requests durch PDP/PEP:**
+    * **Metrik-Typ:** Counter.
+    * **Bedingung:**  Inkrementiere den Counter, wenn der PEP einen Request aufgrund einer Policy-Entscheidung des PDP ablehnt (z.B. HTTP Statuscode 403).
+    * **Zweck:**  Überwachung der Effektivität der Zero-Trust-Richtlinien und potenzieller Fehlkonfigurationen.
+* **PEP-Performance (optional):**
+    * **Metrik-Typ:** Histogramm.
+    * **Messung:**  Latenz der Policy-Entscheidung im PEP selbst (Zeit zwischen Request-Empfang und Weiterleitung an den Resource Server).
+    * **Zweck:**  Überwachung der Performance des PEP selbst und Identifizierung potenzieller Engpässe im PEP oder PDP.
+
+### 7. Beispiel-Daten und Konfiguration
+
+#### 7.1 Beispiel-Daten (Prometheus Exposition Format)
+
+```
+# HELP http_server_duration_seconds Histogram of HTTP server request durations.
+# TYPE http_server_duration_seconds histogram
+http_server_duration_seconds_bucket{http_method="GET",http_route="/api/produkte/{produktId}",http_status_code="200",le="0.005"} 10
+http_server_duration_seconds_bucket{http_method="GET",http_route="/api/produkte/{produktId}",http_status_code="200",le="0.01"} 50
+http_server_duration_seconds_bucket{http_method="GET",http_route="/api/produkte/{produktId}",http_status_code="200",le="0.025"} 120
+http_server_duration_seconds_bucket{http_method="GET",http_route="/api/produkte/{produktId}",http_status_code="200",le="0.05"} 250
+http_server_duration_seconds_bucket{http_method="GET",http_route="/api/produkte/{produktId}",http_status_code="200",le="0.1"} 400
+http_server_duration_seconds_bucket{http_method="GET",http_route="/api/produkte/{produktId}",http_status_code="200",le="0.25"} 480
+http_server_duration_seconds_bucket{http_method="GET",http_route="/api/produkte/{produktId}",http_status_code="200",le="0.5"} 495
+http_server_duration_seconds_bucket{http_method="GET",http_route="/api/produkte/{produktId}",http_status_code="200",le="1.0"} 500
+http_server_duration_seconds_bucket{http_method="GET",http_route="/api/produkte/{produktId}",http_status_code="200",le="+Inf"} 500
+http_server_duration_seconds_sum{http_method="GET",http_route="/api/produkte/{produktId}",http_status_code="200"} 12.5
+http_server_duration_seconds_count{http_method="GET",http_route="/api/produkte/{produktId}",http_status_code="200"} 500
+
+# HELP http_server_requests_total Total number of HTTP server requests.
+# TYPE http_server_requests_total counter
+http_server_requests_total{http_method="GET",http_route="/api/produkte/{produktId}",http_status_code="200"} 500
+http_server_requests_total{http_method="POST",http_route="/api/bestellungen",http_status_code="201"} 150
+http_server_requests_total{http_method="GET",http_route="/api/produkte",http_status_code="500"} 10
+http_server_requests_total{http_method="GET",http_route="/api/produkte",http_status_code="404"} 5
+
+# HELP zeta_cause_errors_total Total number of errors reported via ZETA-Cause header.
+# TYPE zeta_cause_errors_total counter
+zeta_cause_errors_total{zeta_cause_code="ERR-1001",zeta_cause_description="Datenbankfehler",http_status_code="500",http_route="/api/produkte"} 3
+zeta_cause_errors_total{zeta_cause_code="ERR-2005",zeta_cause_description="Ungültige Eingabe",http_status_code="400",http_route="/api/bestellungen"} 2
+
+# HELP http_server_status_codes_total Total count of HTTP status codes.
+# TYPE http_server_status_codes_total counter
+http_server_status_codes_total{http_status_code="2xx"} 650
+http_server_status_codes_total{http_status_code="4xx"} 7
+http_server_status_codes_total{http_status_code="5xx"} 10
+```
+
+#### 7.2 Beispiel-Daten im OTLP Format (Strukturierte Darstellung)
+
+**Wichtiger Hinweis:** OTLP ist ein binäres Protokoll (meist Protobuf oder gRPC).  Die hier gezeigten Beispiele sind **keine direkte binäre Repräsentation**. Stattdessen handelt es sich um eine **strukturierte, textuelle Darstellung**, die die logische Struktur von OTLP Datenpunkten und Metriken verdeutlicht.  In der Praxis würden OTLP Daten als binäre Protobuf-Nachrichten über das Netzwerk gesendet.
+
+Wir konzentrieren uns auf die gleichen Metrik-Beispiele wie im Prometheus Format (Performance, Last, ZETA-Cause Fehler).
+
+**1. HTTP Server Request Duration (Histogramm)**
+
+* **Metrik-Name:** `http.server.duration` (Konventionell in OTel für HTTP Server Duration)
+* **Daten-Typ:** Histogram
+* **Einheit:** Sekunden (`s`)
+
+```
+Metric:
+  name: "http.server.duration"
+  unit: "s"
+  data: Histogram
+    data_points:
+      - attributes:
+          - key: "http.method"
+            value: "GET"
+          - key: "http.route"
+            value: "/api/produkte/{produktId}"
+          - key: "http.status_code"
+            value: "200"
+        start_time_unix_nano: <Timestamp 1>  # Startzeit des Messintervalls
+        time_unix_nano: <Timestamp 2>     # Endzeit des Messintervalls
+        count: 500                        # Anzahl der Messungen im Intervall
+        sum: 12.5                         # Summe aller Messwerte
+        bucket_counts: [10, 40, 70, 130, 150, 80, 15, 5] # Anzahl in jedem Bucket (bis zum jeweiligen Upper Bound)
+        explicit_bounds: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0] # Bucket Grenzen (Upper Bounds)
+
+      # ... weitere Datenpunkte für andere Methoden, Routen, Statuscodes ...
+
+```
+
+**Erläuterung Histogramm:**
+
+* `name`: Der Name der Metrik.
+* `unit`: Die Einheit der Metrik (Sekunden).
+* `data: Histogram`:  Kennzeichnet den Metrik-Typ als Histogramm.
+* `data_points`: Eine Liste von einzelnen Datenpunkten.
+* `attributes`:  Die Dimensionen/Labels, die diesen Datenpunkt identifizieren (Methode, Route, Statuscode).
+* `start_time_unix_nano`, `time_unix_nano`:  Zeitintervalle für die Aggregation.
+* `count`, `sum`:  Zusammenfassende Werte für das Histogramm.
+* `bucket_counts`, `explicit_bounds`: Definiert die Histogramm-Buckets und deren Zählwerte.
+
+**2. HTTP Server Requests Total (Counter)**
+
+* **Metrik-Name:** `http.server.requests_count` (oder `http.server.request.count` - Konventionen können leicht variieren)
+* **Daten-Typ:** Summe (Counter ist ein Spezialfall einer Summe mit Monotonicity = INCREMENTING)
+* **Einheit:** `{requests}` (Anzahl Anfragen, dimensionslos)
+
+```
+Metric:
+  name: "http.server.requests_count"
+  unit: "{requests}"
+  data: Sum
+    aggregation_temporality: CUMULATIVE # Oder DELTA, je nach Konfiguration
+    is_monotonic: true # Counter sind immer monoton steigend
+    data_points:
+      - attributes:
+          - key: "http.method"
+            value: "GET"
+          - key: "http.route"
+            value: "/api/produkte/{produktId}"
+          - key: "http.status_code"
+            value: "200"
+        start_time_unix_nano: <Timestamp 3>
+        time_unix_nano: <Timestamp 4>
+        value: 500 # Aktueller Zählerstand
+
+      - attributes:
+          - key: "http.method"
+            value: "POST"
+          - key: "http.route"
+            value: "/api/bestellungen"
+          - key: "http.status_code"
+            value: "201"
+        start_time_unix_nano: <Timestamp 5>
+        time_unix_nano: <Timestamp 6>
+        value: 150
+
+      # ... weitere Datenpunkte ...
+```
+
+**Erläuterung Counter:**
+
+* `name`: Metrik-Name.
+* `unit`: Einheit (Anzahl Requests).
+* `data: Sum`: Kennzeichnet Summen-Metrik (Counter).
+* `aggregation_temporality`:  `CUMULATIVE` (Zählerstand seit Start) oder `DELTA` (Änderung im letzten Intervall).  `CUMULATIVE` ist typischer für Counter.
+* `is_monotonic: true`:  Bestätigt, dass es sich um einen monoton steigenden Zähler handelt.
+* `data_points`: Datenpunkte.
+* `attributes`: Dimensionen.
+* `value`: Der aktuelle Zählerwert.
+
+**3. ZETA-Cause Fehler Counter**
+
+* **Metrik-Name:** `zeta.cause.errors_total` (oder prägnanter z.B. `zeta.errors.count`)
+* **Daten-Typ:** Summe (Counter)
+* **Einheit:** `{errors}`
+
+```
+Metric:
+  name: "zeta.cause.errors_total"
+  unit: "{errors}"
+  data: Sum
+    aggregation_temporality: CUMULATIVE
+    is_monotonic: true
+    data_points:
+      - attributes:
+          - key: "zeta.cause.code"
+            value: "ERR-1001"
+          - key: "zeta.cause.description"
+            value: "Datenbankfehler"
+          - key: "http.status_code"
+            value: "500"
+          - key: "http.route"
+            value: "/api/produkte"
+        start_time_unix_nano: <Timestamp 7>
+        time_unix_nano: <Timestamp 8>
+        value: 3
+
+      - attributes:
+          - key: "zeta.cause.code"
+            value: "ERR-2005"
+          - key: "zeta.cause.description"
+            value: "Ungültige Eingabe"
+          - key: "http.status_code"
+            value: "400"
+          - key: "http.route"
+            value: "/api/bestellungen"
+        start_time_unix_nano: <Timestamp 9>
+        time_unix_nano: <Timestamp 10>
+        value: 2
+
+      # ... weitere Fehler ...
+```
+
+**Erläuterung ZETA-Cause Counter:**
+
+* Analog zum Request Counter, aber mit zusätzlichen Attributen für `zeta.cause.code` und `zeta.cause.description`, um die Fehlerursachen zu differenzieren.
+
+**Wichtige Punkte zu OTLP:**
+
+* **Binär:**  Wie bereits betont, ist OTLP binär. Diese strukturierte Textform dient nur zur Veranschaulichung.
+* **Protokoll-Flexibilität:** OTLP kann über gRPC oder HTTP/Protobuf übertragen werden.
+* **Erweiterbarkeit:** OTLP ist darauf ausgelegt, erweiterbar zu sein. Sie können eigene Attribute und Metriken hinzufügen.
+* **Standardisierung:** OTLP ist der empfohlene Standard für Telemetriedaten in OpenTelemetry und wird von vielen Backend-Systemen unterstützt.
+
+**Verwendung mit Collector und Backend:**
+
+Der OpenTelemetry Collector würde diese OTLP Daten von den Agenten empfangen, verarbeiten und dann in das gewünschte Backend-Format (z.B. Prometheus, Jaeger, Zipkin, Datenbanken) exportieren.  Wenn Sie Prometheus als Backend verwenden, würde der Collector die OTLP Metriken in das Prometheus Exposition Format umwandeln, bevor er sie für Prometheus zum Scrapen bereitstellt (oder per Push, je nach Konfiguration).
+
+Diese Beispiele sollten Ihnen ein besseres Verständnis dafür geben, wie Metriken in OTLP strukturiert sind und wie sie Ihre Performance-, Last- und Fehlerdaten repräsentieren könnten.
+
+#### 7.3 Beispiel-Konfiguration (OpenTelemetry Collector - YAML)
+
+Dieses Beispiel zeigt eine Collector-Konfiguration, die:
+
+1. **OTLP-Protokoll** als Eingang für Daten vom Agenten verwendet.
+2. Einen **Batch-Prozessor** verwendet, um Daten effizient zu bündeln.
+3. Einen **Attribute-Prozessor** verwendet, um den `ZETA-Cause` Header zu extrahieren und als Attribute hinzuzufügen.
+4. Daten an einen **Prometheus Exporter** und optional an einen **Logging Exporter** weiterleitet.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch:
+  attributes/extract_zeta_cause:
+    actions:
+      - action: insert
+        key: zeta.cause.code
+        from_attribute: http.response.header.zeta-cause
+        pattern: '^(.*?):'  # Regex to extract code before colon
+      - action: insert
+        key: zeta.cause.description
+        from_attribute: http.response.header.zeta-cause
+        pattern: '^.*?:(.*)$' # Regex to extract description after colon
+
+exporters:
+  prometheus:
+    endpoint: ":8889" # Prometheus Endpoint für Scrapping
+  logging: # Optional für Debugging
+    loglevel: debug
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch, attributes/extract_zeta_cause] # Wichtig: Attribute-Prozessor vor dem Export!
+      exporters: [prometheus, logging]
+```
+
+#### 7.4 Beispiel-Konfiguration (OpenTelemetry Agent - Code, Python mit Flask)
+
+Dieses Beispiel zeigt, wie Auto-Instrumentation in Python mit Flask verwendet werden kann und ein OTLP Exporter konfiguriert wird.  **Hinweis:** Der PEP müsste in Python und Flask implementiert sein, um dieses Beispiel direkt zu verwenden. Das Prinzip ist aber in anderen Sprachen und Frameworks ähnlich.
+
+```python
+from flask import Flask
+import requests
+import os
+from opentelemetry import trace, metrics
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.grpc.metrics_exporter import OTLPMetricExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.sdk.resources import Resource
+
+app = Flask(__name__)
+
+# OpenTelemetry Resource (optional, aber empfolen)
+resource = Resource.create({
+    "service.name": "pep-service",
+    "service.version": "1.0.0",
+    "environment": "production" # oder development, staging, etc.
+})
+
+# Tracer Provider
+tracer_provider = TracerProvider(resource=resource)
+span_exporter = OTLPSpanExporter(endpoint="otel-collector:4317", insecure=True) # Collector Adresse
+tracer_provider.add_span_processor(BatchSpanProcessor(span_exporter))
+trace.set_tracer_provider(tracer_provider)
+
+# Meter Provider
+metric_reader = PeriodicExportingMetricReader(OTLPMetricExporter(endpoint="otel-collector:4317", insecure=True)) # Collector Adresse
+meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
+metrics.set_meter_provider(meter_provider)
+
+# Instrumentation
+FlaskInstrumentor().instrument_app(app)
+RequestsInstrumentor().instrument() # Instrumentiert outgoing Requests, falls der PEP selbst Requests macht
+
+@app.route("/protected-resource")
+def protected_resource():
+    # ... PEP Logik (Policy Enforcement, PDP Anfrage etc.) ...
+
+    # Beispiel: Weiterleitung zum Resource Server
+    resource_server_url = "http://resource-server:8080/api/daten"
+    response = requests.get(resource_server_url)
+
+    # ... Response Verarbeitung ...
+
+    return response.text, response.status_code, response.headers.items()
+
+if __name__ == "__main__":
+    app.run(debug=False, host="0.0.0.0", port=8080)
+```
+
+### 8. Zusammenfassung und Empfehlungen
+
+OpenTelemetry bietet eine leistungsstarke und flexible Lösung, um Performance, Last und Fehler Ihres Resource Servers in einer Zero-Trust-Architektur zu überwachen.
+
+**Wichtige Empfehlungen:**
+
+* **Auto-Instrumentation nutzen:** Wo immer möglich, nutzen Sie Auto-Instrumentation, um den Aufwand zu minimieren und konsistente Daten zu erhalten.
+* **Attribute nutzen:** Verwenden Sie Attribute, um Metriken mit Kontextinformationen anzureichern (HTTP-Methode, Route, Statuscode, Fehlercodes).
+* **Collector konfigurieren:**  Nutzen Sie den OpenTelemetry Collector, um Daten zu verarbeiten, anzureichern und an verschiedene Backends zu exportieren.
+* **Backend wählen:** Wählen Sie ein geeignetes Backend für Ihre Anforderungen (Prometheus für Metriken, Jaeger/Tempo für Traces, etc.).
+* **Dashboards erstellen:**  Visualisieren Sie die erfassten Metriken in Dashboards (z.B. mit Grafana), um einen Echtzeit-Überblick über den Zustand und die Performance des Resource Servers zu erhalten.
+* **Alerting einrichten:**  Konfigurieren Sie Alerting-Regeln basierend auf den Metriken, um bei Problemen (z.B. hohe Latenz, hohe Fehlerrate) frühzeitig benachrichtigt zu werden.
+
+Diese Dokumentation bietet Ihnen einen umfassenden Leitfaden zur Implementierung von OpenTelemetry Monitoring in Ihrer Zero-Trust-Umgebung. Passen Sie die Konfiguration und die Metriken an Ihre spezifischen Anforderungen an, um das bestmögliche Monitoring zu erreichen.
+
+## OpenTelemetry Collector Deployment
 
 The OpenTelemetry Collector is a crucial component that acts as a vendor-agnostic intermediary for receiving, processing, and exporting telemetry data. You'll deploy it within your Kubernetes cluster.
 
@@ -464,7 +799,7 @@ spec:
       targetPort: 8888
 ```
 
-**3. Backend Systems**
+## Backend Systems
 
 *   **Choose Backends:** Select the observability backend(s) where you want to store and analyze your telemetry data. Popular options include:
     *   **Open Source:** Jaeger, Zipkin (for traces), Prometheus, Grafana (for metrics and visualizations), Elasticsearch, Fluentd, Kibana (for logs).
