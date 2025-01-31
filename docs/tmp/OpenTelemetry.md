@@ -257,13 +257,13 @@ Diese Dokumentation beschreibt, wie OpenTelemetry verwendet werden kann, um wich
 [Client] --> [PEP] --> [Resource Server]
              ^
              |
-             [OpenTelemetry Agent (PEP)] --> [ZETA Guard OpenTelemetry Collector]
+             [OpenTelemetry Agent (PEP)] --> [ZETA Guard OpenTelemetry Collector] <--> [Monitoring des Anbieters]
                                              |
                                              v 
                                              [BDE OpenTelemetry Collector]
                                              |
                                              v 
-                                             [Backend (z.B. DB, Prometheus, Jaeger)]
+                                             [Backend (z.B. DB, Grafana, Prometheus, Jaeger)]
 ```
 
 * **Client:**  Der Benutzer oder die Anwendung, die auf den Resource Server zugreifen möchte.
