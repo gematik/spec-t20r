@@ -827,3 +827,112 @@ spec:
 *   **Custom Processors:** For more advanced use cases, write custom processors for the Collector to implement specific filtering, transformation, or enrichment logic.
 
 By following these steps, you can successfully deploy and use OpenTelemetry in your Kubernetes environment to gain deep insights into the performance and behavior of your microservices. Remember to tailor the configuration to your specific needs and choose the right backends for your analysis requirements. Using OpenTelemetry will significantly improve the observability of your applications and help you troubleshoot issues more effectively.
+
+## 5. Aggregation von Metriken
+
+Hier sind Beispiel-OpenTelemetry-Daten, die der OpenTelemetry Agent des HTTP-Proxies an den OpenTelemetry Collector sendet:
+
+### Beispiel eines HTTP-Requests:
+```json
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {"key": "service.name", "value": {"stringValue": "zero-trust-pep"}},
+          {"key": "host.name", "value": {"stringValue": "pep.example.com"}}
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "auto-instrumentation"
+          },
+          "spans": [
+            {
+              "traceId": "abc1234567890def",
+              "spanId": "1234567890abcd",
+              "parentSpanId": null,
+              "name": "HTTP GET /protected-resource",
+              "kind": 2, 
+              "startTimeUnixNano": "1707575200000000000",
+              "endTimeUnixNano": "1707575201000000000",
+              "attributes": [
+                {"key": "http.method", "value": {"stringValue": "GET"}},
+                {"key": "http.url", "value": {"stringValue": "https://resource-server.example.com/protected-resource"}},
+                {"key": "http.status_code", "value": {"intValue": 200}},
+                {"key": "http.user_agent", "value": {"stringValue": "Mozilla/5.0"}},
+                {"key": "zero_trust.authenticated", "value": {"boolValue": true}},
+                {"key": "zero_trust.token_jti", "value": {"stringValue": "token-xyz-123"}},
+                {"key": "zero_trust.client_id", "value": {"stringValue": "client-abc"}}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### OpenTelemetry Header im weitergeleiteten Request
+Ja, der HTTP Proxy kann OpenTelemetry Header im Request an den Resource Server weiterleiten, insbesondere den `traceparent`-Header, der eine bestehende Trace-ID weitergibt. Beispiel für HTTP-Header des weitergeleiteten Requests:
+
+```
+GET /protected-resource HTTP/1.1
+Host: resource-server.example.com
+Authorization: Bearer eyJhbGciOiJI...
+traceparent: 00-abc1234567890def-1234567890abcd-01
+```
+
+### Kann der Resource Server eigene Daten an den OpenTelemetry Collector senden?
+Der Resource Server kann ebenfalls OpenTelemetry-Daten an den OpenTelemetry Collector senden und diese mit den Daten des HTTP-Proxies verknüpfen, indem er die `traceId` aus dem `traceparent`-Header übernimmt.
+
+**Beispiel für die Daten des Resource Servers:**
+```json
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {"key": "service.name", "value": {"stringValue": "resource-server"}},
+          {"key": "host.name", "value": {"stringValue": "resource-server.example.com"}}
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "auto-instrumentation"
+          },
+          "spans": [
+            {
+              "traceId": "abc1234567890def",
+              "spanId": "56789abcd12345",
+              "parentSpanId": "1234567890abcd",
+              "name": "Process HTTP GET /protected-resource",
+              "kind": 3, 
+              "startTimeUnixNano": "1707575201000000000",
+              "endTimeUnixNano": "1707575201500000000",
+              "attributes": [
+                {"key": "http.method", "value": {"stringValue": "GET"}},
+                {"key": "http.url", "value": {"stringValue": "/protected-resource"}},
+                {"key": "http.status_code", "value": {"intValue": 200}},
+                {"key": "zero_trust.token_jti", "value": {"stringValue": "token-xyz-123"}},
+                {"key": "zero_trust.client_id", "value": {"stringValue": "client-abc"}},
+                {"key": "processing_time_ms", "value": {"intValue": 50}}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Wie erfolgt die Verknüpfung?
+- Beide Komponenten (PEP und Resource Server) verwenden dieselbe `traceId`, die aus dem `traceparent`-Header kommt.
+- Der `spanId` des HTTP-Proxies wird als `parentSpanId` im Resource Server gesetzt.
+- Damit können die Traces später in OpenTelemetry-Backends wie Jaeger oder Grafana Tempo visuell zusammengeführt werden.
+
+Damit lässt sich eine vollständige End-to-End-Tracing-Kette vom Zero Trust PEP bis zum Resource Server erstellen.
