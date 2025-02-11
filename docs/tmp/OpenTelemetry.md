@@ -1,5 +1,32 @@
 # Open Telemetry
 
+## Inhaltsverzeichnis
+
+- [Open Telemetry](#open-telemetry)
+  - [Inhaltsverzeichnis](#inhaltsverzeichnis)
+  - [1. Einführung](#1-einführung)
+  - [2. OpenTelemetry Monitoring für Resource Server in Zero-Trust-Architektur](#2-opentelemetry-monitoring-für-resource-server-in-zero-trust-architektur)
+    - [2.1 Architekturübersicht](#21-architekturübersicht)
+    - [2.2 Datenerfassung durch OpenTelemetry am PEP](#22-datenerfassung-durch-opentelemetry-am-pep)
+    - [2.3 Berechnung von Performance und Last Metriken](#23-berechnung-von-performance-und-last-metriken)
+    - [2.4 Erfassung von Fehlermeldungen (ZETA-Cause Header)](#24-erfassung-von-fehlermeldungen-zeta-cause-header)
+    - [2.5 Zusätzliche Metriken](#25-zusätzliche-metriken)
+    - [2.6 Beispiel-Daten und Konfiguration](#26-beispiel-daten-und-konfiguration)
+      - [2.6.1 Beispiel-Daten (Prometheus Exposition Format)](#261-beispiel-daten-prometheus-exposition-format)
+      - [2.6.2 Beispiel-Daten im OTLP Format (Strukturierte Darstellung)](#262-beispiel-daten-im-otlp-format-strukturierte-darstellung)
+      - [2.6.3 Beispiel-Konfiguration (OpenTelemetry Collector - YAML)](#263-beispiel-konfiguration-opentelemetry-collector---yaml)
+      - [2.6.4 Beispiel-Konfiguration (OpenTelemetry Agent - Code, Python mit Flask)](#264-beispiel-konfiguration-opentelemetry-agent---code-python-mit-flask)
+  - [3. Aggregation von Metriken](#3-aggregation-von-metriken)
+    - [3.1 Beispiel eines HTTP-Requests:](#31-beispiel-eines-http-requests)
+    - [3.2 OpenTelemetry Header im weitergeleiteten Request](#32-opentelemetry-header-im-weitergeleiteten-request)
+    - [3.3 Kann der Resource Server eigene Daten an den OpenTelemetry Collector senden?](#33-kann-der-resource-server-eigene-daten-an-den-opentelemetry-collector-senden)
+    - [3.4 Wie erfolgt die Verknüpfung?](#34-wie-erfolgt-die-verknüpfung)
+  - [4. Empfehlungen](#4-empfehlungen)
+  - [5. Anhang, OpenTelemetry Collector Deployment](#5-anhang-opentelemetry-collector-deployment)
+
+
+## 1. Einführung
+
 Siehe https://opentelemetry.io/
 
 Das OpenTelemetry Protocol (OTLP) ist ein **allgemeines, herstellerunabhängiges Telemetrie-Datenübertragungsprotokoll**. Es wurde entwickelt, um die Art und Weise zu standardisieren, wie Telemetriedaten (wie Traces, Metriken und Logs) von Anwendungen und Infrastrukturkomponenten zu Backend-Systemen für Analyse und Beobachtung gesendet werden.
@@ -32,7 +59,7 @@ OpenTelemetry kann den Versand von mehreren JSON-Objekten zusammenfassen und in 
 
 Hier ist, wie es funktioniert:
 
-**1. Batching (Zusammenfassung):**
+**Batching (Zusammenfassung):**
 
 * OpenTelemetry SDKs bieten in der Regel **Batch Processors** (z.B. `BatchSpanProcessor` für Traces, `BatchLogRecordProcessor` für Logs).
 * Diese Processors sammeln Telemetriedaten (Spans, Log Records, etc.) im Speicher, anstatt sie sofort zu versenden.
@@ -42,12 +69,12 @@ Hier ist, wie es funktioniert:
     * **`export_timeout_millis`:** Die maximale Zeit, die für den Export eines Batches gewartet wird.
     * **`max_export_batch_size`:** Die maximale Anzahl von Telemetriedaten, die in einem einzelnen Exportvorgang gesendet werden. Wenn der Batch größer ist, wird er in mehrere Exporte aufgeteilt.
 
-**2. Scheduling (Zeitgesteuerter Versand):**
+**Scheduling (Zeitgesteuerter Versand):**
 
 * Der Batch Processor verwendet einen internen Timer, um den Versand der gesammelten Daten in regelmäßigen Abständen auszulösen.
 * Basierend auf dem konfigurierten `scheduled_delay_millis` (z.B. 5 Minuten) wird der Batch Processor die Daten an den Exporter weiterleiten.
 
-**3. Exporter (Versand):**
+**Exporter (Versand):**
 
 * Der Exporter ist verantwortlich für die eigentliche Übertragung der Daten an das Backend.
 * OpenTelemetry bietet verschiedene Exporter, einschließlich eines OTLP Exporters, der die Daten im OTLP-Format (über gRPC oder HTTP) versenden kann.
@@ -85,173 +112,11 @@ OpenTelemetry bietet durch die Kombination von Batch Processors und Exportern di
 * Die genaue Implementierung und die verfügbaren Konfigurationsoptionen können je nach verwendeter OpenTelemetry-Sprach-SDK variieren.
 * Die Wahl des richtigen Batching-Intervalls und der Batch-Größe hängt von verschiedenen Faktoren ab, wie z.B. dem Volumen der Telemetriedaten, der Netzwerklatenz und der Kapazität des Backends. Es ist wichtig, diese Parameter sorgfältig zu testen und zu optimieren, um eine optimale Leistung zu gewährleisten.
 
-Here's an example of how you might represent performance data for several HTTP requests and responses using JSON, keeping in mind that OpenTelemetry primarily uses OTLP and not JSON for transmission. This example shows how span data from HTTP requests could be *represented* in JSON after being exported and transformed, perhaps for a system that doesn't support OTLP directly.
-
-**Example JSON Structure for Multiple HTTP Requests (Inspired by OpenTelemetry Spans):**
-
-```json
-[
-  {
-    "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-    "spanId": "00f067aa0ba902b7",
-    "parentSpanId": null,
-    "name": "HTTP GET /api/users",
-    "kind": "SERVER",
-    "startTimeUnixNano": "1678886400000000000",
-    "endTimeUnixNano": "1678886400150000000",
-    "attributes": {
-      "http.method": "GET",
-      "http.url": "https://api.example.com/api/users",
-      "http.target": "/api/users",
-      "http.host": "api.example.com",
-      "http.scheme": "https",
-      "http.status_code": 200,
-      "http.response_content_length": "1234",
-      "net.peer.ip": "192.168.1.10",
-      "net.peer.port": "443"
-    },
-    "status": {
-      "code": "OK"
-    }
-  },
-  {
-    "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-    "spanId": "74755584d576b4d9",
-    "parentSpanId": "00f067aa0ba902b7",
-    "name": "HTTP GET /api/users/123",
-    "kind": "CLIENT",
-    "startTimeUnixNano": "1678886400050000000",
-    "endTimeUnixNano": "1678886400100000000",
-    "attributes": {
-      "http.method": "GET",
-      "http.url": "https://internal-api/api/users/123",
-      "http.target": "/api/users/123",
-      "http.host": "internal-api",
-      "http.scheme": "https",
-      "http.status_code": 200,
-      "http.response_content_length": "256",
-      "net.peer.ip": "10.0.0.5",
-      "net.peer.port": "8080"
-    },
-    "status": {
-      "code": "OK"
-    }
-  },
-  {
-    "traceId": "8a3c60f7d4dff4d6b2f9f8e7d8d7c8f7",
-    "spanId": "245fa4b9655567cd",
-    "parentSpanId": null,
-    "name": "HTTP POST /api/orders",
-    "kind": "SERVER",
-    "startTimeUnixNano": "1678886401000000000",
-    "endTimeUnixNano": "1678886401500000000",
-    "attributes": {
-      "http.method": "POST",
-      "http.url": "https://api.example.com/api/orders",
-      "http.target": "/api/orders",
-      "http.host": "api.example.com",
-      "http.scheme": "https",
-      "http.status_code": 201,
-      "http.request_content_length": "567",
-      "net.peer.ip": "192.168.1.20",
-      "net.peer.port": "443"
-    },
-    "status": {
-      "code": "OK"
-    }
-  },
-  {
-    "traceId": "8a3c60f7d4dff4d6b2f9f8e7d8d7c8f7",
-    "spanId": "195ee4b965556711",
-    "parentSpanId": "245fa4b9655567cd",
-    "name": "database.query",
-    "kind": "CLIENT",
-    "startTimeUnixNano": "1678886401100000000",
-    "endTimeUnixNano": "1678886401400000000",
-    "attributes": {
-      "db.system": "postgresql",
-      "db.statement": "INSERT INTO orders (user_id, product_id) VALUES ($1, $2)",
-      "net.peer.ip": "10.0.0.10",
-      "net.peer.port": "5432"
-    },
-    "status": {
-      "code": "OK"
-    }
-  },
-  {
-    "traceId": "f4a7b8c9d0e1f23456789abcdef01234",
-    "spanId": "c3d4e5f6a7b89012",
-    "parentSpanId": null,
-    "name": "HTTP GET /api/products/99",
-    "kind": "SERVER",
-    "startTimeUnixNano": "1678886402000000000",
-    "endTimeUnixNano": "1678886402200000000",
-    "attributes": {
-      "http.method": "GET",
-      "http.url": "https://api.example.com/api/products/99",
-      "http.target": "/api/products/99",
-      "http.host": "api.example.com",
-      "http.scheme": "https",
-      "http.status_code": 404,
-      "http.response_content_length": "42",
-      "net.peer.ip": "192.168.1.30",
-      "net.peer.port": "443"
-    },
-    "status": {
-      "code": "ERROR",
-      "message": "Not Found"
-    }
-  }
-]
-```
-
-**Explanation of the Fields:**
-
-*   **`traceId`:** A unique identifier for the entire request trace (all related spans).
-*   **`spanId`:** A unique identifier for a specific operation within the trace (a single span).
-*   **`parentSpanId`:** The `spanId` of the span that caused this span to be created. `null` indicates a root span.
-*   **`name`:** A human-readable name for the operation (e.g., "HTTP GET /api/users").
-*   **`kind`:**  Indicates the type of span:
-    *   `SERVER`: Represents the server side of an RPC or a process starting a trace.
-    *   `CLIENT`: Represents the client side of an RPC.
-    *   `INTERNAL`: Indicates an internal operation within an application.
-    *   `PRODUCER`: Represents a producer in an asynchronous messaging scenario.
-    *   `CONSUMER`: Represents a consumer in an asynchronous messaging scenario.
-*   **`startTimeUnixNano`:** The start time of the span in nanoseconds since the Unix epoch (UTC).
-*   **`endTimeUnixNano`:** The end time of the span in nanoseconds since the Unix epoch (UTC).
-*   **`attributes`:** Key-value pairs providing more context about the operation. These follow OpenTelemetry's semantic conventions (e.g., `http.method`, `http.status_code`, `net.peer.ip`).
-    *   **`http.method`:** The HTTP method (GET, POST, etc.).
-    *   **`http.url`:** The full URL of the request.
-    *   **`http.target`:** The path and query string of the request.
-    *   **`http.host`:** The hostname from the URL.
-    *   **`http.scheme`:** The URL scheme (http or https).
-    *   **`http.status_code`:** The HTTP status code of the response.
-    *   **`http.response_content_length`:** The size of the response body in bytes.
-    *   **`http.request_content_length`:** The size of the request body in bytes.
-    *   **`net.peer.ip`:** The IP address of the client or server.
-    *   **`net.peer.port`:** The port number of the client or server.
-    *   **`db.system`:** Type of the database system (e.g. postgresql, mysql)
-    *   **`db.statement`:** SQL query for database operations.
-*   **`status`:** Information about the outcome of the operation.
-    *   **`code`:**  `OK`, `ERROR`, or `UNSET`.
-    *   **`message`:** An error message (if applicable).
-
-**Important Considerations:**
-
-*   **OTLP is Preferred:** This is a JSON representation *for illustrative purposes*. OpenTelemetry uses OTLP, which is more efficient.
-*   **Semantic Conventions:**  The `attributes` use OpenTelemetry's semantic conventions. You can find a comprehensive list of these conventions in the OpenTelemetry specification. These conventions provide a common vocabulary for describing various types of operations.
-*   **Custom Attributes:** You can add your own custom attributes to spans to capture application-specific data.
-*   **Tools for Transformation:** If you need to transform OTLP data to JSON, you can use tools like the OpenTelemetry Collector, which can export data in various formats, or you can write custom code to perform the transformation after receiving the data from an OTLP exporter.
-
-This comprehensive example helps you understand how you can represent OpenTelemetry performance data in JSON format, even though it's not the standard way OpenTelemetry transmits data. Remember to use OTLP if you can. Use this JSON representation for compatibility with systems that need it.
-
-## Dokumentation: OpenTelemetry Monitoring für Resource Server in Zero-Trust-Architektur
-
-### 1. Einführung
+## 2. OpenTelemetry Monitoring für Resource Server in Zero-Trust-Architektur
 
 Diese Dokumentation beschreibt, wie OpenTelemetry verwendet werden kann, um wichtige Betriebsdaten eines Resource Servers zu erfassen, der durch eine Zero-Trust-Architektur mit Policy Decision Point (PDP) und Policy Enforcement Point (PEP) geschützt ist.  Der Fokus liegt auf der Erfassung von Performance- und Lastmetriken sowie der Erkennung und Erfassung von Fehlermeldungen. Die Daten werden über OpenTelemetry erfasst, verarbeitet und an eine zentrale Stelle zur Analyse und Visualisierung weitergeleitet.
 
-### 2. Architekturübersicht
+### 2.1 Architekturübersicht
 
 ```
 [Client] --> [PEP] --> [Resource Server]
@@ -273,7 +138,7 @@ Diese Dokumentation beschreibt, wie OpenTelemetry verwendet werden kann, um wich
 * **ZETA Guard OpenTelemetry Collector:**  Der Collector empfängt die von den Agents gesammelten Daten, verarbeitet sie (z.B. Batching, Sampling, Anreicherung) und exportiert sie an den BDE OpenTelemetry Collector.
 * **Backend (z.B. DB, Grafana, Prometheus):**  Ein Speichersystem und Visualisierungswerkzeug für die Telemetriedaten. Prometheus ist ideal für Metriken.
 
-### 3. Datenerfassung durch OpenTelemetry am PEP
+### 2.2 Datenerfassung durch OpenTelemetry am PEP
 
 OpenTelemetry erfasst Rohdaten zu Requests und Responses auf folgende Weise:
 
@@ -292,7 +157,7 @@ OpenTelemetry erfasst Rohdaten zu Requests und Responses auf folgende Weise:
     * **HTTP-Statuscode:**  200, 404, 500, etc.
     * **Response-Header:**  Alle Response-Header, die der Resource Server gesendet hat, inklusive des **`ZETA-Cause`** Headers im Fehlerfall.
 
-### 4. Berechnung von Performance und Last Metriken
+### 2.3 Berechnung von Performance und Last Metriken
 
 OpenTelemetry nutzt die erfassten Rohdaten, um automatisch Metriken zu berechnen:
 
@@ -312,7 +177,7 @@ OpenTelemetry nutzt die erfassten Rohdaten, um automatisch Metriken zu berechnen
         * `http.route`: Der geroutete Pfad des Endpunkts.
         * `http.status_code`: HTTP-Statuscode des Responses (um z.B. erfolgreiche und fehlerhafte Requests separat zu zählen).
 
-### 5. Erfassung von Fehlermeldungen (ZETA-Cause Header)
+### 2.4 Erfassung von Fehlermeldungen (ZETA-Cause Header)
 
 Der `ZETA-Cause` Header im Response enthält Fehlerinformationen. OpenTelemetry kann diese Informationen extrahieren und für Metriken und ggf. Logs nutzen:
 
@@ -328,7 +193,7 @@ Der `ZETA-Cause` Header im Response enthält Fehlerinformationen. OpenTelemetry 
 
 * **Logs (Optional):**  Für detailliertere Fehleranalyse können Fehlerereignisse auch als Logs erfasst werden, inklusive der extrahierten `ZETA-Cause` Informationen und des gesamten Response-Headers. Dies ist hilfreich für Debugging, sollte aber sparsam eingesetzt werden, um die Menge an Logdaten zu begrenzen.
 
-### 6. Zusätzliche Metriken
+### 2.5 Zusätzliche Metriken
 
 Zusätzlich zu den Kernmetriken (Performance, Last, Fehler) könnten folgende Metriken nützlich sein:
 
@@ -347,9 +212,9 @@ Zusätzlich zu den Kernmetriken (Performance, Last, Fehler) könnten folgende Me
     * **Messung:**  Latenz der Policy-Entscheidung im PEP selbst (Zeit zwischen Request-Empfang und Weiterleitung an den Resource Server).
     * **Zweck:**  Überwachung der Performance des PEP selbst und Identifizierung potenzieller Engpässe im PEP oder PDP.
 
-### 7. Beispiel-Daten und Konfiguration
+### 2.6 Beispiel-Daten und Konfiguration
 
-#### 7.1 Beispiel-Daten (Prometheus Exposition Format)
+#### 2.6.1 Beispiel-Daten (Prometheus Exposition Format)
 
 ```
 # HELP http_server_duration_seconds Histogram of HTTP server request durations.
@@ -385,13 +250,13 @@ http_server_status_codes_total{http_status_code="4xx"} 7
 http_server_status_codes_total{http_status_code="5xx"} 10
 ```
 
-#### 7.2 Beispiel-Daten im OTLP Format (Strukturierte Darstellung)
+#### 2.6.2 Beispiel-Daten im OTLP Format (Strukturierte Darstellung)
 
 **Wichtiger Hinweis:** OTLP ist ein binäres Protokoll (meist Protobuf oder gRPC).  Die hier gezeigten Beispiele sind **keine direkte binäre Repräsentation**. Stattdessen handelt es sich um eine **strukturierte, textuelle Darstellung**, die die logische Struktur von OTLP Datenpunkten und Metriken verdeutlicht.  In der Praxis würden OTLP Daten als binäre Protobuf-Nachrichten über das Netzwerk gesendet.
 
 Wir konzentrieren uns auf die gleichen Metrik-Beispiele wie im Prometheus Format (Performance, Last, ZETA-Cause Fehler).
 
-**1. HTTP Server Request Duration (Histogramm)**
+**HTTP Server Request Duration (Histogramm)**
 
 * **Metrik-Name:** `http.server.duration` (Konventionell in OTel für HTTP Server Duration)
 * **Daten-Typ:** Histogram
@@ -432,7 +297,7 @@ Metric:
 * `count`, `sum`:  Zusammenfassende Werte für das Histogramm.
 * `bucket_counts`, `explicit_bounds`: Definiert die Histogramm-Buckets und deren Zählwerte.
 
-**2. HTTP Server Requests Total (Counter)**
+**HTTP Server Requests Total (Counter)**
 
 * **Metrik-Name:** `http.server.requests_count` (oder `http.server.request.count` - Konventionen können leicht variieren)
 * **Daten-Typ:** Summe (Counter ist ein Spezialfall einer Summe mit Monotonicity = INCREMENTING)
@@ -482,7 +347,7 @@ Metric:
 * `attributes`: Dimensionen.
 * `value`: Der aktuelle Zählerwert.
 
-**3. ZETA-Cause Fehler Counter**
+**ZETA-Cause Fehler Counter**
 
 * **Metrik-Name:** `zeta.cause.errors_total` (oder prägnanter z.B. `zeta.errors.count`)
 * **Daten-Typ:** Summe (Counter)
@@ -542,7 +407,7 @@ Der OpenTelemetry Collector würde diese OTLP Daten von den Agenten empfangen, v
 
 Diese Beispiele sollten Ihnen ein besseres Verständnis dafür geben, wie Metriken in OTLP strukturiert sind und wie sie Ihre Performance-, Last- und Fehlerdaten repräsentieren könnten.
 
-#### 7.3 Beispiel-Konfiguration (OpenTelemetry Collector - YAML)
+#### 2.6.3 Beispiel-Konfiguration (OpenTelemetry Collector - YAML)
 
 Dieses Beispiel zeigt eine Collector-Konfiguration, die:
 
@@ -585,7 +450,7 @@ service:
       exporters: [prometheus, logging]
 ```
 
-#### 7.4 Beispiel-Konfiguration (OpenTelemetry Agent - Code, Python mit Flask)
+#### 2.6.4 Beispiel-Konfiguration (OpenTelemetry Agent - Code, Python mit Flask)
 
 Dieses Beispiel zeigt, wie Auto-Instrumentation in Python mit Flask verwendet werden kann und ein OTLP Exporter konfiguriert wird.  **Hinweis:** Der PEP müsste in Python und Flask implementiert sein, um dieses Beispiel direkt zu verwenden. Das Prinzip ist aber in anderen Sprachen und Frameworks ähnlich.
 
@@ -644,7 +509,116 @@ if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=8080)
 ```
 
-### 8. Zusammenfassung und Empfehlungen
+## 3. Aggregation von Metriken
+
+Hier sind Beispiel-OpenTelemetry-Daten, die der OpenTelemetry Agent des HTTP-Proxies an den OpenTelemetry Collector sendet:
+
+### 3.1 Beispiel eines HTTP-Requests:
+```json
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {"key": "service.name", "value": {"stringValue": "zero-trust-pep"}},
+          {"key": "host.name", "value": {"stringValue": "pep.example.com"}}
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "auto-instrumentation"
+          },
+          "spans": [
+            {
+              "traceId": "abc1234567890def",
+              "spanId": "1234567890abcd",
+              "parentSpanId": null,
+              "name": "HTTP GET /protected-resource",
+              "kind": 2, 
+              "startTimeUnixNano": "1707575200000000000",
+              "endTimeUnixNano": "1707575201000000000",
+              "attributes": [
+                {"key": "http.method", "value": {"stringValue": "GET"}},
+                {"key": "http.url", "value": {"stringValue": "https://resource-server.example.com/protected-resource"}},
+                {"key": "http.status_code", "value": {"intValue": 200}},
+                {"key": "http.user_agent", "value": {"stringValue": "Mozilla/5.0"}},
+                {"key": "zero_trust.authenticated", "value": {"boolValue": true}},
+                {"key": "zero_trust.token_jti", "value": {"stringValue": "token-xyz-123"}},
+                {"key": "zero_trust.client_id", "value": {"stringValue": "client-abc"}}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 3.2 OpenTelemetry Header im weitergeleiteten Request
+Ja, der HTTP Proxy kann OpenTelemetry Header im Request an den Resource Server weiterleiten, insbesondere den `traceparent`-Header, der eine bestehende Trace-ID weitergibt. Beispiel für HTTP-Header des weitergeleiteten Requests:
+
+```
+GET /protected-resource HTTP/1.1
+Host: resource-server.example.com
+Authorization: Bearer eyJhbGciOiJI...
+traceparent: 00-abc1234567890def-1234567890abcd-01
+```
+
+### 3.3 Kann der Resource Server eigene Daten an den OpenTelemetry Collector senden?
+Der Resource Server kann ebenfalls OpenTelemetry-Daten an den OpenTelemetry Collector senden und diese mit den Daten des HTTP-Proxies verknüpfen, indem er die `traceId` aus dem `traceparent`-Header übernimmt.
+
+**Beispiel für die Daten des Resource Servers:**
+```json
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {"key": "service.name", "value": {"stringValue": "resource-server"}},
+          {"key": "host.name", "value": {"stringValue": "resource-server.example.com"}}
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "auto-instrumentation"
+          },
+          "spans": [
+            {
+              "traceId": "abc1234567890def",
+              "spanId": "56789abcd12345",
+              "parentSpanId": "1234567890abcd",
+              "name": "Process HTTP GET /protected-resource",
+              "kind": 3, 
+              "startTimeUnixNano": "1707575201000000000",
+              "endTimeUnixNano": "1707575201500000000",
+              "attributes": [
+                {"key": "http.method", "value": {"stringValue": "GET"}},
+                {"key": "http.url", "value": {"stringValue": "/protected-resource"}},
+                {"key": "http.status_code", "value": {"intValue": 200}},
+                {"key": "zero_trust.token_jti", "value": {"stringValue": "token-xyz-123"}},
+                {"key": "zero_trust.client_id", "value": {"stringValue": "client-abc"}},
+                {"key": "processing_time_ms", "value": {"intValue": 50}}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 3.4 Wie erfolgt die Verknüpfung?
+- Beide Komponenten (PEP und Resource Server) verwenden dieselbe `traceId`, die aus dem `traceparent`-Header kommt.
+- Der `spanId` des HTTP-Proxies wird als `parentSpanId` im Resource Server gesetzt.
+- Damit können die Traces später in OpenTelemetry-Backends wie Jaeger oder Grafana Tempo visuell zusammengeführt werden.
+
+Damit lässt sich eine vollständige End-to-End-Tracing-Kette vom Zero Trust PEP bis zum Resource Server erstellen.
+
+## 4. Empfehlungen
 
 OpenTelemetry bietet eine leistungsstarke und flexible Lösung, um Performance, Last und Fehler Ihres Resource Servers in einer Zero-Trust-Architektur zu überwachen.
 
@@ -659,7 +633,7 @@ OpenTelemetry bietet eine leistungsstarke und flexible Lösung, um Performance, 
 
 Diese Dokumentation bietet Ihnen einen umfassenden Leitfaden zur Implementierung von OpenTelemetry Monitoring in Ihrer Zero-Trust-Umgebung. Passen Sie die Konfiguration und die Metriken an Ihre spezifischen Anforderungen an, um das bestmögliche Monitoring zu erreichen.
 
-## OpenTelemetry Collector Deployment
+## 5. Anhang, OpenTelemetry Collector Deployment
 
 The OpenTelemetry Collector is a crucial component that acts as a vendor-agnostic intermediary for receiving, processing, and exporting telemetry data. You'll deploy it within your Kubernetes cluster.
 
@@ -799,7 +773,7 @@ spec:
       targetPort: 8888
 ```
 
-## Backend Systems
+##Backend Systems##
 
 *   **Choose Backends:** Select the observability backend(s) where you want to store and analyze your telemetry data. Popular options include:
     *   **Open Source:** Jaeger, Zipkin (for traces), Prometheus, Grafana (for metrics and visualizations), Elasticsearch, Fluentd, Kibana (for logs).
@@ -827,112 +801,3 @@ spec:
 *   **Custom Processors:** For more advanced use cases, write custom processors for the Collector to implement specific filtering, transformation, or enrichment logic.
 
 By following these steps, you can successfully deploy and use OpenTelemetry in your Kubernetes environment to gain deep insights into the performance and behavior of your microservices. Remember to tailor the configuration to your specific needs and choose the right backends for your analysis requirements. Using OpenTelemetry will significantly improve the observability of your applications and help you troubleshoot issues more effectively.
-
-## 5. Aggregation von Metriken
-
-Hier sind Beispiel-OpenTelemetry-Daten, die der OpenTelemetry Agent des HTTP-Proxies an den OpenTelemetry Collector sendet:
-
-### Beispiel eines HTTP-Requests:
-```json
-{
-  "resourceSpans": [
-    {
-      "resource": {
-        "attributes": [
-          {"key": "service.name", "value": {"stringValue": "zero-trust-pep"}},
-          {"key": "host.name", "value": {"stringValue": "pep.example.com"}}
-        ]
-      },
-      "scopeSpans": [
-        {
-          "scope": {
-            "name": "auto-instrumentation"
-          },
-          "spans": [
-            {
-              "traceId": "abc1234567890def",
-              "spanId": "1234567890abcd",
-              "parentSpanId": null,
-              "name": "HTTP GET /protected-resource",
-              "kind": 2, 
-              "startTimeUnixNano": "1707575200000000000",
-              "endTimeUnixNano": "1707575201000000000",
-              "attributes": [
-                {"key": "http.method", "value": {"stringValue": "GET"}},
-                {"key": "http.url", "value": {"stringValue": "https://resource-server.example.com/protected-resource"}},
-                {"key": "http.status_code", "value": {"intValue": 200}},
-                {"key": "http.user_agent", "value": {"stringValue": "Mozilla/5.0"}},
-                {"key": "zero_trust.authenticated", "value": {"boolValue": true}},
-                {"key": "zero_trust.token_jti", "value": {"stringValue": "token-xyz-123"}},
-                {"key": "zero_trust.client_id", "value": {"stringValue": "client-abc"}}
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
-
-### OpenTelemetry Header im weitergeleiteten Request
-Ja, der HTTP Proxy kann OpenTelemetry Header im Request an den Resource Server weiterleiten, insbesondere den `traceparent`-Header, der eine bestehende Trace-ID weitergibt. Beispiel für HTTP-Header des weitergeleiteten Requests:
-
-```
-GET /protected-resource HTTP/1.1
-Host: resource-server.example.com
-Authorization: Bearer eyJhbGciOiJI...
-traceparent: 00-abc1234567890def-1234567890abcd-01
-```
-
-### Kann der Resource Server eigene Daten an den OpenTelemetry Collector senden?
-Der Resource Server kann ebenfalls OpenTelemetry-Daten an den OpenTelemetry Collector senden und diese mit den Daten des HTTP-Proxies verknüpfen, indem er die `traceId` aus dem `traceparent`-Header übernimmt.
-
-**Beispiel für die Daten des Resource Servers:**
-```json
-{
-  "resourceSpans": [
-    {
-      "resource": {
-        "attributes": [
-          {"key": "service.name", "value": {"stringValue": "resource-server"}},
-          {"key": "host.name", "value": {"stringValue": "resource-server.example.com"}}
-        ]
-      },
-      "scopeSpans": [
-        {
-          "scope": {
-            "name": "auto-instrumentation"
-          },
-          "spans": [
-            {
-              "traceId": "abc1234567890def",
-              "spanId": "56789abcd12345",
-              "parentSpanId": "1234567890abcd",
-              "name": "Process HTTP GET /protected-resource",
-              "kind": 3, 
-              "startTimeUnixNano": "1707575201000000000",
-              "endTimeUnixNano": "1707575201500000000",
-              "attributes": [
-                {"key": "http.method", "value": {"stringValue": "GET"}},
-                {"key": "http.url", "value": {"stringValue": "/protected-resource"}},
-                {"key": "http.status_code", "value": {"intValue": 200}},
-                {"key": "zero_trust.token_jti", "value": {"stringValue": "token-xyz-123"}},
-                {"key": "zero_trust.client_id", "value": {"stringValue": "client-abc"}},
-                {"key": "processing_time_ms", "value": {"intValue": 50}}
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Wie erfolgt die Verknüpfung?
-- Beide Komponenten (PEP und Resource Server) verwenden dieselbe `traceId`, die aus dem `traceparent`-Header kommt.
-- Der `spanId` des HTTP-Proxies wird als `parentSpanId` im Resource Server gesetzt.
-- Damit können die Traces später in OpenTelemetry-Backends wie Jaeger oder Grafana Tempo visuell zusammengeführt werden.
-
-Damit lässt sich eine vollständige End-to-End-Tracing-Kette vom Zero Trust PEP bis zum Resource Server erstellen.
