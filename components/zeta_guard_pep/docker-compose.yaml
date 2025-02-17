@@ -1,0 +1,32 @@
+# docker-compose.yaml (modified)
+version: '3.8'
+services:
+  rs_vsdm2_server:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      OTLP_ENDPOINT: otel-collector:4317
+    depends_on:
+      - otel-collector
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8888:8888"
+      - "8889:8889"
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    command: ["--config=/etc/otel-collector-config.yaml", "--set=service.telemetry.logs.level=debug"]
+
+  envoy-proxy: # New Envoy proxy service
+    image: envoyproxy/envoy:v1.29-latest # Use a recent Envoy version
+    ports:
+      - "8081:8081" # Expose Envoy's listening port
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
+    depends_on:
+      - rs_vsdm2_server
+      - otel-collector
