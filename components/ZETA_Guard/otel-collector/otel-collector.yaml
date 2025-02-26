@@ -48,6 +48,10 @@ spec:
     port: 4318
     targetPort: 4318
     name: otlp-http
+  - protocol: TCP  # <----- Add this port definition
+    port: 9090      # <----- Prometheus exporter port
+    targetPort: 9090 # <----- Target port in the container
+    name: prometheus # <----- Name for this port (optional, but good practice)
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -64,6 +68,24 @@ data:
           http:
             endpoint: "0.0.0.0:4318"
 
+    exporters:
+      prometheus:
+        endpoint: "0.0.0.0:9090"
+      prometheusremotewrite:
+        endpoint: http://prometheus-svc.vsdm2.svc.cluster.local:9090/api/v1/write
+        target_info:
+          enabled: true
+      debug:
+        verbosity: normal
+      #bde2:
+      #  protocols:
+      #    grpc:
+      #      endpoint: https://bde2.gematik.de:4318
+      #  headers:
+      #    api-key: "my-api-key"
+      #  timeout: 5s
+      #  compression: "gzip"
+  
     processors:
       batch:
     
@@ -82,7 +104,7 @@ data:
         dimensions_cache_size: 1000
         aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
         metrics_flush_interval: 15s
-        metrics_expiration: 5m
+        metrics_expiration: 60m
         events:
           enabled: true
           dimensions:
@@ -93,16 +115,6 @@ data:
           - telemetry.sdk.language
           - telemetry.sdk.name
     
-    exporters:
-      prometheus:
-        endpoint: "0.0.0.0:9090"
-      prometheusremotewrite:
-        endpoint: http://prometheus-svc.vsdm2.svc.cluster.local:9090/api/v1/write
-        target_info:
-          enabled: true
-      debug:
-        verbosity: detailed
-    
     service:
       pipelines:
         traces:
@@ -112,4 +124,4 @@ data:
         metrics:
           receivers: [spanmetrics, otlp]
           processors: [batch]
-          exporters: [prometheus, debug]
+          exporters: [prometheus, prometheusremotewrite, debug]

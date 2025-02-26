@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: rs-vsdm2-app
-        image: rs_vsdm2-app:latest # Dein gebautes Image
+        image: rs-vsdm2-app:latest # Dein gebautes Image
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

@@ -3,21 +3,21 @@
 set -e  # Beendet das Skript bei einem Fehler
 
 CLUSTER_NAME="zeta-guard"
-CONFIG_FILE="./kind-config.yaml"
-INGRESS_FILE="../ingress/ingress.yaml"
-ENVOY_FILE="../envoy/envoy.yaml"
-HELLO_FILE="../hello-world/hello-world.yaml"
-OPA_FILE="../opa/opa.yaml"
-ORY_FILE="../ory/ory.yaml"
-OTEL_COLLECTOR_FILE="../otel-collector/otel-collector.yaml"
-PROMETHEUS_FILE="../prometheus/prometheus.yaml"
-RESOURCE_SERVER_FILE="../resource_server/rs-vsdm2-app.yaml"
-VALKEY_PDP_FILE="../valkey-pdp/valkey-pdp.yaml"
-VALKEY_PEP_FILE="../valkey-pep/valkey-pep.yaml"
+CONFIG_FILE="kind-zeta-guard/kind-config.yaml"
+INGRESS_FILE="ingress/ingress.yaml"
+ENVOY_FILE="envoy/envoy.yaml"
+HELLO_FILE="hello-world/hello-world.yaml"
+OPA_FILE="opa/opa.yaml"
+ORY_FILE="ory/ory.yaml"
+OTEL_COLLECTOR_FILE="otel-collector/otel-collector.yaml"
+PROMETHEUS_FILE="prometheus/prometheus.yaml"
+RESOURCE_SERVER_FILE="resource_server/rs-vsdm2-app.yaml"
+VALKEY_PDP_FILE="valkey-pdp/valkey-pdp.yaml"
+VALKEY_PEP_FILE="valkey-pep/valkey-pep.yaml"
 
 # Docker-Image, das in den Cluster geladen werden soll
-DOCKERFILE_PATH="../resource_server/src/Dockerfile"
-DOCKER_IMAGE="rs_vsdm2-app:latest"
+DOCKERFILE_PATH="resource_server/src/Dockerfile"
+DOCKER_IMAGE="rs-vsdm2-app:latest"
 
 # Prüfen, ob Docker installiert ist
 if ! command -v docker &>/dev/null; then
@@ -35,7 +35,7 @@ fi
 
 # Erstellen des Docker-Images für den Resource Server
 echo "📦 Erstelle das Docker-Image ${DOCKER_IMAGE} aus ${DOCKERFILE_PATH}..."
-docker build -t "${DOCKER_IMAGE}" -f "${DOCKERFILE_PATH}" ../resource_server/src
+docker build -t "${DOCKER_IMAGE}" -f "${DOCKERFILE_PATH}" resource_server/src
 
 # Prüfen, ob der Kind-Cluster existiert
 if kind get clusters | grep -q "^${CLUSTER_NAME}$"; then

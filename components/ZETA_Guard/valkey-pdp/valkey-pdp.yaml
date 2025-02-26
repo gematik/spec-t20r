@@ -7,11 +7,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: valkey-as
+      app: valkey-pdp
   template:
     metadata:
       labels:
-        app: valkey-as
+        app: valkey-pdp
     spec:
       containers:
       - name: valkey
@@ -23,11 +23,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: valkey-as-svc
+  name: valkey-pdp-svc
   namespace: vsdm2
 spec:
   selector:
-    app: valkey-as
+    app: valkey-pdp
   ports:
   - protocol: TCP
     port: 10080
