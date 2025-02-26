@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rs-vsdm2-app
+  namespace: vsdm2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rs-vsdm2-app
+  template:
+    metadata:
+      labels:
+        app: rs-vsdm2-app
+    spec:
+      containers:
+      - name: rs-vsdm2-app
+        image: rs_vsdm2-app:latest # Dein gebautes Image
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "otel-collector-svc.vsdm2.svc.cluster.local:4317" # OTEL Collector Service URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rs-vsdm2-app-svc
+  namespace: vsdm2
+spec:
+  selector:
+    app: rs-vsdm2-app
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080

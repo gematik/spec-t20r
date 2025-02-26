@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa
+  namespace: vsdm2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opa
+  template:
+    metadata:
+      labels:
+        app: opa
+    spec:
+      containers:
+      - name: opa
+        image: openpolicyagent/opa:latest
+        args:
+        - "run"
+        - "--server"
+        - "--addr=:8181"
+        - "--config-file=/config/opa-config.yaml"
+        volumeMounts:
+        - name: opa-config-vol
+          mountPath: /config
+          readOnly: true
+        ports:
+        - containerPort: 8181
+          name: http
+      volumes: # Hinzugefügter Volumes-Abschnitt
+      - name: opa-config-vol
+        configMap:
+          name: opa-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opa-svc
+  namespace: vsdm2
+spec:
+  selector:
+    app: opa
+  ports:
+  - protocol: TCP
+    port: 8181
+    targetPort: 8181
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-config
+  namespace: vsdm2
+data:
+  opa-config.yaml: |
+    authorization:
+      decision_cache_enabled: true
+      decision_cache_ttl_seconds: 10
+    services:
+      valkey:
+        url: "http://valkey-pdp-svc.vsdm2.svc.cluster.local:80" # ValKey PDP Service URL
+        headers:
+          Authorization: "Bearer some-secret-token" # Beispiel Auth (anpassen!)
+
+    policies:
+      authz/allow:
+        query: |
+          valkey.lookup("authz_policies", input.user) == "allow" # Beispiel: Lookup in ValKey

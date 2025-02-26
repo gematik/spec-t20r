@@ -1,7 +1,7 @@
 # Dockerfile for rs_vsdm2 Go server
 
 # Builder stage: Compile the Go application
-FROM golang:1.22-alpine AS builder
+FROM golang:1.23.6 AS builder
 
 WORKDIR /app
 
@@ -13,12 +13,15 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN go build -o rs_vsdm2 ./rs_vsdm2.go
+#RUN go build -o rs_vsdm2 ./rs_vsdm2.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o rs_vsdm2 ./rs_vsdm2.go
 
 # Runtime stage: Create a minimal image to run the application
 FROM alpine:latest
 
 WORKDIR /app
+
+RUN apk add --no-cache ca-certificates
 
 # Copy the executable from the builder stage
 COPY --from=builder /app/rs_vsdm2 /app/rs_vsdm2

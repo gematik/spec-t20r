@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: vsdm2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:latest
+        ports:
+        - containerPort: 9090
+          name: http
+        volumeMounts: # <----- Add volumeMounts
+        - name: prometheus-config-vol # Volume name
+          mountPath: /etc/prometheus # Mount path inside container
+          subPath: prometheus.yaml # SubPath to the config file within the ConfigMap
+      volumes: # <----- Add volumes
+      - name: prometheus-config-vol # Volume name (must match volumeMounts.name)
+        configMap:
+          name: prometheus-config # ConfigMap name (must match ConfigMap metadata.name)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-svc
+  namespace: vsdm2
+spec:
+  selector:
+    app: prometheus
+  ports:
+  - protocol: TCP
+    port: 9090
+    targetPort: 9090
+    nodePort: 30090 # Optional: Exposed auf NodePort für einfachen Zugriff
+  type: NodePort # Optional: Exposed auf NodePort für einfachen Zugriff
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: vsdm2
+data:
+  prometheus.yaml: |
+    global:
+      scrape_interval:     15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      - job_name: 'prometheus' # Default Prometheus self-monitoring job (keep this)
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: 'otel-collector' # <---- ADD THIS JOB to scrape otel-collector
+        kubernetes_sd_configs:
+        - role: service
+          namespaces:
+            - vsdm2
+          selectors:
+            matchLabels:
+              app: otel-collector # Assuming otel-collector service has label app: otel-collector
+        relabel_configs: # Optional: Keep only prometheus port
+        - source_labels: [__meta_kubernetes_service_port_name]
+          action: keep
+          regex: prometheus # Keep only prometheus port

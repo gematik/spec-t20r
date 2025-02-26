@@ -19,107 +19,107 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Define data structures based on the OpenAPI spec (simplified for example)
 type GetVSDMBundleResponse struct {
 	VSDMBundle VSDMBundle `json:"VSDMBundle"`
 }
 
 type VSDMBundle struct {
-	ResourceType string `json:"resourceType"` // Minimal example
-	// Add other fields as needed based on the OpenAPI spec
+	ResourceType string `json:"resourceType"`
 }
 
-// Initialize tracer provider for OpenTelemetry
 func initTracer() *sdktrace.TracerProvider {
 	ctx := context.Background()
 
-	// Get OTLP exporter endpoint from environment variable
 	otlpEndpoint := os.Getenv("OTLP_ENDPOINT")
 	if otlpEndpoint == "" {
-		otlpEndpoint = "localhost:4317" // Default OTLP endpoint
-		log.Printf("OTLP_ENDPOINT environment variable not set, using default: %s", otlpEndpoint)
+		otlpEndpoint = "localhost:4317"
+		log.Printf("[WARN] OTLP_ENDPOINT environment variable not set, using default: %s", otlpEndpoint)
 	} else {
-		log.Printf("Using OTLP_ENDPOINT from environment variable: %s", otlpEndpoint)
+		log.Printf("[INFO] Using OTLP_ENDPOINT: %s", otlpEndpoint)
 	}
 
 	exporter, err := otlptracegrpc.New(ctx,
 		otlptracegrpc.WithEndpoint(otlpEndpoint),
-		otlptracegrpc.WithInsecure(), // For local development, disable security
+		otlptracegrpc.WithInsecure(),
 	)
 	if err != nil {
-		log.Fatalf("Failed to create exporter: %v", err)
+		log.Fatalf("[ERROR] Failed to create OTLP exporter: %v", err)
 	}
 
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
 			semconv.ServiceName("rs_vsdm2"),
 			semconv.ServiceVersion("1.0.0"),
-			attribute.String("environment", "development"), // Or get from env var
+			attribute.String("environment", "development"),
 		),
 	)
 	if err != nil {
-		log.Fatalf("Failed to create resource: %v", err)
+		log.Fatalf("[ERROR] Failed to create OpenTelemetry resource: %v", err)
 	}
 
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()), // Sample all traces for this example
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
 	)
 	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.TraceContext{}) // Use TraceContext for propagation
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 
+	log.Println("[INFO] OpenTelemetry tracer initialized successfully")
 	return tp
 }
 
 func getVSDMBundleHandler(tracer trace.Tracer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
 		ctx := r.Context()
 
-		// Extract traceparent from headers
+		log.Printf("[INFO] Received request: %s %s", r.Method, r.URL.Path)
+
 		carrier := propagation.HeaderCarrier(r.Header)
 		ctx = otel.GetTextMapPropagator().Extract(ctx, carrier)
 
-		// Start a new span
 		ctx, span := tracer.Start(ctx, "getVSDMBundle", trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 
 		span.SetAttributes(semconv.HTTPMethod(r.Method))
 		span.SetAttributes(semconv.HTTPRoute("/vsdservice/v1/vsdmbundle"))
 
-		// Simulate API logic - replace with actual VSDMBundle retrieval
 		response := GetVSDMBundleResponse{
 			VSDMBundle: VSDMBundle{
 				ResourceType: "Bundle",
-				// ... more realistic data here if needed
 			},
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK) // 200 OK
+		w.WriteHeader(http.StatusOK)
 
 		enc := json.NewEncoder(w)
 		if err := enc.Encode(response); err != nil {
+			log.Printf("[ERROR] JSON encoding failed: %v", err)
 			span.RecordError(err)
 			span.SetAttributes(semconv.HTTPStatusCode(http.StatusInternalServerError))
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			log.Printf("Error encoding JSON: %v", err)
 			return
 		}
 
+		duration := time.Since(start)
 		span.SetAttributes(semconv.HTTPStatusCode(http.StatusOK))
-		log.Println("Successfully served /vsdservice/v1/vsdmbundle")
+		log.Printf("[INFO] Successfully served /vsdservice/v1/vsdmbundle in %v", duration)
 	}
 }
 
 func main() {
+	log.Println("[INFO] Starting rs_vsdm2 service...")
+
 	tp := initTracer()
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 		if err := tp.Shutdown(ctx); err != nil {
-			log.Fatalf("TracerProvider shutdown failed: %v", err)
+			log.Fatalf("[ERROR] TracerProvider shutdown failed: %v", err)
 		}
+		log.Println("[INFO] TracerProvider shut down successfully")
 	}()
 
 	tracer := otel.Tracer("rs_vsdm2")
@@ -128,7 +128,8 @@ func main() {
 	mux.HandleFunc("/vsdservice/v1/vsdmbundle", getVSDMBundleHandler(tracer))
 
 	port := ":8080"
-	log.Printf("Server listening on port %s", port)
+	log.Printf("[INFO] Server listening on port %s", port)
+
 	server := &http.Server{
 		Addr:         port,
 		Handler:      mux,
@@ -136,7 +137,25 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	// Start server and handle graceful shutdown
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("[ERROR] Server failed to start: %v", err)
+		}
+	}()
+
+	// Handle shutdown signal
+	stop := make(chan os.Signal, 1)
+
+	<-stop
+	log.Println("[INFO] Shutting down server...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("[ERROR] Server forced to shutdown: %v", err)
 	}
+
+	log.Println("[INFO] Server exited cleanly")
 }
