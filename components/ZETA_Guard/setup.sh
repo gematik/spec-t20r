@@ -67,7 +67,7 @@ EOF
 
 echo "🚀 Verwende Cluster-Name: ${CLUSTER_NAME}"
 
-CONFIG_FILE="kind-zeta-guard/kind-config.yaml"
+#CONFIG_FILE="kind-zeta-guard/kind-config.yaml"
 INGRESS_FILE="ingress/ingress.yaml"
 ENVOY_FILE="envoy/envoy.yaml"
 HELLO_FILE="hello-world/hello-world.yaml"
@@ -128,7 +128,7 @@ kubectl config use-context kind-${CLUSTER_NAME}
 
 # Manifest Dateien anwenden
 echo "Wende die Manifest Dateien an..."
-kubectl label node zeta-guard-worker ingress-ready=true # Label hinzufügen, um Ingress auf einem Worker-Node aktivieren zu können
+kubectl label node "${CLUSTER_NAME}"-worker ingress-ready=true # Label hinzufügen, um Ingress auf einem Worker-Node aktivieren zu können
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml -n ingress-nginx # Erzeugt Namespace ingress-nginx
 kubectl apply -f "${INGRESS_FILE}" # Erzeugt namespace vsdm2
 kubectl apply -f "${ENVOY_FILE}" # Erzeugt den PEP HTTP Proxy
