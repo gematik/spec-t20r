@@ -11,6 +11,7 @@ OPA_FILE="opa/opa.yaml"
 ORY_FILE="ory/ory.yaml"
 OTEL_COLLECTOR_FILE="otel-collector/otel-collector.yaml"
 PROMETHEUS_FILE="prometheus/prometheus.yaml"
+JAEGER_FILE="jaeger/jaeger.yaml"
 RESOURCE_SERVER_FILE="resource_server/rs-vsdm2-app.yaml"
 VALKEY_PDP_FILE="valkey-pdp/valkey-pdp.yaml"
 VALKEY_PEP_FILE="valkey-pep/valkey-pep.yaml"
@@ -68,6 +69,7 @@ kubectl apply -f "${OPA_FILE}" # Erzeugt den OPA Service (Policy Engine)
 kubectl apply -f "${ORY_FILE}" # Erzeugt die ORY Services (Authentifizierung und Autorisierung)
 kubectl apply -f "${OTEL_COLLECTOR_FILE}" # Erzeugt den OpenTelemetry Collector (Telemetrie-Daten Service)
 kubectl apply -f "${PROMETHEUS_FILE}" # Erzeugt den Prometheus Service (Monitoring)
+kubectl apply -f "${JAEGER_FILE}" # Erzeugt den Jaeger Service (Tracing)
 kubectl apply -f "${RESOURCE_SERVER_FILE}" # Erzeugt den Resource Server Service (VSDM2 App)
 kubectl apply -f "${VALKEY_PDP_FILE}" # Erzeugt die PDP DB Service (ValKey)
 kubectl apply -f "${VALKEY_PEP_FILE}" # Erzeugt den PEP DB Service (ValKey)
@@ -112,3 +114,7 @@ echo "Die Services wurden bereitgestellt und sind einsatzbereit."
 echo "🚀 Port-Forwarding für Prometheus..."
 kubectl port-forward svc/prometheus-svc 9090:9090 -n vsdm2 &
 echo "Prometheus ist unter http://localhost:9090 erreichbar."
+echo "Beispielabfrage: http://localhost:9090/graph?g0.range_input=1h&g0.expr=up&g0.tab=0"
+echo "Port-Forwarding für Jaeger..."
+kubectl port-forward svc/jaeger-query-svc 16686:16686 -n vsdm2 &
+echo "Jaeger ist unter http://localhost:16686 erreichbar."

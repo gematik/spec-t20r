@@ -71,20 +71,16 @@ data:
     exporters:
       prometheus:
         endpoint: "0.0.0.0:9090"
-      prometheusremotewrite:
-        endpoint: http://prometheus-svc.vsdm2.svc.cluster.local:9090/api/v1/write
-        target_info:
-          enabled: true
+      #prometheusremotewrite:
+      #  endpoint: http://prometheus-svc.vsdm2.svc.cluster.local:9090/api/v1/write
+      #  target_info:
+      #    enabled: true
+      otlp:
+        endpoint: "jaeger-collector-svc:14250"
+        tls:
+          insecure: true
       debug:
         verbosity: normal
-      #bde2:
-      #  protocols:
-      #    grpc:
-      #      endpoint: https://bde2.gematik.de:4318
-      #  headers:
-      #    api-key: "my-api-key"
-      #  timeout: 5s
-      #  compression: "gzip"
   
     processors:
       batch:
@@ -120,8 +116,8 @@ data:
         traces:
           receivers: [otlp]
           processors: [batch]  # <-----  CRITICAL: batch processor IS in traces pipeline
-          exporters: [spanmetrics, debug] # <----- CRITICAL: spanmetrics is in traces pipeline EXPORTERS (as connector)
+          exporters: [spanmetrics, debug, otlp] # <----- CRITICAL: spanmetrics is in traces pipeline EXPORTERS (as connector)
         metrics:
           receivers: [spanmetrics, otlp]
           processors: [batch]
-          exporters: [prometheus, prometheusremotewrite, debug]
+          exporters: [prometheus, debug]
