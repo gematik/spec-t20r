@@ -107,3 +107,8 @@ echo "Der Cluster ${CLUSTER_NAME} wurde erstellt und ist einsatzbereit."
 echo "Du kannst den Cluster mit 'kind delete cluster --name ${CLUSTER_NAME}' löschen."
 echo "Die Ingress-Ressource wurde angewendet und ist einsatzbereit."
 echo "Die Services wurden bereitgestellt und sind einsatzbereit."
+
+# Port-Forwarding für Prometheus
+echo "🚀 Port-Forwarding für Prometheus..."
+kubectl port-forward svc/prometheus-svc 9090:9090 -n vsdm2 &
+echo "Prometheus ist unter http://localhost:9090 erreichbar."
