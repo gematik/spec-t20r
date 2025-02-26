@@ -2,7 +2,43 @@
 
 set -e  # Beendet das Skript bei einem Fehler
 
+
+# Standardwerte
 CLUSTER_NAME="zeta-guard"
+
+# Hilfe-Funktion
+usage() {
+    echo "Usage: $0 [-c|--cluster <name>] [-h|--help]"
+    echo ""
+    echo "Optionen:"
+    echo "  -c, --cluster <name>  Setzt den Namen des Kind-Clusters (Standard: zeta-guard)"
+    echo "  -h, --help            Zeigt diese Hilfe an"
+    echo ""
+    echo "Requirements:"
+    echo "  - docker   (https://docs.docker.com/get-docker/)"
+    echo "  - kind     (https://kind.sigs.k8s.io/docs/user/quick-start/#installation)"
+    echo "  - kubectl  (https://kubernetes.io/docs/tasks/tools/)"    exit 0
+}
+
+# Kommandozeilen-Argumente verarbeiten
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -c|--cluster)
+            CLUSTER_NAME="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            echo "❌ Ungültige Option: $1"
+            usage
+            ;;
+    esac
+done
+
+echo "🚀 Verwende Cluster-Name: ${CLUSTER_NAME}"
+
 CONFIG_FILE="kind-zeta-guard/kind-config.yaml"
 INGRESS_FILE="ingress/ingress.yaml"
 ENVOY_FILE="envoy/envoy.yaml"
@@ -17,7 +53,7 @@ VALKEY_PDP_FILE="valkey-pdp/valkey-pdp.yaml"
 VALKEY_PEP_FILE="valkey-pep/valkey-pep.yaml"
 
 # Docker-Image, das in den Cluster geladen werden soll
-DOCKERFILE_PATH="resource_server/src/Dockerfile"
+DOCKERFILE_PATH="resource-server/src/Dockerfile"
 DOCKER_IMAGE="rs-vsdm2-app:latest"
 
 # Prüfen, ob Docker installiert ist
@@ -36,7 +72,7 @@ fi
 
 # Erstellen des Docker-Images für den Resource Server
 echo "📦 Erstelle das Docker-Image ${DOCKER_IMAGE} aus ${DOCKERFILE_PATH}..."
-docker build -t "${DOCKER_IMAGE}" -f "${DOCKERFILE_PATH}" resource_server/src
+docker build -t "${DOCKER_IMAGE}" -f "${DOCKERFILE_PATH}" resource-server/src
 
 # Prüfen, ob der Kind-Cluster existiert
 if kind get clusters | grep -q "^${CLUSTER_NAME}$"; then
@@ -57,6 +93,10 @@ sleep 5  # Kleine Verzögerung, um sicherzustellen, dass der Cluster bereit ist
 # Docker-Image in Kind-Cluster laden
 echo "Lade das Docker-Image ${DOCKER_IMAGE} in den Kind-Cluster..."
 kind load docker-image "${DOCKER_IMAGE}" --name "${CLUSTER_NAME}"
+
+# Konfiguriere kubectl für den Zugriff auf den Cluster
+echo "Konfiguriere kubectl für den Zugriff auf den Cluster..."
+kubectl config use-context kind-${CLUSTER_NAME}
 
 # Manifest Dateien anwenden
 echo "Wende die Manifest Dateien an..."

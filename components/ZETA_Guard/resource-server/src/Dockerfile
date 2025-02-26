@@ -14,7 +14,7 @@ COPY . .
 
 # Build the application
 #RUN go build -o rs-vsdm2 ./rs-vsdm2.go
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o rs-vsdm2 ./rs-vsdm2.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o rs-vsdm2-app ./rs-vsdm2-app.go
 
 # Runtime stage: Create a minimal image to run the application
 FROM alpine:latest
@@ -24,10 +24,10 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates
 
 # Copy the executable from the builder stage
-COPY --from=builder /app/rs-vsdm2 /app/rs-vsdm2
+COPY --from=builder /app/rs-vsdm2-app /app/rs-vsdm2-app
 
 # Expose the port the app listens on
 EXPOSE 8080
 
 # Command to run the executable
-CMD ["./rs-vsdm2"]
+CMD ["./rs-vsdm2-app"]

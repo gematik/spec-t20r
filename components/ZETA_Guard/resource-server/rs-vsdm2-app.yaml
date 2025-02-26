@@ -21,7 +21,7 @@ spec:
         - containerPort: 8080
           name: http
         env:
-        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        - name: OTLP_ENDPOINT
           value: "otel-collector-svc.vsdm2.svc.cluster.local:4317" # OTEL Collector Service URL
 ---
 apiVersion: v1

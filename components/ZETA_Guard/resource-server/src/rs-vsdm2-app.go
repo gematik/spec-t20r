@@ -1,4 +1,4 @@
-// rs_vsdm2.go
+// rs-vsdm2-app.go
 package main
 
 import (
@@ -48,7 +48,7 @@ func initTracer() *sdktrace.TracerProvider {
 
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceName("rs_vsdm2"),
+			semconv.ServiceName("rs-vsdm2-app"),
 			semconv.ServiceVersion("1.0.0"),
 			attribute.String("environment", "development"),
 		),
@@ -110,7 +110,7 @@ func getVSDMBundleHandler(tracer trace.Tracer) http.HandlerFunc {
 }
 
 func main() {
-	log.Println("[INFO] Starting rs_vsdm2 service...")
+	log.Println("[INFO] Starting rs-vsdm2-app service...")
 
 	tp := initTracer()
 	defer func() {
@@ -122,7 +122,7 @@ func main() {
 		log.Println("[INFO] TracerProvider shut down successfully")
 	}()
 
-	tracer := otel.Tracer("rs_vsdm2")
+	tracer := otel.Tracer("rs-vsdm2-app")
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/vsdservice/v1/vsdmbundle", getVSDMBundleHandler(tracer))
