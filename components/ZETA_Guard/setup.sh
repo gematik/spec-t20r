@@ -2,22 +2,24 @@
 
 set -e  # Beendet das Skript bei einem Fehler
 
-
 # Standardwerte
 CLUSTER_NAME="zeta-guard"
+INGRESS_PORT=80  # Standardport für Ingress
 
 # Hilfe-Funktion
 usage() {
-    echo "Usage: $0 [-c|--cluster <name>] [-h|--help]"
+    echo "Usage: $0 [-c|--cluster <name>] [-p|--port <port>] [-h|--help]"
     echo ""
     echo "Optionen:"
     echo "  -c, --cluster <name>  Setzt den Namen des Kind-Clusters (Standard: zeta-guard)"
+    echo "  -p, --port <port>     Setzt den Host-Port für Ingress (Standard: 80)"
     echo "  -h, --help            Zeigt diese Hilfe an"
     echo ""
     echo "Requirements:"
     echo "  - docker   (https://docs.docker.com/get-docker/)"
     echo "  - kind     (https://kind.sigs.k8s.io/docs/user/quick-start/#installation)"
-    echo "  - kubectl  (https://kubernetes.io/docs/tasks/tools/)"    exit 0
+    echo "  - kubectl  (https://kubernetes.io/docs/tasks/tools/)"
+    exit 0
 }
 
 # Kommandozeilen-Argumente verarbeiten
@@ -25,6 +27,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -c|--cluster)
             CLUSTER_NAME="$2"
+            shift 2
+            ;;
+        -p|--port)
+            INGRESS_PORT="$2"
             shift 2
             ;;
         -h|--help)
@@ -36,6 +42,28 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+echo "🚀 Verwende Cluster-Name: ${CLUSTER_NAME}"
+echo "🌐 Ingress wird auf Port ${INGRESS_PORT} gebunden"
+
+# Generiere die kind-config.yaml mit dynamischem Port
+CONFIG_FILE="./kind-config-${CLUSTER_NAME}.yaml"
+
+cat <<EOF > "${CONFIG_FILE}"
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+- role: worker
+- role: worker
+- role: worker
+- role: worker
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: ${INGRESS_PORT}   # Dynamischer Ingress-Port
+  - containerPort: 443
+    hostPort: 8443
+EOF
 
 echo "🚀 Verwende Cluster-Name: ${CLUSTER_NAME}"
 
