@@ -96,3 +96,7 @@ data:
       - job_name: 'otel-collector' # <---- ADD THIS JOB to scrape otel-collector
         kubernetes_sd_configs:
         - role: endpoints
+        relabel_configs:
+        - source_labels: [__address__] # Target the address:port of the endpoint
+          action: keep
+          regex: ^.*:9090$  # Explicitly match any character before :9090 at the end of the address
