@@ -27,7 +27,73 @@ type GetVSDMBundleResponse struct {
 }
 
 type VSDMBundle struct {
-	ResourceType string `json:"resourceType"`
+	ResourceType string     `json:"resourceType"`
+	Id           string     `json:"id"`
+	Meta         Meta       `json:"meta"`
+	Identifier   Identifier `json:"identifier"`
+	Type         string     `json:"type"`
+	Timestamp    string     `json:"timestamp"`
+	Total        int        `json:"total"`
+	Link         []Link     `json:"link"`
+	Entry        []Entry    `json:"entry"`
+}
+
+type Meta struct {
+	Profile []string `json:"profile"`
+}
+
+type Identifier struct {
+	System string `json:"system"`
+	Value  string `json:"value"`
+}
+
+type Link struct {
+	Relation string `json:"relation"`
+	Url      string `json:"url"`
+}
+
+type Entry struct {
+	FullUrl  string   `json:"fullUrl"`
+	Resource Resource `json:"resource"`
+}
+
+type Resource struct {
+	ResourceType string       `json:"resourceType"`
+	Id           string       `json:"id,omitempty"`           // omitempty because some resources in entry don't have id in example
+	Meta         *Meta        `json:"meta,omitempty"`         // omitempty because Bundle.resource does not have meta
+	Identifier   []Identifier `json:"identifier,omitempty"`   // omitempty because Patient and Organization have identifier
+	Status       string       `json:"status,omitempty"`       // omitempty because Coverage has status
+	Type         *Type        `json:"type,omitempty"`         // omitempty because Coverage has type
+	SubscriberId string       `json:"subscriberId,omitempty"` // omitempty because Coverage has subscriberId
+	Beneficiary  *Reference   `json:"beneficiary,omitempty"`  // omitempty because Coverage has beneficiary
+	Payor        []Reference  `json:"payor,omitempty"`        // omitempty because Coverage has payor
+	Period       *Period      `json:"period,omitempty"`       // omitempty because Coverage has period
+	Name         []Name       `json:"name,omitempty"`         // omitempty because Patient has name
+	Gender       string       `json:"gender,omitempty"`       // omitempty because Patient has gender
+	BirthDate    string       `json:"birthDate,omitempty"`    // omitempty because Patient has birthDate
+}
+
+type Type struct {
+	Coding []Coding `json:"coding"`
+}
+
+type Coding struct {
+	System  string `json:"system"`
+	Code    string `json:"code"`
+	Display string `json:"display"`
+}
+
+type Reference struct {
+	Reference string `json:"reference"`
+}
+
+type Period struct {
+	Start string `json:"start"`
+}
+
+type Name struct {
+	Family string   `json:"family"`
+	Given  []string `json:"given"`
 }
 
 var debugMode bool
@@ -111,7 +177,107 @@ func getVSDMBundleHandler(tracer trace.Tracer) http.HandlerFunc {
 			log.Printf("[WARN] Failed to parse RemoteAddr: %v", err)
 		}
 
-		response := GetVSDMBundleResponse{VSDMBundle: VSDMBundle{ResourceType: "Bundle"}}
+		response := GetVSDMBundleResponse{
+			VSDMBundle: VSDMBundle{
+				ResourceType: "Bundle",
+				Id:           "example-vsdmbundle-1",
+				Meta: Meta{
+					Profile: []string{"https://gematik.de/fhir/vsdm2/StructureDefinition/VSDMBundle"},
+				},
+				Identifier: Identifier{
+					System: "urn:ietf:rfc:3986",
+					Value:  "urn:uuid:a1b2c3d4-e5f6-7890-1234-567890abcdef",
+				},
+				Type:      "collection",
+				Timestamp: "2023-10-27T10:00:00Z",
+				Total:     3,
+				Link: []Link{
+					{
+						Relation: "self",
+						Url:      "https://example.com/fhir/VSDMBundle/example-vsdmbundle-1",
+					},
+				},
+				Entry: []Entry{
+					{
+						FullUrl: "urn:uuid:patient-example-1",
+						Resource: Resource{
+							ResourceType: "Patient",
+							Id:           "patient-example-1",
+							Meta: &Meta{
+								Profile: []string{"https://gematik.de/fhir/vsdm2/StructureDefinition/VSDPatient"},
+							},
+							Identifier: []Identifier{
+								{
+									System: "urn:oid:1.2.276.0.76.4.512",
+									Value:  "123456789",
+								},
+							},
+							Name: []Name{
+								{
+									Family: "Mustermann",
+									Given:  []string{"Max"},
+								},
+							},
+							Gender:    "male",
+							BirthDate: "1970-01-01",
+						},
+					},
+					{
+						FullUrl: "urn:uuid:coverage-example-1",
+						Resource: Resource{
+							ResourceType: "Coverage",
+							Id:           "coverage-example-1",
+							Meta: &Meta{
+								Profile: []string{"https://gematik.de/fhir/vsdm2/StructureDefinition/VSDMCoverage"},
+							},
+							Status: "active",
+							Type: &Type{
+								Coding: []Coding{
+									{
+										System:  "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+										Code:    "EHCPOL",
+										Display: "extended healthcare policy",
+									},
+								},
+							},
+							SubscriberId: "KV123456789",
+							Beneficiary: &Reference{
+								Reference: "urn:uuid:patient-example-1",
+							},
+							Payor: []Reference{
+								{
+									Reference: "urn:uuid:organization-example-1",
+								},
+							},
+							Period: &Period{
+								Start: "2023-01-01",
+							},
+						},
+					},
+					{
+						FullUrl: "urn:uuid:organization-example-1",
+						Resource: Resource{
+							ResourceType: "Organization",
+							Id:           "organization-example-1",
+							Meta: &Meta{
+								Profile: []string{"https://gematik.de/fhir/vsdm2/StructureDefinition/VSDMOrganization"},
+							},
+							Identifier: []Identifier{
+								{
+									System: "urn:oid:1.2.276.0.76.4.511",
+									Value:  "ORG12345",
+								},
+							},
+							Name: []Name{ // Corrected Name field assignment
+								{
+									Family: "Beispiel Krankenkasse",
+									Given:  []string{},
+								},
+							},
+						},
+					},
+				},
+			}}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
