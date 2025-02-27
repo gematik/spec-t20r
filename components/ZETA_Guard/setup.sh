@@ -5,6 +5,7 @@ set -e  # Beendet das Skript bei einem Fehler
 # Standardwerte
 CLUSTER_NAME="zeta-guard"
 INGRESS_PORT=80  # Standardport für Ingress
+INGRESS_PORT_TLS=443  # Standardport für Ingress TLS
 
 # Hilfe-Funktion
 usage() {
@@ -31,6 +32,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -p|--port)
             INGRESS_PORT="$2"
+            INGRESS_PORT_TLS="$2"43
             shift 2
             ;;
         -h|--help)
@@ -56,13 +58,12 @@ nodes:
 - role: control-plane
 - role: worker
 - role: worker
-- role: worker
-- role: worker
   extraPortMappings:
   - containerPort: 80
     hostPort: ${INGRESS_PORT}   # Dynamischer Ingress-Port
   - containerPort: 443
-    hostPort: 8443
+    hostPort: ${INGRESS_PORT_TLS} # Dynamischer Ingress-Port for HTTPS
+
 EOF
 
 echo "🚀 Verwende Cluster-Name: ${CLUSTER_NAME}"

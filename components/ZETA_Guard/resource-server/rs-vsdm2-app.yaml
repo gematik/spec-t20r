@@ -23,6 +23,8 @@ spec:
         env:
         - name: OTLP_ENDPOINT
           value: "otel-collector-svc.vsdm2.svc.cluster.local:4317" # OTEL Collector Service URL
+        command: ["/app/rs-vsdm2-app"] # Explicitly set the command to your app executable        
+        args: ["-debug"] # Add this line to enable the debug flag
 ---
 apiVersion: v1
 kind: Service

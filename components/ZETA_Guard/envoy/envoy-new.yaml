@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: envoy
-        image: envoyproxy/envoy:v1.31-latest
+        image: envoyproxy/envoy:latest
         ports:
         - containerPort: 10000
           name: http
@@ -60,7 +60,7 @@ data:
           socket_address:
             address: "0.0.0.0"
             port_value: 10000
-        traffic_direction: INBOUND
+        traffic_direction: OUTBOUND
         filter_chains:
         - filters:
           - name: envoy.filters.network.http_connection_manager
@@ -73,7 +73,7 @@ data:
                     "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
                     grpc_service:
                       envoy_grpc:
-                        cluster_name: opentelemetry_collector
+                        cluster_name: opentelemetry-collector
                       timeout: 0.250s
                     service_name: envoy-pep-svc
               codec_type: AUTO
@@ -83,25 +83,25 @@ data:
                 typed_config:
                   "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               route_config:
-                name: service1_route
+                name: pep_route
                 virtual_hosts:
-                - name: service1
+                - name: pep
                   domains:
                   - "*"
                   routes:
                   - match:
                       prefix: "/"
                     route:
-                      cluster: rs_cluster
+                      cluster: rs-cluster
                     decorator:
                       operation: routeToRS
       clusters:
-      - name: rs_cluster
+      - name: rs-cluster
         connect_timeout: 0.25s
         type: STRICT_DNS
         lb_policy: ROUND_ROBIN
         load_assignment:
-          cluster_name: rs_cluster
+          cluster_name: rs-cluster
           endpoints:
           - lb_endpoints:
             - endpoint:
@@ -109,7 +109,7 @@ data:
                   socket_address:
                     address: "rs-vsdm2-app-svc.vsdm2.svc.cluster.local"
                     port_value: 8080
-      - name: opentelemetry_collector
+      - name: opentelemetry-collector
         type: STRICT_DNS
         lb_policy: ROUND_ROBIN
         typed_extension_protocol_options:
@@ -118,7 +118,7 @@ data:
             explicit_http_config:
               http2_protocol_options: {}
         load_assignment:
-          cluster_name: opentelemetry_collector
+          cluster_name: opentelemetry-collector
           endpoints:
           - lb_endpoints:
             - endpoint:
@@ -126,4 +126,3 @@ data:
                   socket_address:
                     address: otel-collector-svc.vsdm2.svc.cluster.local
                     port_value: 4317
-

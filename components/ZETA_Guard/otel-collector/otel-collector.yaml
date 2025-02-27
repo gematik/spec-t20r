@@ -71,12 +71,8 @@ data:
     exporters:
       prometheus:
         endpoint: "0.0.0.0:9090"
-      #prometheusremotewrite:
-      #  endpoint: http://prometheus-svc.vsdm2.svc.cluster.local:9090/api/v1/write
-      #  target_info:
-      #    enabled: true
       otlp:
-        endpoint: "jaeger-collector-svc:14250"
+        endpoint: "jaeger-svc:4317"
         tls:
           insecure: true
       debug:

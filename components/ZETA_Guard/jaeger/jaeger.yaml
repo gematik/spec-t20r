@@ -1,8 +1,3 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: vsdm2 # Use the same namespace as your otel-collector
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -20,29 +15,17 @@ spec:
     spec:
       containers:
       - name: jaeger
-        image: jaegertracing/all-in-one:latest # All-in-one image for simplicity
+        image: jaegertracing/jaeger:latest
         ports:
+        - containerPort: 4317 # Jaeger gRPC Collector port (OTLP/gRPC)
+          name: jaeger-grpc
+          protocol: TCP
+        - containerPort: 4318 # Jaeger HTTP Collector port (OTLP/HTTP, Jaeger Thrift HTTP)
+          name: jaeger-http
+          protocol: TCP
         - containerPort: 16686 # Jaeger UI port
           name: jaeger-ui
           protocol: TCP
-        - containerPort: 14250 # Jaeger gRPC Collector port
-          name: jaeger-grpc
-          protocol: TCP
-        - containerPort: 14268 # Jaeger HTTP Collector port
-          name: jaeger-http
-          protocol: TCP
-        - containerPort: 5775  # Jaeger Agent compact protocol
-          name: ja-compact
-          protocol: UDP
-        - containerPort: 5778  # Jaeger Agent config port
-          name: ja-config
-          protocol: TCP
-        - containerPort: 6831  # Jaeger Agent binary thrift protocol
-          name: ja-binary-tp
-          protocol: UDP
-        - containerPort: 6832  # Jaeger Agent compact thrift protocol
-          name: ja-compact-tp
-          protocol: UDP
         resources:
           limits:
             memory: "1Gi"
@@ -54,29 +37,22 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: jaeger-query-svc
+  name: jaeger-svc
   namespace: vsdm2
 spec:
   selector:
     app: jaeger
   ports:
   - protocol: TCP
+    port: 4317      # Service-Port (OTLP/gRPC)
+    targetPort: jaeger-grpc
+    name: jaeger-grpc
+  - protocol: TCP
+    port: 4318      # Service-Port (OTLP/HTTP, Jaeger Thrift HTTP)
+    targetPort: jaeger-http
+    name: jaeger-http
+  - protocol: TCP
     port: 16686
     targetPort: jaeger-ui
     name: jaeger-ui
-  type: ClusterIP # Use ClusterIP for internal access, or LoadBalancer/NodePort for external
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: jaeger-collector-svc # <----- Jaeger COLLECTOR Service Name
-  namespace: vsdm2
-spec:
-  selector:
-    app: jaeger # Selektiert die Jaeger-Pods
-  ports:
-  - protocol: TCP
-    port: 14250      # Service-Port (kann sich von targetPort unterscheiden)
-    targetPort: jaeger-grpc # Ziel ist der jaeger-grpc-Portname im Pod
-    name: jaeger-grpc-collector
   type: ClusterIP
