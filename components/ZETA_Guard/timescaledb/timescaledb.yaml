@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: timescaledb
+  namespace: vsdm2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: timescaledb
+  template:
+    metadata:
+      labels:
+        app: timescaledb
+    spec:
+      containers:
+      - name: timescaledb-container
+        image: timescale/timescaledb:latest # Verwenden Sie die offizielle TimescaleDB Docker Image
+        ports:
+        - containerPort: 5432 # Standard PostgreSQL Port
+          name: postgresql
+        env:
+        - name: POSTGRES_PASSWORD
+          value: "your_strong_password" # ÄNDERN SIE DIES IN EIN SICHERES PASSWORT!
+        - name: POSTGRES_USER
+          value: "otelcollector" # Benutzername für den Collector-Zugriff
+        - name: POSTGRES_DB
+          value: "otel_telemetry" # Datenbankname für Telemetriedaten
+        volumeMounts:
+        - name: timescaledb-data
+          mountPath: /var/lib/postgresql/data # Standard PostgreSQL Datenverzeichnis im Container
+      volumes:
+      - name: timescaledb-data
+        persistentVolumeClaim:
+          claimName: timescaledb-data-pvc # PVC Name, siehe unten
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: timescaledb-svc
+  namespace: vsdm2
+spec:
+  selector:
+    app: timescaledb
+  ports:
+  - protocol: TCP
+    port: 5432 # Port, auf dem der Service erreichbar ist (Standard PostgreSQL)
+    targetPort: 5432 # Port des Containers
+    name: postgresql
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: timescaledb-data-pvc
+  namespace: vsdm2
+spec:
+  accessModes:
+    - ReadWriteOnce # Für einen einzelnen TimescaleDB Pod
+  resources:
+    requests:
+      storage: 10Gi # Anpassen nach Bedarf

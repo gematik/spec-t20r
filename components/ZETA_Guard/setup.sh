@@ -20,6 +20,9 @@ usage() {
     echo "  - docker   (https://docs.docker.com/get-docker/)"
     echo "  - kind     (https://kind.sigs.k8s.io/docs/user/quick-start/#installation)"
     echo "  - kubectl  (https://kubernetes.io/docs/tasks/tools/)"
+    echo ""
+    echo "Hinweis: Die Installation mit snap (Ubuntu) führt zu Fehlern."
+    echo "         Verwende apt install."   
     exit 0
 }
 
@@ -71,7 +74,6 @@ echo "🚀 Verwende Cluster-Name: ${CLUSTER_NAME}"
 #CONFIG_FILE="kind-zeta-guard/kind-config.yaml"
 NAMESPACE_FILE="namespace/namespace.yaml"
 ENVOY_FILE="envoy/envoy.yaml"
-HELLO_FILE="hello-world/hello-world.yaml"
 OPA_FILE="opa/opa.yaml"
 ORY_FILE="ory/ory.yaml"
 OTEL_COLLECTOR_FILE="otel-collector/otel-collector.yaml"
@@ -90,6 +92,12 @@ DOCKER_IMAGE="rs-vsdm2-app:latest"
 if ! command -v docker &>/dev/null; then
     echo "❌ 'docker' ist nicht installiert. Installiere es mit:"
     echo "👉 https://docs.docker.com/get-docker/"
+    echo "ℹ️ Stelle sicher, dass Docker Desktop ausgeführt wird."
+    echo "ℹ️ Falls permission denied Fehler auftreten, führe folgende Bafehle aus."
+    echo "ℹ️ sudo groupadd docker"
+    echo "ℹ️ sudo usermod -aG docker $USER"
+    echo "ℹ️ newgrp docker"
+    echo "ℹ️ docker run hello-world"
     exit 1
 fi
 
@@ -134,7 +142,6 @@ kubectl label node "${CLUSTER_NAME}"-worker ingress-ready=true # Label hinzufüg
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml -n ingress-nginx # Erzeugt Namespace ingress-nginx
 kubectl apply -f "${NAMESPACE_FILE}" # Erzeugt den Namespace vsdm2
 kubectl apply -f "${ENVOY_FILE}" # Erzeugt den PEP HTTP Proxy
-kubectl apply -f "${HELLO_FILE}" # Erzeugt den Hello-World Service, der von der Ingress-Ressource erreichbar ist
 kubectl apply -f "${OPA_FILE}" # Erzeugt den OPA Service (Policy Engine)
 kubectl apply -f "${ORY_FILE}" # Erzeugt die ORY Services (Authentifizierung und Autorisierung)
 kubectl apply -f "${OTEL_COLLECTOR_FILE}" # Erzeugt den OpenTelemetry Collector (Telemetrie-Daten Service)
@@ -164,23 +171,6 @@ kubectl get svc -n vsdm2
 echo "📌 Ingress-Konfiguration:"
 kubectl get ingress -n vsdm2
 
-# Teste den Zugriff auf die Services
-echo "📌 Teste den Zugriff auf die Ingress-Routen..."
-echo "Hello-World Service:"
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost/hello
-
-echo "Prometheus Service:"
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost/query
-
-echo "Resource Server Service:"
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost/vsdservice/v1/vsdmbundle
-
-echo "✅ Skript erfolgreich abgeschlossen."
-echo "Der Cluster ${CLUSTER_NAME} wurde erstellt und ist einsatzbereit."
-echo "Du kannst den Cluster mit 'kind delete cluster --name ${CLUSTER_NAME}' löschen."
-echo "Die Ingress-Ressource wurde angewendet und ist einsatzbereit."
-echo "Die Services wurden bereitgestellt und sind einsatzbereit."
-
 # Port-Forwarding für Prometheus, Jaeger und Grafana
 echo "🚀 Port-Forwarding für Prometheus..."
 kubectl port-forward svc/prometheus-svc 9090:9090 -n vsdm2 &
@@ -192,3 +182,11 @@ echo "Jaeger ist unter http://localhost:16686 erreichbar."
 echo "Port-Forwarding für Grafana..."
 kubectl port-forward svc/grafana-svc 3000:3000 -n vsdm2 &
 echo "Grafana ist unter http://localhost:3000 erreichbar."
+
+# Teste den Zugriff auf die Services
+echo "Resource Server Service:"
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost/vsdservice/v1/vsdmbundle
+
+echo "✅ Skript erfolgreich abgeschlossen."
+echo "Der Cluster ${CLUSTER_NAME} wurde erstellt und ist einsatzbereit."
+echo "Du kannst den Cluster mit 'kind delete cluster --name ${CLUSTER_NAME}' löschen."

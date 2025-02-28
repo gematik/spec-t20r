@@ -26,6 +26,26 @@ spec:
           requests:
             memory: "512Mi"
             cpu: "0.5"
+        volumeMounts:
+        - name: grafana-dashboard-config # Existing dashboard volume mount
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: grafana-datasource-config # <----- New volumeMount for datasource provisioning
+          mountPath: /etc/grafana/provisioning/datasources # Standard Grafana datasource provisioning path
+          readOnly: true # Recommended: Datasources are usually read-only from ConfigMap
+        env: # <----- Moved 'env' block inside the 'containers[0]' definition
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: "true"
+        - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+          value: "Admin"
+        - name: GF_AUTH_DISABLE_LOGIN_FORM
+          value: "true"
+      volumes:
+      - name: grafana-dashboard-config # Existing dashboard volume
+        configMap:
+          name: grafana-dashboard-otel-collector
+      - name: grafana-datasource-config # <----- New volume definition for datasource provisioning
+        configMap:
+          name: grafana-datasource-prometheus # ConfigMap name for datasource provisioning
 ---
 apiVersion: v1
 kind: Service
@@ -40,4 +60,89 @@ spec:
     port: 3000
     targetPort: 3000
     nodePort: 30030 # Optional: Exposed on NodePort for easy access
-  type: NodePort # Optional: Exposed on NodePort for easy access
+  type: NodePort # Optional: Exposed on NodePort für einfachen Zugriff
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasource-prometheus # Name of your ConfigMap
+  namespace: vsdm2 # Same namespace as Grafana
+data:
+  datasources.yaml: |-
+    # datasources.yaml
+    apiVersion: 1
+
+    datasources:
+      - name: Prometheus # Name as it will appear in Grafana UI
+        type: prometheus # Datasource type: prometheus
+        url: http://prometheus-svc.vsdm2.svc.cluster.local:9090 # URL to your Prometheus service
+        access: proxy # Access mode (proxy or direct - 'proxy' is generally recommended in Kubernetes)
+        isDefault: true # Set to true if you want this to be the default datasource
+        editable: true # Set to true if you want to be able to edit it in Grafana UI (usually false for provisioned datasources)
+        # Add any other Prometheus-specific settings here if needed, e.g.,
+        # basicAuth: false
+        # jsonData:
+        #   httpMethod: GET
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-otel-collector # Name of your ConfigMap
+  namespace: vsdm2 # Same namespace as Grafana
+  labels:
+    grafana_dashboard: "1" # Important label for Grafana to recognize dashboards
+data:
+  otel-collector-dashboard.json: |- # Key is the filename, value is the JSON
+    {
+      "annotations": {
+        "list": []
+      },
+      "editable": true,
+      "gnetId": null,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "panels": [], # <--- Your dashboard panels JSON will go here
+      "refresh": "5s",
+      "schemaVersion": 39,
+      "style": "dark",
+      "tags": [],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
+      "timepicker": {
+        "refresh_intervals": [
+          "5s",
+          "10s",
+          "30s",
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "1d"
+        ],
+        "time_options": [
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "3h",
+          "6h",
+          "12h",
+          "24h",
+          "2d",
+          "7d",
+          "30d"
+        ]
+      },
+      "timezone": "",
+      "title": "OTel Collector Metrics Dashboard", # Dashboard Title
+      "uid": "otelcollectormetrics", # Unique UID for your dashboard
+      "version": 0
+    }
