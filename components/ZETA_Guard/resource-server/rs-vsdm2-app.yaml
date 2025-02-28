@@ -4,7 +4,7 @@ metadata:
   name: rs-vsdm2-app
   namespace: vsdm2
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: rs-vsdm2-app

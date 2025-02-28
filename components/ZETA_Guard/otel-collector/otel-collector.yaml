@@ -4,7 +4,7 @@ metadata:
   name: otel-collector
   namespace: vsdm2
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: otel-collector
@@ -71,7 +71,7 @@ data:
     exporters:
       prometheus:
         endpoint: "0.0.0.0:9090"
-      otlp:
+      otlp/jaeger:
         endpoint: "jaeger-svc:4317"
         tls:
           insecure: true
@@ -112,8 +112,8 @@ data:
         traces:
           receivers: [otlp]
           processors: [batch]  # <-----  CRITICAL: batch processor IS in traces pipeline
-          exporters: [spanmetrics, debug, otlp] # <----- CRITICAL: spanmetrics is in traces pipeline EXPORTERS (as connector)
+          exporters: [spanmetrics, debug, otlp/jaeger] # <----- CRITICAL: spanmetrics is in traces pipeline EXPORTERS (as connector)
         metrics:
-          receivers: [spanmetrics, otlp]
+          receivers: [spanmetrics]
           processors: [batch]
           exporters: [prometheus, debug]
