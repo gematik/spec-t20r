@@ -78,7 +78,7 @@ OTEL_COLLECTOR_FILE="otel-collector/otel-collector.yaml"
 PROMETHEUS_FILE="prometheus/prometheus.yaml"
 JAEGER_FILE="jaeger/jaeger.yaml"
 GRAFANA_FILE="grafana/grafana.yaml"
-RESOURCE_SERVER_FILE="resource_server/rs-vsdm2-app.yaml"
+RESOURCE_SERVER_FILE="resource-server/rs-vsdm2-app.yaml"
 VALKEY_PDP_FILE="valkey-pdp/valkey-pdp.yaml"
 VALKEY_PEP_FILE="valkey-pep/valkey-pep.yaml"
 
