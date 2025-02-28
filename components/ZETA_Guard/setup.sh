@@ -69,7 +69,7 @@ EOF
 echo "🚀 Verwende Cluster-Name: ${CLUSTER_NAME}"
 
 #CONFIG_FILE="kind-zeta-guard/kind-config.yaml"
-INGRESS_FILE="ingress/ingress.yaml"
+NAMESPACE_FILE="namespace/namespace.yaml"
 ENVOY_FILE="envoy/envoy.yaml"
 HELLO_FILE="hello-world/hello-world.yaml"
 OPA_FILE="opa/opa.yaml"
@@ -132,7 +132,7 @@ kubectl config use-context kind-${CLUSTER_NAME}
 echo "Wende die Manifest Dateien an..."
 kubectl label node "${CLUSTER_NAME}"-worker ingress-ready=true # Label hinzufügen, um Ingress auf einem Worker-Node aktivieren zu können
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml -n ingress-nginx # Erzeugt Namespace ingress-nginx
-kubectl apply -f "${INGRESS_FILE}" # Erzeugt namespace vsdm2
+kubectl apply -f "${NAMESPACE_FILE}" # Erzeugt den Namespace vsdm2
 kubectl apply -f "${ENVOY_FILE}" # Erzeugt den PEP HTTP Proxy
 kubectl apply -f "${HELLO_FILE}" # Erzeugt den Hello-World Service, der von der Ingress-Ressource erreichbar ist
 kubectl apply -f "${OPA_FILE}" # Erzeugt den OPA Service (Policy Engine)
