@@ -94,6 +94,7 @@ data:
           - name: http.method
             default: GET
           - name: http.status_code
+          - name: http.route
         exemplars:
           enabled: true
         exclude_dimensions: ['status.code']
