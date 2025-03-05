@@ -19,7 +19,7 @@ spec:
         command: ["/otelcol-contrib", "--config=/etc/bde-collector-config.yaml"]
         volumeMounts:
         - name: bde-collector-config-vol
-          mountPath: /etc
+          mountPath: /etc/bde-collector-config.yaml
           subPath: bde-collector-config.yaml
         ports:
         - containerPort: 4317 # OTLP gRPC Receiver Port
