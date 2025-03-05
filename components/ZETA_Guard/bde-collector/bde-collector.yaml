@@ -19,13 +19,11 @@ spec:
         command: ["/otelcol-contrib", "--config=/etc/bde-collector-config.yaml"]
         volumeMounts:
         - name: bde-collector-config-vol
-          mountPath: /etc/bde-collector-config.yaml
+          mountPath: /etc
           subPath: bde-collector-config.yaml
         ports:
         - containerPort: 4317 # OTLP gRPC Receiver Port
           name: otlp-grpc
-        - containerPort: 4318 # OTLP HTTP Receiver Port
-          name: otlp-http
       volumes:
       - name: bde-collector-config-vol
         configMap:
@@ -44,10 +42,6 @@ spec:
     port: 4317
     targetPort: 4317
     name: otlp-grpc
-  - protocol: TCP
-    port: 4318
-    targetPort: 4318
-    name: otlp-http
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -55,20 +49,16 @@ metadata:
   name: bde-collector-config
   namespace: vsdm2
 data:
-  otel-collector-config.yaml: |
+  bde-collector-config.yaml: |
     receivers:
       otlp:
         protocols:
           grpc:
             endpoint: "0.0.0.0:4317"
-          http:
-            endpoint: "0.0.0.0:4318"
 
     exporters:
-      otlp/timescaledb: # Definieren Sie einen Exporter für TimescaleDB (Name kann angepasst werden)
-        endpoint: "<timescaledb-otlp-receiver-host>:<timescaledb-otlp-receiver-port>" # Ersetzen Sie dies mit dem Host und Port des TimescaleDB OTLP Empfängers
-        tls:
-          insecure: true # Für Testzwecke.  In Produktion MÜSSEN Sie TLS konfigurieren!
+      debug:
+        verbosity: normal
 
     processors:
       batch:
@@ -78,8 +68,8 @@ data:
         traces:
           receivers: [otlp]
           processors: [batch]
-          exporters: [otlp/timescaledb] # Verwenden Sie den TimescaleDB Exporter für Traces
+          exporters: [debug] # Verwenden Sie den TimescaleDB Exporter für Traces
         metrics:
           receivers: [otlp] # OTLP Receiver auch für Metriken, falls Sie Metriken an diesen Collector senden möchten
           processors: [batch]
-          exporters: [otlp/timescaledb] # Verwenden Sie den TimescaleDB Exporter auch für Metriken
+          exporters: [debug] # Verwenden Sie den TimescaleDB Exporter auch für Metriken

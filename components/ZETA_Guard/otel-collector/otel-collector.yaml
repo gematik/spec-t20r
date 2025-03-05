@@ -75,6 +75,10 @@ data:
         endpoint: "jaeger-svc:4317"
         tls:
           insecure: true
+      otlp/bde:
+        endpoint: "bde-collector-svc:4317"
+        tls:
+          insecure: true
       debug:
         verbosity: normal
   
@@ -112,8 +116,8 @@ data:
         traces:
           receivers: [otlp]
           processors: [batch]  # <-----  CRITICAL: batch processor IS in traces pipeline
-          exporters: [spanmetrics, debug, otlp/jaeger] # <----- CRITICAL: spanmetrics is in traces pipeline EXPORTERS (as connector)
+          exporters: [spanmetrics, debug, otlp/jaeger, otlp/bde] # <----- CRITICAL: spanmetrics is in traces pipeline EXPORTERS (as connector)
         metrics:
-          receivers: [spanmetrics]
+          receivers: [spanmetrics, otlp]
           processors: [batch]
-          exporters: [prometheus, debug]
+          exporters: [prometheus, debug, otlp/bde]

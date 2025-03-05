@@ -14,14 +14,18 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
+// ... (Strukturdefinitionen von oben) ...
 type GetVSDMBundleResponse struct {
 	VSDMBundle VSDMBundle `json:"VSDMBundle"`
 }
@@ -59,18 +63,18 @@ type Entry struct {
 
 type Resource struct {
 	ResourceType string       `json:"resourceType"`
-	Id           string       `json:"id,omitempty"`           // omitempty because some resources in entry don't have id in example
-	Meta         *Meta        `json:"meta,omitempty"`         // omitempty because Bundle.resource does not have meta
-	Identifier   []Identifier `json:"identifier,omitempty"`   // omitempty because Patient and Organization have identifier
-	Status       string       `json:"status,omitempty"`       // omitempty because Coverage has status
-	Type         *Type        `json:"type,omitempty"`         // omitempty because Coverage has type
-	SubscriberId string       `json:"subscriberId,omitempty"` // omitempty because Coverage has subscriberId
-	Beneficiary  *Reference   `json:"beneficiary,omitempty"`  // omitempty because Coverage has beneficiary
-	Payor        []Reference  `json:"payor,omitempty"`        // omitempty because Coverage has payor
-	Period       *Period      `json:"period,omitempty"`       // omitempty because Coverage has period
-	Name         []Name       `json:"name,omitempty"`         // omitempty because Patient has name
-	Gender       string       `json:"gender,omitempty"`       // omitempty because Patient has gender
-	BirthDate    string       `json:"birthDate,omitempty"`    // omitempty because Patient has birthDate
+	Id           string       `json:"id,omitempty"`
+	Meta         *Meta        `json:"meta,omitempty"`
+	Identifier   []Identifier `json:"identifier,omitempty"`
+	Status       string       `json:"status,omitempty"`
+	Type         *Type        `json:"type,omitempty"`
+	SubscriberId string       `json:"subscriberId,omitempty"`
+	Beneficiary  *Reference   `json:"beneficiary,omitempty"`
+	Payor        []Reference  `json:"payor,omitempty"`
+	Period       *Period      `json:"period,omitempty"`
+	Name         []Name       `json:"name,omitempty"`
+	Gender       string       `json:"gender,omitempty"`
+	BirthDate    string       `json:"birthDate,omitempty"`
 }
 
 type Type struct {
@@ -98,7 +102,15 @@ type Name struct {
 
 var debugMode bool
 
-func initTracer() *sdktrace.TracerProvider {
+// Konstanten für Produktinformationen und Konfiguration
+const (
+	productName          = "rs-vsdm2-app"
+	productVersion       = "1.0.1"
+	productTypeVersion   = "VSDM2" // Beispiel für Produkt-Typ Version
+	configurationVersion = "1.0"   // Beispiel für Konfigurationsversion
+)
+
+func initTelemetry() (*sdktrace.TracerProvider, *sdkmetric.MeterProvider) {
 	ctx := context.Background()
 	otlpEndpoint := os.Getenv("OTLP_ENDPOINT")
 	if otlpEndpoint == "" {
@@ -110,18 +122,11 @@ func initTracer() *sdktrace.TracerProvider {
 		log.Printf("[DEBUG] OTLP Exporter sending to: %s", otlpEndpoint)
 	}
 
-	exporter, err := otlptracegrpc.New(ctx,
-		otlptracegrpc.WithEndpoint(otlpEndpoint),
-		otlptracegrpc.WithInsecure(),
-	)
-	if err != nil {
-		log.Fatalf("[ERROR] Failed to create OTLP exporter: %v", err)
-	}
-
+	// Erstellen eines gemeinsamen Resource-Objekts
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceName("rs-vsdm2-app"),
-			semconv.ServiceVersion("1.0.0"),
+			semconv.ServiceName(productName),
+			semconv.ServiceVersion(productVersion),
 			attribute.String("environment", "development"),
 		),
 	)
@@ -129,16 +134,95 @@ func initTracer() *sdktrace.TracerProvider {
 		log.Fatalf("[ERROR] Failed to create OpenTelemetry resource: %v", err)
 	}
 
+	// Trace Exporter setup
+	traceExporter, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithEndpoint(otlpEndpoint),
+		otlptracegrpc.WithInsecure(),
+	)
+	if err != nil {
+		log.Fatalf("[ERROR] Failed to create OTLP trace exporter: %v", err)
+	}
+
+	// Trace Provider
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
-		sdktrace.WithBatcher(exporter),
+		sdktrace.WithBatcher(traceExporter),
 		sdktrace.WithResource(res),
 	)
+
+	// Metrics Exporter setup
+	metricExporter, err := otlpmetricgrpc.New(ctx,
+		otlpmetricgrpc.WithEndpoint(otlpEndpoint),
+		otlpmetricgrpc.WithInsecure(),
+	)
+	if err != nil {
+		log.Fatalf("[ERROR] Failed to create OTLP metric exporter: %v", err)
+	}
+
+	// Erstellen eines korrekten metric readers mit dem exporter
+	metricReader := sdkmetric.NewPeriodicReader(metricExporter,
+		// Optional: Konfigurieren des Intervalls (Standard: 60s)
+		sdkmetric.WithInterval(60*time.Second),
+	)
+
+	// Metrics Provider
+	mp := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(metricReader),
+	)
+
 	otel.SetTracerProvider(tp)
+	otel.SetMeterProvider(mp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
-	log.Println("[INFO] OpenTelemetry tracer initialized successfully")
-	return tp
+	log.Println("[INFO] OpenTelemetry tracer and meter initialized successfully")
+	return tp, mp
+}
+
+func reportProductInfoMetric(mp *sdkmetric.MeterProvider) {
+	meter := mp.Meter("rs-vsdm2-app-metrics")
+
+	// Erstellen eines Observable Gauge für Product Info
+	counter, err := meter.Float64ObservableGauge(
+		"product_info",
+		metric.WithDescription("Information about the product"),
+	)
+
+	if err != nil {
+		log.Printf("[ERROR] Failed to create gauge instrument: %v", err)
+		return
+	}
+
+	// Registriere eine Callback-Funktion für unsere Observable Gauge
+	_, err = meter.RegisterCallback(
+		func(_ context.Context, o metric.Observer) error {
+			podName := os.Getenv("POD_NAME")
+			if podName == "" {
+				podName = "unknown"
+			}
+
+			// Attribute korrekt erstellen
+			attrs := []attribute.KeyValue{
+				attribute.String("product.name", productName),
+				attribute.String("product.version", productVersion),
+				attribute.String("producttype.version", productTypeVersion),
+				attribute.String("configuration.version", configurationVersion),
+				attribute.String("pod.name", podName),
+				attribute.String("timestamp", time.Now().Format(time.RFC3339)),
+			}
+
+			o.ObserveFloat64(counter, 1.0, metric.WithAttributes(attrs...))
+			return nil
+		},
+		counter,
+	)
+
+	if err != nil {
+		log.Printf("[ERROR] Failed to register callback: %v", err)
+		return
+	}
+
+	log.Println("[INFO] Product info metric registered")
 }
 
 func getVSDMBundleHandler(tracer trace.Tracer) http.HandlerFunc {
@@ -268,7 +352,7 @@ func getVSDMBundleHandler(tracer trace.Tracer) http.HandlerFunc {
 									Value:  "ORG12345",
 								},
 							},
-							Name: []Name{ // Corrected Name field assignment
+							Name: []Name{
 								{
 									Family: "Beispiel Krankenkasse",
 									Given:  []string{},
@@ -332,17 +416,23 @@ func main() {
 		log.Println("[DEBUG] Debug mode is enabled")
 	}
 
-	tp := initTracer()
+	tp, mp := initTelemetry()
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := tp.Shutdown(ctx); err != nil {
 			log.Fatalf("[ERROR] TracerProvider shutdown failed: %v", err)
 		}
-		log.Println("[INFO] TracerProvider shut down successfully")
+		if err := mp.Shutdown(ctx); err != nil {
+			log.Fatalf("[ERROR] MeterProvider shutdown failed: %v", err)
+		}
+		log.Println("[INFO] TracerProvider and MeterProvider shut down successfully")
 	}()
 
 	tracer := otel.Tracer("rs-vsdm2-app")
+
+	// Berichte Produkt-Info-Metrik mit dem Meter Provider
+	reportProductInfoMetric(mp)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/vsdservice/v1/vsdmbundle", getVSDMBundleHandler(tracer))
