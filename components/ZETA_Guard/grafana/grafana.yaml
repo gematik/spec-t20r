@@ -296,7 +296,14 @@ data:
                     "value": 80
                   }
                 ]
-              }
+              },
+              "links": [
+                {
+                  "title": "Sample Trace in Jaeger",
+                  "url": "http://localhost:16686/search?service=envoy-pep-svc&operation=HTTP&tags={\"http.status_code\":\"${__data.fields.http_status_code}\"}&start=${__from}&end=${__to}",
+                  "internal": false
+                }
+              ]
             },
             "overrides": []
           },
@@ -328,13 +335,13 @@ data:
                 "type": "prometheus"
               },
               "editorMode": "code",
-              "expr": "sum by (http_method) (rate(traces_span_metrics_calls_total{job=\"otel-collector\"}[1m]))",
-              "legendFormat": "__auto",
+              "expr": "sum by (http_status_code) (rate(traces_span_metrics_calls_total{job=\"otel-collector\"}[1m]))",
+              "legendFormat": "{{http_status_code}}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Requests per Second",
+          "title": "Requests per Second pro HTTP Statuscode",
           "type": "timeseries"
         }
       ],
@@ -346,7 +353,7 @@ data:
         "list": []
       },
       "time": {
-        "from": "now-6h",
+        "from": "now-15m",
         "to": "now"
       },
       "timepicker": {},

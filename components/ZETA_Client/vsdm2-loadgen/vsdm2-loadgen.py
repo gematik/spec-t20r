@@ -5,6 +5,7 @@ vsdm2-loadgen.py
 
 Erzeugt Last auf einen VSD Service Endpoint, indem es HTTP GET Requests sendet.
 Unterstützt parallele Requests mit Threads.
+Jeder 10. Aufruf verwendet den Pfad /unknown.
 
 Verwendung:
   vsdm2-loadgen.py --rps <requests_per_second> --duration <duration_in_seconds> [--url <ziel_url>] [--log-level <level>] [--threads <num_threads>]
@@ -48,22 +49,29 @@ def send_requests_thread(url, duration, rps_thread, log_level_str, thread_id):
     logger_thread.debug(f"Thread-{thread_id}: Starte, RPS pro Thread: {rps_thread}, Sleep Interval: {sleep_interval_thread:.4f}")
 
     start_time_second = time.time()
+    thread_request_counter = 0 # Zähler für Requests pro Thread
 
     for second in range(duration):
         end_time_for_second = start_time_second + 1
         requests_this_second = 0
         while time.time() < end_time_for_second and requests_this_second < rps_thread:
+            thread_request_counter += 1
+            target_url = url
+            if thread_request_counter % 10 == 0:
+                target_url = url.rstrip('/') + "/unknown" # Sicherstellen, dass keine doppelten Slashes entstehen
+                logger_thread.debug(f"Thread-{thread_id}: Sende Request an unbekannten Pfad: {target_url}")
+
             try:
-                response = requests.get(url)
+                response = requests.get(target_url)
                 response.raise_for_status()
                 with threading.Lock(): # Thread-safe increment für globale Zähler
                     global request_count_global
                     request_count_global += 1
                 requests_this_second += 1
-                logger_thread.debug(f"Thread-{thread_id}: Request erfolgreich gesendet. Status Code: {response.status_code}")
+                logger_thread.debug(f"Thread-{thread_id}: Request erfolgreich gesendet an {target_url}. Status Code: {response.status_code}")
             except requests.exceptions.RequestException as e:
-                logger_thread.error(f"Thread-{thread_id}: Fehler beim Senden des Requests: {e}")
-                logger_thread.debug(f"Thread-{thread_id}: Exception details: {e}")
+                #logger_thread.error(f"Thread-{thread_id}: Fehler beim Senden des Requests an {target_url}: {e}")
+                #logger_thread.debug(f"Thread-{thread_id}: Exception details: {e}")
                 with threading.Lock(): # Thread-safe increment für globale Fehlerzähler
                     global error_count_global
                     error_count_global += 1
