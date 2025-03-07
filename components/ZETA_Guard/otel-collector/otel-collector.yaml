@@ -113,11 +113,11 @@ data:
           - telemetry.sdk.name
     
     service:
-      telemetry: # internal otel-collector metrics
-        metrics:
-          level: detailed
-        logs:
-          level: debug
+      #telemetry: # internal otel-collector metrics
+      #  metrics:
+      #    level: detailed
+      #  logs:
+      #    level: debug
       pipelines:
         traces:
           receivers: [otlp]

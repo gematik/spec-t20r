@@ -325,7 +325,7 @@ data:
             {
               "editorMode": "code",
               "expr": "rate(process_network_receive_bytes_total[1m])",
-              "legendFormat": "Data Volume (Bytes/sec)",
+              "legendFormat": "__auto",
               "range": true,
               "refId": "A",
               "datasource": {

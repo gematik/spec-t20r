@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: jaeger
-        image: jaegertracing/jaeger:latest
+        image: jaegertracing/all-in-one # image: jaegertracing/jaeger:latest
         ports:
         - containerPort: 4317 # Jaeger gRPC Collector port (OTLP/gRPC)
           name: jaeger-grpc
@@ -26,6 +26,9 @@ spec:
         - containerPort: 16686 # Jaeger UI port
           name: jaeger-ui
           protocol: TCP
+        - containerPort: 14269 # Prometheus Metrics
+          name: prometheus
+          protocol: TCP
         resources:
           limits:
             memory: "1Gi"
@@ -33,6 +36,9 @@ spec:
           requests:
             memory: "512Mi"
             cpu: "0.5"
+        env:
+        - name: METRICS_STORAGE_TYPE
+          value: "prometheus"
 ---
 apiVersion: v1
 kind: Service
@@ -55,4 +61,8 @@ spec:
     port: 16686
     targetPort: jaeger-ui
     name: jaeger-ui
+  - protocol: TCP  # Prometheus Port
+    port: 14269     # Standard Prometheus Port von Jaeger
+    targetPort: 14269 # Target Port im Container (standardmäßig auch 14269)
+    name: prometheus-metrics
   type: ClusterIP
