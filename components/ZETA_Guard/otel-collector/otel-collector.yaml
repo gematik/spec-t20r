@@ -116,6 +116,8 @@ data:
       telemetry: # internal otel-collector metrics
         metrics:
           level: detailed
+        logs:
+          level: debug
       pipelines:
         traces:
           receivers: [otlp]

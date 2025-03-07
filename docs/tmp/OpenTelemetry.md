@@ -25,6 +25,7 @@
   - [5. Anhang, OpenTelemetry Collector Deployment](#5-anhang-opentelemetry-collector-deployment)
   - [6. Traces und Metriken in OpenTelemetry](#6-traces-und-metriken-in-opentelemetry)
   - [7. OpenTelemetry Collector Konfiguration Abschnitt für Abschnitt](#7-opentelemetry-collector-konfiguration-abschnitt-für-abschnitt)
+  - [8. Referenzen](#8-referenzen)
 
 
 ## 1. Einführung
@@ -1081,3 +1082,9 @@ service:
 *   **Metrik-Generierung aus Traces**: Diese Konfiguration demonstriert, wie man mit dem `spanmetrics` Connector automatisch wertvolle Metriken aus den Traces generieren kann, ohne dass Anwendungen explizit Metriken instrumentieren müssen. Dies ist ein sehr mächtiges Feature des OpenTelemetry Collectors.
 
 Diese Konfiguration ist ein gutes Beispiel für einen OTel Collector, der Traces und Metriken verarbeitet, Metriken aus Traces generiert und die Daten an verschiedene Backend-Systeme (Prometheus, Jaeger) exportiert, während er gleichzeitig Debugging-Möglichkeiten bietet.
+
+## 8. Referenzen
+
+1. [OpenTelemetry Homepage](https://opentelemetry.io/)
+2. [OpenTelemetry Cookbook](https://www.youtube.com/watch?v=UGTU0-KT_60)
+3. [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md)
