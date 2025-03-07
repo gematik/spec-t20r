@@ -4,7 +4,7 @@ metadata:
   name: otel-collector
   namespace: vsdm2
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: otel-collector
@@ -80,7 +80,7 @@ data:
         tls:
           insecure: true
       debug:
-        verbosity: normal
+        verbosity: detailed
   
     processors:
       batch:

@@ -397,7 +397,7 @@ data:
               "links": [
                 {
                   "title": "Sample Trace in Jaeger",
-                  "url": "http://localhost:16686/search?service=envoy-pep-svc&operation=HTTP&tags={\"http.status_code\":\"${__data.fields.http_status_code}\"}&start=${__from}&end=${__to}",
+                  "url": "http://localhost:16686/search?service=envoy-pep-svc&operation=HTTP&tags={\"http.status_code\"=\"${__data.fields.http_status_code}\"}&start=${__from}&end=${__to}",
                   "internal": false
                 }
               ]
