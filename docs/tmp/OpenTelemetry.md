@@ -1087,4 +1087,5 @@ Diese Konfiguration ist ein gutes Beispiel für einen OTel Collector, der Traces
 
 1. [OpenTelemetry Homepage](https://opentelemetry.io/)
 2. [OpenTelemetry Cookbook](https://www.youtube.com/watch?v=UGTU0-KT_60)
-3. [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md)
+3. [OpenTelemetry Filter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor)
+4. [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md)
