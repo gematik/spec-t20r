@@ -80,9 +80,14 @@ data:
         tls:
           insecure: true
       debug:
-        verbosity: detailed
+        verbosity: normal
   
     processors:
+      filter/bde-traces:
+        error_mode: ignore
+        traces:
+          span:
+            - IsMatch(resource.attributes["service.name"], "envoy-pep-svc")
       batch:
     
     connectors:
@@ -119,11 +124,15 @@ data:
       #  logs:
       #    level: debug
       pipelines:
-        traces:
+        traces/all: # <----- Original Pipeline für alle Traces
           receivers: [otlp]
           processors: [batch]  # <-----  CRITICAL: batch processor IS in traces pipeline
-          exporters: [spanmetrics, debug, otlp/jaeger, otlp/bde] # <----- CRITICAL: spanmetrics is in traces pipeline EXPORTERS (as connector)
+          exporters: [spanmetrics, debug, otlp/jaeger] # <----- CRITICAL: spanmetrics is in traces pipeline EXPORTERS (as connector)
+        traces/bde: # <----- Pipeline für BDE (gefiltert)
+          receivers: [otlp]
+          processors: [filter/bde-traces, batch] # <----- Filter HIER eingefügt
+          exporters: [otlp/bde] # <----- Nur otlp/bde Exporter in dieser Pipeline
         metrics:
           receivers: [spanmetrics, otlp]
           processors: [batch]
-          exporters: [prometheus, debug, otlp/bde]
+          exporters: [prometheus, debug]
