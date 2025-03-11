@@ -51,6 +51,8 @@ def send_requests_thread(url, duration, rps_thread, log_level_str, thread_id):
     start_time_second = time.time()
     thread_request_counter = 0 # Zähler für Requests pro Thread
 
+    session = requests.Session() # Session für Connection Pooling erstellen
+
     for second in range(duration):
         end_time_for_second = start_time_second + 1
         requests_this_second = 0
@@ -62,22 +64,23 @@ def send_requests_thread(url, duration, rps_thread, log_level_str, thread_id):
                 logger_thread.debug(f"Thread-{thread_id}: Sende Request an unbekannten Pfad: {target_url}")
 
             try:
-                response = requests.get(target_url)
+                response = session.get(target_url) # Verwende session.get() für Connection Pooling
                 response.raise_for_status()
                 with threading.Lock(): # Thread-safe increment für globale Zähler
                     global request_count_global
                     request_count_global += 1
                 requests_this_second += 1
-                logger_thread.debug(f"Thread-{thread_id}: Request erfolgreich gesendet an {target_url}. Status Code: {response.status_code}")
+                logger_thread.debug(f"Thread-{thread_id}: Request erfolgreich gesendet an {target_url}. Status Code: {response.status_code}") # DEBUG Log behalten, aber Level wird im Main gesteuert
             except requests.exceptions.RequestException as e:
-                #logger_thread.error(f"Thread-{thread_id}: Fehler beim Senden des Requests an {target_url}: {e}")
-                #logger_thread.debug(f"Thread-{thread_id}: Exception details: {e}")
+                #logger_thread.error(f"Thread-{thread_id}: Fehler beim Senden des Requests an {target_url}: {e}") # Optional Error Log falls benötigt
+                #logger_thread.debug(f"Thread-{thread_id}: Exception details: {e}") # Optional Debug Log falls benötigt
                 with threading.Lock(): # Thread-safe increment für globale Fehlerzähler
                     global error_count_global
                     error_count_global += 1
             time.sleep(sleep_interval_thread)
         start_time_second += 1 # Startzeit für nächste Sekunde setzen
 
+    session.close() # Session am Ende schliessen
     logger_thread.debug(f"Thread-{thread_id}: Beendet.")
 
 
@@ -88,7 +91,7 @@ def main():
     parser.add_argument('--rps', type=int, default=20, help='Requests pro Sekunde')
     parser.add_argument('--duration', type=int, default=10, help='Dauer in Sekunden')
     parser.add_argument('--url', type=str, default='http://localhost/vsdservice/v1/vsdmbundle', help='Ziel URL (optional)')
-    parser.add_argument('--log-level', type=str, default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help='Logging Level (optional)')
+    parser.add_argument('--log-level', type=str, default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help='Logging Level (optional)') # Standard auf INFO gesetzt
     parser.add_argument('--threads', type=int, default=1, help='Anzahl paralleler Threads (optional)')
     parser.add_argument('--help', action='store_true', help='Hilfe anzeigen')
 
@@ -101,7 +104,7 @@ def main():
     rps = args.rps
     duration = args.duration
     url = args.url
-    log_level_str = args.log_level.upper()
+    log_level_str = args.log_level.upper() # Log Level aus Argumenten übernehmen
     num_threads = args.threads
 
     # Configure logging with coloredlogs
@@ -110,7 +113,7 @@ def main():
     level_styles = coloredlogs.DEFAULT_LEVEL_STYLES
     if log_level_str == 'DEBUG':
         level_styles['debug'] = {'color': 'cyan'} # Make debug level more visible
-    coloredlogs.install(level=log_level_str, field_styles=field_styles, level_styles=level_styles)
+    coloredlogs.install(level=log_level_str, field_styles=field_styles, level_styles=level_styles) # Verwende log_level_str aus Argumenten
     logger = logging.getLogger(__name__) # Get logger for main module
 
     if rps <= 0 or duration <= 0 or num_threads <= 0:
@@ -122,7 +125,7 @@ def main():
     logger.info(f"  Gesamt Requests pro Sekunde (RPS): {rps}")
     logger.info(f"  Dauer: {duration} Sekunden")
     logger.info(f"  Anzahl Threads: {num_threads}")
-    logger.debug(f"Logging Level gesetzt auf: {log_level_str}")
+    logger.debug(f"Logging Level gesetzt auf: {log_level_str}") # Debug Log behalten, Level wird aber über Kommandozeile gesteuert
 
     start_time_global = time.time()
     request_count_global = 0 # Zurücksetzen der globalen Zähler

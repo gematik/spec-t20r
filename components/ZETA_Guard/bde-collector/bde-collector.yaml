@@ -21,6 +21,13 @@ spec:
         - name: bde-collector-config-vol
           mountPath: /etc/bde-collector-config.yaml
           subPath: bde-collector-config.yaml
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
         ports:
         - containerPort: 4317 # OTLP gRPC Receiver Port
           name: otlp-grpc

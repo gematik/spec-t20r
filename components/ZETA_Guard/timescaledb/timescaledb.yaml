@@ -26,6 +26,13 @@ spec:
           value: "otelcollector" # Benutzername für den Collector-Zugriff
         - name: POSTGRES_DB
           value: "otel_telemetry" # Datenbankname für Telemetriedaten
+        resources:
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
         volumeMounts:
         - name: timescaledb-data
           mountPath: /var/lib/postgresql/data # Standard PostgreSQL Datenverzeichnis im Container

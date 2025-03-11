@@ -4,7 +4,7 @@ metadata:
   name: rs-vsdm2-app
   namespace: vsdm2
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: rs-vsdm2-app
@@ -20,6 +20,13 @@ spec:
         ports:
         - containerPort: 8080
           name: http
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
         env:
         - name: OTLP_ENDPOINT
           value: "otel-collector-svc.vsdm2.svc.cluster.local:4317" # OTEL Collector Service URL

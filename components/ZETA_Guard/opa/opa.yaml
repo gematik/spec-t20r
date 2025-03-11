@@ -25,6 +25,13 @@ spec:
         - name: opa-config-vol
           mountPath: /config
           readOnly: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
         ports:
         - containerPort: 8181
           name: http

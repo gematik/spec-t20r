@@ -1,0 +1,311 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-for-bde-collector 
+  namespace: vsdm2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: bde-collector      
+  minReplicas: 1                  # Passe die minimalen Replicas an
+  maxReplicas: 8                  # Passe die maximalen Replicas an
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-for-envoy-pep
+  namespace: vsdm2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: envoy-pep      
+  minReplicas: 1                  # Passe die minimalen Replicas an
+  maxReplicas: 8                  # Passe die maximalen Replicas an
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-for-grafana
+  namespace: vsdm2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: grafana      
+  minReplicas: 1                  # Passe die minimalen Replicas an
+  maxReplicas: 8                  # Passe die maximalen Replicas an
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-for-ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ingress-nginx-controller      
+  minReplicas: 1                  # Passe die minimalen Replicas an
+  maxReplicas: 8                  # Passe die maximalen Replicas an
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-for-jaeger 
+  namespace: vsdm2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: jaeger      
+  minReplicas: 1                  # Passe die minimalen Replicas an
+  maxReplicas: 8                  # Passe die maximalen Replicas an
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-for-opa 
+  namespace: vsdm2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: opa      
+  minReplicas: 1                  # Passe die minimalen Replicas an
+  maxReplicas: 8                  # Passe die maximalen Replicas an
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-for-ory-hydra 
+  namespace: vsdm2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ory-hydra      
+  minReplicas: 1                  # Passe die minimalen Replicas an
+  maxReplicas: 8                  # Passe die maximalen Replicas an
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-for-otel-collector 
+  namespace: vsdm2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: otel-collector      
+  minReplicas: 1                  # Passe die minimalen Replicas an
+  maxReplicas: 8                  # Passe die maximalen Replicas an
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-for-prometheus 
+  namespace: vsdm2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: prometheus      
+  minReplicas: 1                  # Passe die minimalen Replicas an
+  maxReplicas: 8                  # Passe die maximalen Replicas an
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-for-rs-vsdm2-app 
+  namespace: vsdm2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: rs-vsdm2-app      
+  minReplicas: 1                  # Passe die minimalen Replicas an
+  maxReplicas: 8                  # Passe die maximalen Replicas an
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-for-valkey-pdp 
+  namespace: vsdm2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: valkey-pdp      
+  minReplicas: 1                  # Passe die minimalen Replicas an
+  maxReplicas: 8                  # Passe die maximalen Replicas an
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-for-valkey-pep 
+  namespace: vsdm2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: valkey-pep      
+  minReplicas: 1                  # Passe die minimalen Replicas an
+  maxReplicas: 8                  # Passe die maximalen Replicas an
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

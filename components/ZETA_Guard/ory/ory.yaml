@@ -21,6 +21,13 @@ spec:
           name: public
         - containerPort: 4445
           name: admin
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
         env:
         - name: DSN
           value: "memory" # Changed to explicit in-memory DSN

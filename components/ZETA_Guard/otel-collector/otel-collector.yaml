@@ -17,6 +17,13 @@ spec:
       - name: otel-collector
         image: otel/opentelemetry-collector-contrib:latest
         command: ["/otelcol-contrib", "--config=/etc/otel-collector-config.yaml"]
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
         volumeMounts:
         - name: otel-collector-config-vol
           mountPath: /etc/otel-collector-config.yaml
@@ -87,7 +94,7 @@ data:
         error_mode: ignore
         traces:
           span:
-            - IsMatch(resource.attributes["service.name"], "envoy-pep-svc")
+            - IsMatch(resource.attributes["service.name"], "rs-vsdm2-app-svc")
       batch:
     
     connectors:
@@ -124,7 +131,7 @@ data:
       #  logs:
       #    level: debug
       pipelines:
-        traces/all: # <----- Original Pipeline für alle Traces
+        traces/all: # <----- Pipeline für alle Traces
           receivers: [otlp]
           processors: [batch]  # <-----  CRITICAL: batch processor IS in traces pipeline
           exporters: [spanmetrics, debug, otlp/jaeger] # <----- CRITICAL: spanmetrics is in traces pipeline EXPORTERS (as connector)

@@ -5,7 +5,6 @@ set -e  # Beendet das Skript bei einem Fehler
 # Standardwerte
 CLUSTER_NAME="zeta-guard"
 INGRESS_PORT=80  # Standardport für Ingress
-INGRESS_PORT_TLS=443  # Standardport für Ingress TLS
 
 # Hilfe-Funktion
 usage() {
@@ -35,7 +34,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -p|--port)
             INGRESS_PORT="$2"
-            INGRESS_PORT_TLS="$2"43
             shift 2
             ;;
         -h|--help)
@@ -64,15 +62,14 @@ nodes:
   extraPortMappings:
   - containerPort: 80
     hostPort: ${INGRESS_PORT}   # Dynamischer Ingress-Port
-  - containerPort: 443
-    hostPort: ${INGRESS_PORT_TLS} # Dynamischer Ingress-Port for HTTPS
-
 EOF
 
 echo "🚀 Verwende Cluster-Name: ${CLUSTER_NAME}"
 
 #CONFIG_FILE="kind-zeta-guard/kind-config.yaml"
 NAMESPACE_FILE="namespace/namespace.yaml"
+INGRESS_FILE="ingress/ingress.yaml"
+INGRESS_VSDM2_FILE="ingress/ingress-vsdm2.yaml"
 ENVOY_FILE="envoy/envoy.yaml"
 OPA_FILE="opa/opa.yaml"
 ORY_FILE="ory/ory.yaml"
@@ -83,6 +80,8 @@ GRAFANA_FILE="grafana/grafana.yaml"
 RESOURCE_SERVER_FILE="resource-server/rs-vsdm2-app.yaml"
 VALKEY_PDP_FILE="valkey-pdp/valkey-pdp.yaml"
 VALKEY_PEP_FILE="valkey-pep/valkey-pep.yaml"
+METRICS_SERVER_FILE="metrics-server/metrics-server.yaml"
+HPA_FILE="metrics-server/horizontal-pod-autoscaler.yaml"
 
 # Docker-Image, das in den Cluster geladen werden soll
 DOCKERFILE_PATH="resource-server/src/Dockerfile"
@@ -139,8 +138,17 @@ kubectl config use-context kind-${CLUSTER_NAME}
 # Manifest Dateien anwenden
 echo "Wende die Manifest Dateien an..."
 kubectl label node "${CLUSTER_NAME}"-worker ingress-ready=true # Label hinzufügen, um Ingress auf einem Worker-Node aktivieren zu können
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml -n ingress-nginx # Erzeugt Namespace ingress-nginx
 kubectl apply -f "${NAMESPACE_FILE}" # Erzeugt den Namespace vsdm2
+kubectl apply -f "${INGRESS_FILE}" # Erzeugt den Ingress Controller
+# Warte bis der Ingress Nginx Controller Deployment bereit ist
+echo "⏳ Warten auf Ingress Nginx Controller Deployment..."
+kubectl wait --namespace ingress-nginx \
+  --for=condition=available --timeout=120s deployment/ingress-nginx-controller
+# Warte bis der Ingress Nginx Admission Controller Job abgeschlossen ist
+#echo "⏳ Warten auf Ingress Nginx Admission Controller Job..."
+#kubectl wait --namespace ingress-nginx \
+#  --for=condition=complete --timeout=120s job/ingress-nginx-admission-patch
+kubectl apply -f "${INGRESS_VSDM2_FILE}" # Erzeugt den Ingress für die VSDM2 App
 kubectl apply -f "${ENVOY_FILE}" # Erzeugt den PEP HTTP Proxy
 kubectl apply -f "${OPA_FILE}" # Erzeugt den OPA Service (Policy Engine)
 kubectl apply -f "${ORY_FILE}" # Erzeugt die ORY Services (Authentifizierung und Autorisierung)
@@ -151,6 +159,9 @@ kubectl apply -f "${GRAFANA_FILE}" # Erzeugt den Grafana Service (Dashboard)
 kubectl apply -f "${RESOURCE_SERVER_FILE}" # Erzeugt den Resource Server Service (VSDM2 App)
 kubectl apply -f "${VALKEY_PDP_FILE}" # Erzeugt die PDP DB Service (ValKey)
 kubectl apply -f "${VALKEY_PEP_FILE}" # Erzeugt den PEP DB Service (ValKey)
+#kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml # Erzeugt den Metrics Server (Ressourcenverbrauch)
+kubectl apply -f "${METRICS_SERVER_FILE}" # Erzeugt den Metrics Server (Ressourcenverbrauch)
+kubectl apply -f "${HPA_FILE}" # Erzeugt den Horizontal Pod Autoscaler (HPA)
 
 # Warten, bis die Ressourcen bereit sind
 echo "Warten, bis die Deployments hochgefahren sind..."
@@ -163,7 +174,9 @@ echo "📌 Verfügbare Namespaces:"
 kubectl get namespaces
 
 echo "📌 Running Pods:"
-kubectl get pods -n vsdm2
+kubectl get pods -A
+kubectl top pod -A
+kubectl get hpa -A
 
 echo "📌 Running Services:"
 kubectl get svc -n vsdm2
@@ -177,7 +190,7 @@ kubectl port-forward svc/prometheus-svc 9090:9090 -n vsdm2 &
 echo "Prometheus ist unter http://localhost:9090 erreichbar."
 echo "Beispielabfrage: http://localhost:9090/graph?g0.range_input=1h&g0.expr=up&g0.tab=0"
 echo "Port-Forwarding für Jaeger..."
-kubectl port-forward svc/jaeger-query-svc 16686:16686 -n vsdm2 &
+kubectl port-forward svc/jaeger-svc 16686:16686 -n vsdm2 &
 echo "Jaeger ist unter http://localhost:16686 erreichbar."
 echo "Port-Forwarding für Grafana..."
 kubectl port-forward svc/grafana-svc 3000:3000 -n vsdm2 &
