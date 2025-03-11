@@ -79,14 +79,14 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: hpa-for-ingress-nginx-controller
-  namespace: ingress-nginx
+  name: hpa-for-contour
+  namespace: projectcontour
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: ingress-nginx-controller      
-  minReplicas: 1                  # Passe die minimalen Replicas an
+    name: contour      
+  minReplicas: 2                  # Passe die minimalen Replicas an
   maxReplicas: 8                  # Passe die maximalen Replicas an
   metrics:
   - type: Resource

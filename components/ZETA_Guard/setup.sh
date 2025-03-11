@@ -59,6 +59,10 @@ nodes:
 - role: control-plane
 - role: worker
 - role: worker
+- role: worker
+- role: worker
+- role: worker
+- role: worker
   extraPortMappings:
   - containerPort: 80
     hostPort: ${INGRESS_PORT}   # Dynamischer Ingress-Port
@@ -80,6 +84,7 @@ GRAFANA_FILE="grafana/grafana.yaml"
 RESOURCE_SERVER_FILE="resource-server/rs-vsdm2-app.yaml"
 VALKEY_PDP_FILE="valkey-pdp/valkey-pdp.yaml"
 VALKEY_PEP_FILE="valkey-pep/valkey-pep.yaml"
+BDE_COLLECTOR_FILE="bde-collector/bde-collector.yaml"
 METRICS_SERVER_FILE="metrics-server/metrics-server.yaml"
 HPA_FILE="metrics-server/horizontal-pod-autoscaler.yaml"
 
@@ -140,14 +145,10 @@ echo "Wende die Manifest Dateien an..."
 kubectl label node "${CLUSTER_NAME}"-worker ingress-ready=true # Label hinzufügen, um Ingress auf einem Worker-Node aktivieren zu können
 kubectl apply -f "${NAMESPACE_FILE}" # Erzeugt den Namespace vsdm2
 kubectl apply -f "${INGRESS_FILE}" # Erzeugt den Ingress Controller
-# Warte bis der Ingress Nginx Controller Deployment bereit ist
-echo "⏳ Warten auf Ingress Nginx Controller Deployment..."
-kubectl wait --namespace ingress-nginx \
-  --for=condition=available --timeout=120s deployment/ingress-nginx-controller
-# Warte bis der Ingress Nginx Admission Controller Job abgeschlossen ist
-#echo "⏳ Warten auf Ingress Nginx Admission Controller Job..."
-#kubectl wait --namespace ingress-nginx \
-#  --for=condition=complete --timeout=120s job/ingress-nginx-admission-patch
+# Warte bis der Ingress Controller Deployment bereit ist
+#echo "⏳ Warten auf Ingress Controller Deployment..."
+#kubectl wait --namespace projectcontour \
+#  --for=condition=available --timeout=120s deployment/projectcontour
 kubectl apply -f "${INGRESS_VSDM2_FILE}" # Erzeugt den Ingress für die VSDM2 App
 kubectl apply -f "${ENVOY_FILE}" # Erzeugt den PEP HTTP Proxy
 kubectl apply -f "${OPA_FILE}" # Erzeugt den OPA Service (Policy Engine)
@@ -159,7 +160,7 @@ kubectl apply -f "${GRAFANA_FILE}" # Erzeugt den Grafana Service (Dashboard)
 kubectl apply -f "${RESOURCE_SERVER_FILE}" # Erzeugt den Resource Server Service (VSDM2 App)
 kubectl apply -f "${VALKEY_PDP_FILE}" # Erzeugt die PDP DB Service (ValKey)
 kubectl apply -f "${VALKEY_PEP_FILE}" # Erzeugt den PEP DB Service (ValKey)
-#kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml # Erzeugt den Metrics Server (Ressourcenverbrauch)
+kubectl apply -f "${BDE_COLLECTOR_FILE}" # Erzeugt den BDE Collector Service (otel-collector für BDE)
 kubectl apply -f "${METRICS_SERVER_FILE}" # Erzeugt den Metrics Server (Ressourcenverbrauch)
 kubectl apply -f "${HPA_FILE}" # Erzeugt den Horizontal Pod Autoscaler (HPA)
 
@@ -195,6 +196,9 @@ echo "Jaeger ist unter http://localhost:16686 erreichbar."
 echo "Port-Forwarding für Grafana..."
 kubectl port-forward svc/grafana-svc 3000:3000 -n vsdm2 &
 echo "Grafana ist unter http://localhost:3000 erreichbar."
+
+echo "Status des horizontal pod autoscalers:"
+kubectl get hpa -A
 
 # Teste den Zugriff auf die Services
 echo "Resource Server Service:"
