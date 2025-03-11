@@ -9286,6 +9286,13 @@ spec:
                 - envoy
                 - shutdown
         name: shutdown-manager
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
         volumeMounts:
           - name: envoy-admin
             mountPath: /admin
@@ -9345,13 +9352,6 @@ spec:
               path: /shutdown
               port: 8090
               scheme: HTTP
-        resources:
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
-          requests:
-            cpu: "250m"
-            memory: "256Mi"
       initContainers:
       - args:
         - bootstrap

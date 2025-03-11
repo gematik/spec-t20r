@@ -31,11 +31,11 @@ spec:
           protocol: TCP
         resources:
           limits:
+            memory: "2Gi"
+            cpu: "2"
+          requests:
             memory: "1Gi"
             cpu: "1"
-          requests:
-            memory: "512Mi"
-            cpu: "0.5"
         env:
         - name: METRICS_STORAGE_TYPE
           value: "prometheus"
