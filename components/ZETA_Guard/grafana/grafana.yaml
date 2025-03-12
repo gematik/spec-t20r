@@ -231,7 +231,7 @@ data:
           "targets": [
             {
               "editorMode": "code",
-              "expr": "sum by (http_method) (rate(traces_span_metrics_duration_milliseconds_sum{job=\"otel-collector\"}[1m])) / sum by (http_method)        (rate(traces_span_metrics_duration_milliseconds_count{job=\"otel-collector\"}[1m]))",
+              "expr": "sum by (http_method,service_name) (rate(traces_span_metrics_duration_milliseconds_sum{job=\"otel-collector\"}[1m])) / sum by (http_method,service_name)        (rate(traces_span_metrics_duration_milliseconds_count{job=\"otel-collector\"}[1m]))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -432,7 +432,7 @@ data:
                 "type": "prometheus"
               },
               "editorMode": "code",
-              "expr": "sum by (http_status_code) (rate(traces_span_metrics_calls_total{job=\"otel-collector\"}[1m]))",
+              "expr": "sum by (http_status_code) (rate(traces_span_metrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service_name=\"envoy-pep-svc\"}[1m]))",
               "legendFormat": "{{http_status_code}}",
               "range": true,
               "refId": "A"
