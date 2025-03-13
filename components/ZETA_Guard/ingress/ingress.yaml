@@ -9157,7 +9157,7 @@ metadata:
   name: contour
   namespace: projectcontour
 spec:
-  replicas: 4
+  replicas: 2
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -9286,13 +9286,6 @@ spec:
                 - envoy
                 - shutdown
         name: shutdown-manager
-        resources:
-          requests:
-            cpu: 10m
-            memory: 32Mi
-          limits:
-            cpu: 100m
-            memory: 128Mi
         volumeMounts:
           - name: envoy-admin
             mountPath: /admin
@@ -9395,35 +9388,3 @@ spec:
         runAsNonRoot: true
         runAsUser: 65534
         runAsGroup: 65534
----
-apiVersion: projectcontour.io/v1alpha1
-kind: ExtensionService
-metadata:
-  name: otel-collector # IMPORTANT:  Name of the ExtensionService resource
-  namespace: vsdm2 # IMPORTANT: ExtensionService in 'projectcontour' namespace
-spec:
-  protocol: h2c # Assuming your collector supports gRPC in cleartext (h2c)
-  services:
-    - name: otel-collector-svc # IMPORTANT: Kubernetes Service name in 'vsdm2' namespace
-      port: 4317
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: contour
-  namespace: projectcontour
-data:
-  contour.yaml: |
-    tracing:
-      # Whether to send the namespace and instance where envoy is located to open, the default is true.
-      #includePodDetail: true
-      # The extensionService and namespace and name defined above in the format of namespace/name.
-      extensionService: vsdm2/otel-collector
-      # The service name that envoy sends to openTelemetry-collector, the default is contour.
-      serviceName: contour
-      # A custom set of tags.
-      customTags:
-      # envoy will send the tagName to the collector.
-      - tagName: zeta-guard
-        # fixed tag value.
-        literal: ingress-contour
