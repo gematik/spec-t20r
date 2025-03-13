@@ -5,7 +5,7 @@ set -e  # Beendet das Skript bei einem Fehler
 # Standardwerte
 CLUSTER_NAME="zeta-guard"
 INGRESS_PORT=80  # Standardport für Ingress
-WORKER_COUNT=8   # Standardanzahl Worker Nodes
+WORKER_COUNT=4   # Standardanzahl Worker Nodes
 
 # Hilfe-Funktion
 usage() {
@@ -94,7 +94,7 @@ VALKEY_PEP_FILE="valkey-pep/valkey-pep.yaml"
 BDE_COLLECTOR_FILE="bde-collector/bde-collector.yaml"
 METRICS_SERVER_FILE="metrics-server/metrics-server.yaml"
 HPA_FILE="metrics-server/horizontal-pod-autoscaler.yaml"
-INGRESS_TRCING_FILE="ingress/ingress-tracing.yaml"
+INGRESS_TRACING_FILE="ingress/ingress-tracing.yaml"
 
 # Docker-Image, das in den Cluster geladen werden soll
 DOCKERFILE_PATH="resource-server/src/Dockerfile"
@@ -172,13 +172,12 @@ kubectl apply -f "${VALKEY_PEP_FILE}" # Erzeugt den PEP DB Service (ValKey)
 kubectl apply -f "${BDE_COLLECTOR_FILE}" # Erzeugt den BDE Collector Service (otel-collector für BDE)
 kubectl apply -f "${METRICS_SERVER_FILE}" # Erzeugt den Metrics Server (Ressourcenverbrauch)
 kubectl apply -f "${HPA_FILE}" # Erzeugt den Horizontal Pod Autoscaler (HPA)
+# Ingress für Tracing aktivieren
+kubectl apply -f "${INGRESS_TRACING_FILE}"
 
 # Warten, bis die Ressourcen bereit sind
-echo "Warten, bis die Deployments hochgefahren sind..."
-kubectl wait --for=condition=available --timeout=600s deployment --all -n vsdm2
-
-# Ingress für Tracing aktivieren
-kubectl apply -f "${INGRESS_TRCING_FILE}"
+#echo "Warten, bis die Deployments hochgefahren sind..."
+#kubectl wait --for=condition=available --timeout=600s deployment --all -n vsdm2
 
 # Cluster-Überprüfung
 echo "🔍 Prüfen, ob der Cluster korrekt funktioniert..."
@@ -188,33 +187,30 @@ kubectl get namespaces
 
 echo "📌 Running Pods:"
 kubectl get pods -A
-kubectl top pod -A
-kubectl get hpa -A
+#kubectl top pod -A
+#echo "Status des horizontal pod autoscalers:"
+#kubectl get hpa -A
 
 echo "📌 Running Services:"
 kubectl get svc -n vsdm2
 
-echo "📌 Ingress-Konfiguration:"
-kubectl get ingress -n vsdm2
+#echo "📌 Ingress-Konfiguration:"
+#kubectl get ingress -n vsdm2
 
-echo "Status des horizontal pod autoscalers:"
-kubectl get hpa -A
+# Rollout restart für alle Deployments
+echo "🔄 Rollout restart für alle Deployments -im namespace projectcontour..."
+kubectl rollout restart deployment -n projectcontour
 
 # Port-Forwarding für Prometheus, Jaeger und Grafana
-echo "🚀 Port-Forwarding für Prometheus..."
-kubectl port-forward svc/prometheus-svc 9090:9090 -n vsdm2 &
-echo "Prometheus ist unter http://localhost:9090 erreichbar."
-echo "Beispielabfrage: http://localhost:9090/graph?g0.range_input=1h&g0.expr=up&g0.tab=0"
-echo "Port-Forwarding für Jaeger..."
-kubectl port-forward svc/jaeger-svc 16686:16686 -n vsdm2 &
-echo "Jaeger ist unter http://localhost:16686 erreichbar."
-echo "Port-Forwarding für Grafana..."
-kubectl port-forward svc/grafana-svc 3000:3000 -n vsdm2 &
-echo "Grafana ist unter http://localhost:3000 erreichbar."
+echo "🚀 Port-Forwarding für Prometheus, Grafana und Jaeger erst starten, wenn alle pods laufen."
+echo "🚀 Warte bis alles läuft: kubectl get pods -A | grep -v kube-system"
+echo "🚀 Dann: ./forwardports.sh"
 
 # Teste den Zugriff auf die Services
-echo "Resource Server Service:"
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost/vsdservice/v1/vsdmbundle
+echo "Wenn alle pods laufen, kann man den Resource Server aufrufen:"
+echo "curl -s -o /dev/null -w "%{http_code}\n" http://localhost/vsdservice/v1/vsdmbundle"
+echo "Oder Last anlegen:"
+echo "python ../ZETA-Client/vsdm2-loadgen/vsdm2-loadgen.py --rps=60 --duration=1000 --threads=2
 
 echo "✅ Skript erfolgreich abgeschlossen."
-echo "Der Cluster ${CLUSTER_NAME} wurde erstellt und ist einsatzbereit."
+echo "Der Cluster ${CLUSTER_NAME} wurde erstellt."
