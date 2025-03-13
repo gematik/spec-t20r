@@ -138,7 +138,7 @@ kind load docker-image "${DOCKER_IMAGE}" --name "${CLUSTER_NAME}"
 
 # Konfiguriere kubectl für den Zugriff auf den Cluster
 echo "Konfiguriere kubectl für den Zugriff auf den Cluster..."
-kubectl config use-context kind-${CLUSTER_NAME}
+kubectl config use-context "kind-${CLUSTER_NAME}"
 
 # Manifest Dateien anwenden
 echo "Wende die Manifest Dateien an..."
