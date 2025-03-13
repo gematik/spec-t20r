@@ -65,5 +65,5 @@ uritools==4.0.3
 urllib3==2.2.1
 uvicorn==0.28.0
 uWSGI==2.0.24
-Werkzeug==3.0.1
+Werkzeug==3.0.6
 xmltodict==0.13.0
