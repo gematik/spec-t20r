@@ -97,7 +97,7 @@ if ! command -v docker &>/dev/null; then
     echo "❌ 'docker' ist nicht installiert. Installiere es mit:"
     echo "👉 https://docs.docker.com/get-docker/"
     echo "ℹ️ Stelle sicher, dass Docker Desktop ausgeführt wird."
-    echo "ℹ️ Falls permission denied Fehler auftreten, führe folgende Bafehle aus."
+    echo "ℹ️ Falls permission denied Fehler auftreten, führe folgende Befehle aus."
     echo "ℹ️ sudo groupadd docker"
     echo "ℹ️ sudo usermod -aG docker $USER"
     echo "ℹ️ newgrp docker"
@@ -197,7 +197,7 @@ echo "Port-Forwarding für Grafana..."
 kubectl port-forward svc/grafana-svc 3000:3000 -n vsdm2 &
 echo "Grafana ist unter http://localhost:3000 erreichbar."
 
-echo "Status des horizontal pod autoscalers:"
+echo "Status des horizontal pod autoscaler:"
 kubectl get hpa -A
 
 # Teste den Zugriff auf die Services
