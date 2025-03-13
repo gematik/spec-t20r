@@ -1,3 +1,4 @@
+.idea
 .vscode
 *.log
 *.tar.gz
@@ -5,3 +6,5 @@
 __pycache__/
 var/
 console
+poetry.lock
+dist/
