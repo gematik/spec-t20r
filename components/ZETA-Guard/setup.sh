@@ -5,14 +5,15 @@ set -e  # Beendet das Skript bei einem Fehler
 # Standardwerte
 CLUSTER_NAME="zeta-guard"
 INGRESS_PORT=80  # Standardport für Ingress
+WORKER_COUNT=4   # Standardanzahl Worker Nodes
 
 # Hilfe-Funktion
 usage() {
-    echo "Usage: $0 [-c|--cluster <name>] [-p|--port <port>] [-h|--help]"
+    echo "Usage: $0 [-c|--cluster <name>] [-w|--workers <count>] [-h|--help]"
     echo ""
     echo "Optionen:"
     echo "  -c, --cluster <name>  Setzt den Namen des Kind-Clusters (Standard: zeta-guard)"
-    echo "  -p, --port <port>     Setzt den Host-Port für Ingress (Standard: 80)"
+    echo "  -w, --workers <count> Setzt die Anzahl der Worker Nodes (Standard: 4)"
     echo "  -h, --help            Zeigt diese Hilfe an"
     echo ""
     echo "Requirements:"
@@ -21,7 +22,7 @@ usage() {
     echo "  - kubectl  (https://kubernetes.io/docs/tasks/tools/)"
     echo ""
     echo "Hinweis: Die Installation mit snap (Ubuntu) führt zu Fehlern."
-    echo "         Verwende apt install."   
+    echo "         Verwende apt install."
     exit 0
 }
 
@@ -32,8 +33,8 @@ while [[ $# -gt 0 ]]; do
             CLUSTER_NAME="$2"
             shift 2
             ;;
-        -p|--port)
-            INGRESS_PORT="$2"
+        -w|--workers)
+            WORKER_COUNT="$2"
             shift 2
             ;;
         -h|--help)
@@ -48,8 +49,9 @@ done
 
 echo "🚀 Verwende Cluster-Name: ${CLUSTER_NAME}"
 echo "🌐 Ingress wird auf Port ${INGRESS_PORT} gebunden"
+echo "⚙️ Anzahl Worker Nodes: ${WORKER_COUNT}"
 
-# Generiere die kind-config.yaml mit dynamischem Port
+# Generiere die kind-config.yaml mit dynamischem Port und Worker Anzahl
 CONFIG_FILE="./kind-config-${CLUSTER_NAME}.yaml"
 
 cat <<EOF > "${CONFIG_FILE}"
@@ -57,15 +59,20 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
+EOF
+
+# Füge Worker Nodes dynamisch hinzu
+for ((i=1; i<=${WORKER_COUNT}; i++)); do
+  cat <<EOF >> "${CONFIG_FILE}"
 - role: worker
-- role: worker
-- role: worker
-- role: worker
-- role: worker
+EOF
+done
+
+cat <<EOF >> "${CONFIG_FILE}"
 - role: worker
   extraPortMappings:
   - containerPort: 80
-    hostPort: ${INGRESS_PORT}   # Dynamischer Ingress-Port
+    hostPort: ${INGRESS_PORT}   # Ingress-Port
 EOF
 
 echo "🚀 Verwende Cluster-Name: ${CLUSTER_NAME}"
@@ -87,6 +94,7 @@ VALKEY_PEP_FILE="valkey-pep/valkey-pep.yaml"
 BDE_COLLECTOR_FILE="bde-collector/bde-collector.yaml"
 METRICS_SERVER_FILE="metrics-server/metrics-server.yaml"
 HPA_FILE="metrics-server/horizontal-pod-autoscaler.yaml"
+INGRESS_TRACING_FILE="ingress/ingress-tracing.yaml"
 
 # Docker-Image, das in den Cluster geladen werden soll
 DOCKERFILE_PATH="resource-server/src/Dockerfile"
@@ -145,8 +153,9 @@ echo "Wende die Manifest Dateien an..."
 kubectl label node "${CLUSTER_NAME}"-worker ingress-ready=true # Label hinzufügen, um Ingress auf einem Worker-Node aktivieren zu können
 kubectl apply -f "${NAMESPACE_FILE}" # Erzeugt den Namespace vsdm2
 kubectl apply -f "${INGRESS_FILE}" # Erzeugt den Ingress Controller
-# Warte bis der Ingress Controller Deployment bereit ist
-#echo "⏳ Warten auf Ingress Controller Deployment..."
+# Warte bis das Ingress Controller Deployment bereit ist
+echo "⏳ Warten auf das Ingress Controller Deployment..."
+# sleep 30  # Kleine Verzögerung, um sicherzustellen, dass das Ingress Controller Deployment bereit ist
 #kubectl wait --namespace projectcontour \
 #  --for=condition=available --timeout=120s deployment/projectcontour
 kubectl apply -f "${INGRESS_VSDM2_FILE}" # Erzeugt den Ingress für die VSDM2 App
@@ -163,10 +172,12 @@ kubectl apply -f "${VALKEY_PEP_FILE}" # Erzeugt den PEP DB Service (ValKey)
 kubectl apply -f "${BDE_COLLECTOR_FILE}" # Erzeugt den BDE Collector Service (otel-collector für BDE)
 kubectl apply -f "${METRICS_SERVER_FILE}" # Erzeugt den Metrics Server (Ressourcenverbrauch)
 kubectl apply -f "${HPA_FILE}" # Erzeugt den Horizontal Pod Autoscaler (HPA)
+# Ingress für Tracing aktivieren
+kubectl apply -f "${INGRESS_TRACING_FILE}"
 
 # Warten, bis die Ressourcen bereit sind
-echo "Warten, bis die Deployments hochgefahren sind..."
-kubectl wait --for=condition=available --timeout=120s deployment --all -n vsdm2
+#echo "Warten, bis die Deployments hochgefahren sind..."
+#kubectl wait --for=condition=available --timeout=600s deployment --all -n vsdm2
 
 # Cluster-Überprüfung
 echo "🔍 Prüfen, ob der Cluster korrekt funktioniert..."
@@ -176,34 +187,33 @@ kubectl get namespaces
 
 echo "📌 Running Pods:"
 kubectl get pods -A
-kubectl top pod -A
-kubectl get hpa -A
+#kubectl top pod -A
+#echo "Status des horizontal pod autoscalers:"
+#kubectl get hpa -A
 
 echo "📌 Running Services:"
 kubectl get svc -n vsdm2
 
-echo "📌 Ingress-Konfiguration:"
-kubectl get ingress -n vsdm2
+#echo "📌 Ingress-Konfiguration:"
+#kubectl get ingress -n vsdm2
 
-# Port-Forwarding für Prometheus, Jaeger und Grafana
-echo "🚀 Port-Forwarding für Prometheus..."
-kubectl port-forward svc/prometheus-svc 9090:9090 -n vsdm2 &
-echo "Prometheus ist unter http://localhost:9090 erreichbar."
-echo "Beispielabfrage: http://localhost:9090/graph?g0.range_input=1h&g0.expr=up&g0.tab=0"
-echo "Port-Forwarding für Jaeger..."
-kubectl port-forward svc/jaeger-svc 16686:16686 -n vsdm2 &
-echo "Jaeger ist unter http://localhost:16686 erreichbar."
-echo "Port-Forwarding für Grafana..."
-kubectl port-forward svc/grafana-svc 3000:3000 -n vsdm2 &
-echo "Grafana ist unter http://localhost:3000 erreichbar."
-
-echo "Status des horizontal pod autoscalers:"
-kubectl get hpa -A
-
-# Teste den Zugriff auf die Services
-echo "Resource Server Service:"
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost/vsdservice/v1/vsdmbundle
+# Rollout restart für alle Deployments
+echo "🔄 Rollout restart für alle Deployments -im namespace projectcontour..."
+kubectl rollout restart deployment -n projectcontour
 
 echo "✅ Skript erfolgreich abgeschlossen."
-echo "Der Cluster ${CLUSTER_NAME} wurde erstellt und ist einsatzbereit."
-echo "Du kannst den Cluster mit 'kind delete cluster --name ${CLUSTER_NAME}' löschen."
+echo "Der Cluster ${CLUSTER_NAME} wurde erstellt."
+echo ""
+echo "Wie geht es weiter?"
+# Port-Forwarding für Prometheus, Jaeger und Grafana
+echo "🌐 Port-Forwarding für Prometheus, Grafana und Jaeger erst starten, wenn alle pods laufen."
+echo "⏳ Warte bis alles läuft:"
+echo "kubectl get pods -A | grep -v kube-system"
+echo "📌 Dann Port-Forwarding:"
+echo "./forwardports.sh"
+
+# Teste den Zugriff auf die Services
+echo "📌 Wenn alle pods laufen, kann man den Resource Server aufrufen:"
+echo "curl -v http://localhost/vsdservice/v1/vsdmbundle"
+echo "📌 Oder Last anlegen:"
+echo "python ../ZETA-Client/vsdm2-loadgen/vsdm2-loadgen.py --rps=60 --duration=1000 --threads=2"
