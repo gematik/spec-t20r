@@ -9,6 +9,9 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Ensure go.sum is tidy and up-to-date
+RUN go mod tidy
+
 # Copy the source code
 COPY . .
 
