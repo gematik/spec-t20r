@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bde-collector
+  namespace: vsdm2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bde-collector
+  template:
+    metadata:
+      labels:
+        app: bde-collector
+    spec:
+      containers:
+      - name: bde-collector
+        image: otel/opentelemetry-collector-contrib:latest
+        command: ["/otelcol-contrib", "--config=/etc/bde-collector-config.yaml"]
+        volumeMounts:
+        - name: bde-collector-config-vol
+          mountPath: /etc/bde-collector-config.yaml
+          subPath: bde-collector-config.yaml
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+        ports:
+        - containerPort: 4317 # OTLP gRPC Receiver Port
+          name: otlp-grpc
+      volumes:
+      - name: bde-collector-config-vol
+        configMap:
+          name: bde-collector-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bde-collector-svc
+  namespace: vsdm2
+spec:
+  selector:
+    app: bde-collector
+  ports:
+  - protocol: TCP
+    port: 4317
+    targetPort: 4317
+    name: otlp-grpc
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bde-collector-config
+  namespace: vsdm2
+data:
+  bde-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: "0.0.0.0:4317"
+
+    exporters:
+      debug:
+        verbosity: normal
+
+    processors:
+      batch:
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [debug] # Verwenden Sie den TimescaleDB Exporter für Traces
+        metrics:
+          receivers: [otlp] # OTLP Receiver auch für Metriken, falls Sie Metriken an diesen Collector senden möchten
+          processors: [batch]
+          exporters: [debug] # Verwenden Sie den TimescaleDB Exporter auch für Metriken
