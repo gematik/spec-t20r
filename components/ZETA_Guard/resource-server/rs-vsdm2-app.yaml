@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rs-vsdm2-app
+  namespace: vsdm2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rs-vsdm2-app
+  template:
+    metadata:
+      labels:
+        app: rs-vsdm2-app
+    spec:
+      containers:
+      - name: rs-vsdm2-app
+        image: rs-vsdm2-app:latest # Dein gebautes Image
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+        env:
+        - name: OTLP_ENDPOINT
+          value: "otel-collector-svc.vsdm2.svc.cluster.local:4317" # OTEL Collector Service URL
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        command: ["/app/rs-vsdm2-app"] # Explicitly set the command to your app executable        
+        args: ["-debug"] # Add this line to enable the debug flag
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rs-vsdm2-app-svc
+  namespace: vsdm2
+spec:
+  selector:
+    app: rs-vsdm2-app
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080

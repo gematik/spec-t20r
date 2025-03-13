@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  rs_vsdm2-app:
+    build:
+      context: .  # Path to the directory containing Dockerfile
+      dockerfile: Dockerfile
+    ports:
+      - "8800:8080"
+    image: rs-vsdm2-app  # Give your image a name
+    environment:
+      OTLP_ENDPOINT: "host.docker.internal:4317"

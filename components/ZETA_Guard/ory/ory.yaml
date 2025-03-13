@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ory-hydra
+  namespace: vsdm2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ory-hydra
+  template:
+    metadata:
+      labels:
+        app: ory-hydra
+    spec:
+      containers:
+      - name: hydra
+        image: oryd/hydra:v2.2.0
+        ports: # Korrekte Einrückung beginnt hier
+        - containerPort: 4444
+          name: public
+        - containerPort: 4445
+          name: admin
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+        env:
+        - name: DSN
+          value: "memory" # Changed to explicit in-memory DSN
+        - name: URLS_SELF_ISSUER
+          value: "http://ory-hydra-svc.vsdm2.svc.cluster.local:4444" # Interner Service Name
+        - name: URLS_SELF_PUBLIC
+          value: "http://localhost:4444" # Für externen Zugriff (NodePort später)
+        - name: URLS_ADMIN
+          value: "http://ory-hydra-svc.vsdm2.svc.cluster.local:4445" # Admin API intern
+        - name: URLS_CONSENT
+          value: "http://localhost:8080/consent" # Beispiel Consent-URL (muss implementiert werden)
+        - name: URLS_LOGIN
+          value: "http://localhost:8080/login"   # Beispiel Login-URL (muss implementiert werden)
+        - name: URLS_LOGOUT
+          value: "http://localhost:8080/logout"  # Beispiel Logout-URL (muss implementiert werden)
+        - name: SECRETS_SYSTEM
+          value: "super-secret-system-key" # Zufälligen Wert in Production generieren!
+        - name: SECRETS_COOKIE
+          value: "super-secret-cookie-key" # Zufälligen Wert in Production generieren!
+        - name: OIDC_SUBJECT_IDENTIFIERS_SUPPORTED_TYPES
+          value: "public,pairwise" # Für OIDC
+        - name: OIDC_SUBJECT_IDENTIFIERS_PAIRWISE_SALT
+          value: "some-salt" # Zufälligen Salt generieren
+        - name: DEV # Added DEV=true to enable development mode
+          value: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ory-hydra-svc
+  namespace: vsdm2
+spec:
+  selector:
+    app: ory-hydra
+  type: NodePort # Falls du einen NodePort nutzen möchtest
+  ports:
+  - protocol: TCP
+    port: 4444 # Public API
+    targetPort: 4444
+    name: public
+    nodePort: 30444 # Optional: NodePort für Public API
+  - protocol: TCP
+    port: 4445 # Admin API
+    targetPort: 4445
+    name: admin
