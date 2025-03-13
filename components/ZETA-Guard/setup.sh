@@ -122,7 +122,7 @@ fi
 
 # Erstellen des Docker-Images für den Resource Server
 echo "📦 Erstelle das Docker-Image ${DOCKER_IMAGE} aus ${DOCKERFILE_PATH}..."
-docker build -t "${DOCKER_IMAGE}" -f "${DOCKERFILE_PATH}" resource-server/src
+docker build --no-cache -t "${DOCKER_IMAGE}" -f "${DOCKERFILE_PATH}" resource-server/src
 
 # Prüfen, ob der Kind-Cluster existiert
 if kind get clusters | grep -q "^${CLUSTER_NAME}$"; then
