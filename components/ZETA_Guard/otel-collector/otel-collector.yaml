@@ -86,6 +86,8 @@ data:
         endpoint: "bde-collector-svc:4317"
         tls:
           insecure: true
+      otlp/gematik-siem: # <----- Neuer Exporter für gematik SIEM
+        endpoint: "default.main.jolly-morse-ztibejl.cribl.cloud:4317"
       debug:
         verbosity: normal
   
@@ -95,6 +97,13 @@ data:
         traces:
           span:
             - IsMatch(resource.attributes["service.name"], "rs-vsdm2-app-svc")
+      filter/product-info-metrics: # <----- Filter für product_info Metriken
+        error_mode: ignore
+        metrics:
+          include:
+            match_type: strict
+            metric_names:
+              - product_info
       batch:
     
     connectors:
@@ -139,7 +148,11 @@ data:
           receivers: [otlp]
           processors: [filter/bde-traces, batch] # <----- Filter HIER eingefügt
           exporters: [otlp/bde] # <----- Nur otlp/bde Exporter in dieser Pipeline
-        metrics:
+        metrics/all:
           receivers: [spanmetrics, otlp]
           processors: [batch]
           exporters: [prometheus, debug]
+        metrics/gematik-siem: # <----- Pipeline für gematik SIEM
+          receivers: [otlp]
+          processors: [filter/product-info-metrics, batch] # <----- Filter HIER eingefügt
+          exporters: [otlp/gematik-siem] # <----- Nur otlp/gematik-siem Exporter in dieser Pipeline
