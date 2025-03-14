@@ -187,14 +187,14 @@ echo "🔍 Prüfen, ob der Cluster korrekt funktioniert..."
 echo "📌 Verfügbare Namespaces:"
 kubectl get namespaces
 
+echo "📌 Running Services:"
+kubectl get svc -n vsdm2
+
 echo "📌 Running Pods:"
 kubectl get pods -A
 #kubectl top pod -A
 #echo "Status des horizontal pod autoscalers:"
 #kubectl get hpa -A
-
-echo "📌 Running Services:"
-kubectl get svc -n vsdm2
 
 #echo "📌 Ingress-Konfiguration:"
 #kubectl get ingress -n vsdm2
