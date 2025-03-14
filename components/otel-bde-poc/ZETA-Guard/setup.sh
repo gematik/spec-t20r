@@ -134,6 +134,8 @@ fi
 echo "Erstelle den Cluster ${CLUSTER_NAME} mit der Konfigurationsdatei ${CONFIG_FILE}..."
 kind create cluster --name "${CLUSTER_NAME}" --config "${CONFIG_FILE}"
 
+# ${CONFIG_FILE} löschen
+rm "${CONFIG_FILE}"
 
 # Warten, bis der Cluster verfügbar ist
 echo "Warten, bis der Cluster verfügbar ist..."
