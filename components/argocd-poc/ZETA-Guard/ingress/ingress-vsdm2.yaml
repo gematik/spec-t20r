@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-vsdm2
+  namespace: vsdm2
+spec:
+  ingressClassName: contour
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: envoy-pep-svc
+            port:
+              number: 80
+        path: /vsdservice/v1/vsdmbundle
+        pathType: ImplementationSpecific

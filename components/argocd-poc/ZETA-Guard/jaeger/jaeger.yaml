@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: vsdm2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one # image: jaegertracing/jaeger:latest
+        ports:
+        - containerPort: 4317 # Jaeger gRPC Collector port (OTLP/gRPC)
+          name: jaeger-grpc
+          protocol: TCP
+        - containerPort: 4318 # Jaeger HTTP Collector port (OTLP/HTTP, Jaeger Thrift HTTP)
+          name: jaeger-http
+          protocol: TCP
+        - containerPort: 16686 # Jaeger UI port
+          name: jaeger-ui
+          protocol: TCP
+        - containerPort: 14269 # Prometheus Metrics
+          name: prometheus
+          protocol: TCP
+        resources:
+          limits:
+            memory: "2Gi"
+            cpu: "2"
+          requests:
+            memory: "1Gi"
+            cpu: "1"
+        env:
+        - name: METRICS_STORAGE_TYPE
+          value: "prometheus"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-svc
+  namespace: vsdm2
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - protocol: TCP
+    port: 4317      # Service-Port (OTLP/gRPC)
+    targetPort: jaeger-grpc
+    name: jaeger-grpc
+  - protocol: TCP
+    port: 4318      # Service-Port (OTLP/HTTP, Jaeger Thrift HTTP)
+    targetPort: jaeger-http
+    name: jaeger-http
+  - protocol: TCP
+    port: 16686
+    targetPort: jaeger-ui
+    name: jaeger-ui
+  - protocol: TCP  # Prometheus Port
+    port: 14269     # Standard Prometheus Port von Jaeger
+    targetPort: 14269 # Target Port im Container (standardmäßig auch 14269)
+    name: prometheus-metrics
+  type: ClusterIP

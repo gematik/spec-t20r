@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vsdm2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: projectcontour
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd

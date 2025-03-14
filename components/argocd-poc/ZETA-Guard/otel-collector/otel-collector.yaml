@@ -1,0 +1,158 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: vsdm2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector-contrib:latest
+        command: ["/otelcol-contrib", "--config=/etc/otel-collector-config.yaml"]
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+        volumeMounts:
+        - name: otel-collector-config-vol
+          mountPath: /etc/otel-collector-config.yaml
+          subPath: otel-collector-config.yaml
+        ports:
+        - containerPort: 4317 # OTLP gRPC
+          name: otlp-grpc
+        - containerPort: 4318 # OTLP HTTP
+          name: otlp-http
+      volumes: # Hinzugefügter Volumes-Abschnitt
+      - name: otel-collector-config-vol
+        configMap:
+          name: otel-collector-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector-svc
+  namespace: vsdm2
+spec:
+  selector:
+    app: otel-collector
+  ports:
+  - protocol: TCP
+    port: 4317
+    targetPort: 4317
+    name: otlp-grpc
+  - protocol: TCP
+    port: 4318
+    targetPort: 4318
+    name: otlp-http
+  - protocol: TCP  # <----- Add this port definition
+    port: 9090      # <----- Prometheus exporter port
+    targetPort: 9090 # <----- Target port in the container
+    name: prometheus # <----- Name for this port (optional, but good practice)
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: vsdm2
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: "0.0.0.0:4317"
+          http:
+            endpoint: "0.0.0.0:4318"
+
+    exporters:
+      prometheus:
+        endpoint: "0.0.0.0:9090"
+      otlp/jaeger:
+        endpoint: "jaeger-svc:4317"
+        tls:
+          insecure: true
+      otlp/bde:
+        endpoint: "bde-collector-svc:4317"
+        tls:
+          insecure: true
+      otlp/gematik-siem: # <----- Neuer Exporter für gematik SIEM
+        endpoint: "default.main.jolly-morse-ztibejl.cribl.cloud:4317"
+      debug:
+        verbosity: normal
+  
+    processors:
+      filter/bde-traces:
+        error_mode: ignore
+        traces:
+          span:
+            - IsMatch(resource.attributes["service.name"], "rs-vsdm2-app-svc")
+      filter/product-info-metrics: # <----- Filter für product_info Metriken
+        error_mode: ignore
+        metrics:
+          include:
+            match_type: strict
+            metric_names:
+              - product_info
+      batch:
+    
+    connectors:
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms]
+        dimensions:
+          - name: http.method
+            default: GET
+          - name: http.status_code
+          - name: http.route
+        exemplars:
+          enabled: true
+        exclude_dimensions: ['status.code']
+        dimensions_cache_size: 1000
+        aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
+        metrics_flush_interval: 15s
+        metrics_expiration: 60m
+        events:
+          enabled: true
+          dimensions:
+            - name: exception.type
+            - name: exception.message
+        resource_metrics_key_attributes:
+          - service.name
+          - telemetry.sdk.language
+          - telemetry.sdk.name
+    
+    service:
+      #telemetry: # internal otel-collector metrics
+      #  metrics:
+      #    level: detailed
+      #  logs:
+      #    level: debug
+      pipelines:
+        traces/all: # <----- Pipeline für alle Traces
+          receivers: [otlp]
+          processors: [batch]  # <-----  CRITICAL: batch processor IS in traces pipeline
+          exporters: [spanmetrics, debug, otlp/jaeger] # <----- CRITICAL: spanmetrics is in traces pipeline EXPORTERS (as connector)
+        traces/bde: # <----- Pipeline für BDE (gefiltert)
+          receivers: [otlp]
+          processors: [filter/bde-traces, batch] # <----- Filter HIER eingefügt
+          exporters: [otlp/bde] # <----- Nur otlp/bde Exporter in dieser Pipeline
+        metrics/all:
+          receivers: [spanmetrics, otlp]
+          processors: [batch]
+          exporters: [prometheus, debug]
+        metrics/gematik-siem: # <----- Pipeline für gematik SIEM
+          receivers: [otlp]
+          processors: [filter/product-info-metrics, batch] # <----- Filter HIER eingefügt
+          exporters: [otlp/gematik-siem] # <----- Nur otlp/gematik-siem Exporter in dieser Pipeline

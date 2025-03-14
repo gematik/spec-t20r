@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valkey-pdp
+  namespace: vsdm2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: valkey-pdp
+  template:
+    metadata:
+      labels:
+        app: valkey-pdp
+    spec:
+      containers:
+      - name: valkey
+        image: valkey/valkey:latest
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+        ports:
+        - containerPort: 18080
+          name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey-pdp-svc
+  namespace: vsdm2
+spec:
+  selector:
+    app: valkey-pdp
+  ports:
+  - protocol: TCP
+    port: 10080
+    targetPort: 18080
