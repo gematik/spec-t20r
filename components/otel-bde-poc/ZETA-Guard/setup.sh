@@ -96,6 +96,7 @@ INGRESS_VSDM2_FILE="ingress/ingress-vsdm2.yaml"
 ENVOY_FILE="envoy/envoy.yaml"
 OPA_FILE="opa/opa.yaml"
 ORY_FILE="ory/ory.yaml"
+GEMATIK_SIEM_SECRET_FILE="otel-collector/gematik-siem-secret.yaml"
 OTEL_COLLECTOR_FILE="otel-collector/otel-collector.yaml"
 PROMETHEUS_FILE="prometheus/prometheus.yaml"
 JAEGER_FILE="jaeger/jaeger.yaml"
@@ -192,6 +193,7 @@ kubectl apply -f "${INGRESS_VSDM2_FILE}" # Erzeugt den Ingress für die VSDM2 Ap
 kubectl apply -f "${ENVOY_FILE}" # Erzeugt den PEP HTTP Proxy
 kubectl apply -f "${OPA_FILE}" # Erzeugt den OPA Service (Policy Engine)
 kubectl apply -f "${ORY_FILE}" # Erzeugt die ORY Services (Authentifizierung und Autorisierung)
+kubectl apply -f "${GEMATIK_SIEM_SECRET_FILE}" # Erzeugt das Geamtik SIEM Secret
 kubectl apply -f "${OTEL_COLLECTOR_FILE}" # Erzeugt den OpenTelemetry Collector (Telemetrie-Daten Service)
 kubectl apply -f "${PROMETHEUS_FILE}" # Erzeugt den Prometheus Service (Monitoring)
 kubectl apply -f "${JAEGER_FILE}" # Erzeugt den Jaeger Service (Tracing)
