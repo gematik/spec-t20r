@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// ... (Strukturdefinitionen von oben) ...
+// ... (Strukturdefinitionen von oben - bleiben gleich) ...
 type GetVSDMBundleResponse struct {
 	VSDMBundle VSDMBundle `json:"VSDMBundle"`
 }
@@ -98,6 +98,29 @@ type Period struct {
 type Name struct {
 	Family string   `json:"family"`
 	Given  []string `json:"given"`
+}
+
+// SiemEvent Strukturdefinition (aktualisiert)
+type SiemEvent struct {
+	CustomerID           string   `json:"customer_id"`
+	Title                string   `json:"title"`
+	Description          string   `json:"description"`
+	Severity             string   `json:"severity"` // Neu: Severity
+	Status               string   `json:"status"`
+	Environment          string   `json:"environment"`
+	Date                 string   `json:"date"`
+	Host                 string   `json:"host"`
+	IP                   string   `json:"ip"`
+	CaseID               int      `json:"case_id"`
+	Category             string   `json:"category"`
+	MitreAttackTactic    []string `json:"mitre_attack_tactic"`
+	MitreAttackTechnique []string `json:"mitre_attack_technique"`
+	Product              string   `json:"product"`
+	Reference            []string `json:"reference"`
+	Disposition          string   `json:"Disposition"`
+	DispositionComment   string   `json:"disposition_comment"`
+	PodName              string   `json:"pod_name"`  // Neu: PodName
+	Timestamp            string   `json:"timestamp"` // Neu: Zeitstempel
 }
 
 var debugMode bool
@@ -406,6 +429,94 @@ func getContentLength(resp GetVSDMBundleResponse) (int, error) {
 	return len(responseBytes), nil
 }
 
+func getLocalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "unknown"
+	}
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return "unknown"
+}
+
+func reportSiemEvent(mp *sdkmetric.MeterProvider) {
+	meter := mp.Meter("rs-vsdm2-app-siem-events")
+
+	// Erstellen eines Observable Gauge für Siem Event
+	counter, err := meter.Float64ObservableGauge(
+		"siem_event",
+		metric.WithDescription("SIEM Event information"),
+	)
+
+	if err != nil {
+		log.Printf("[ERROR] Failed to create siem_event gauge instrument: %v", err)
+		return
+	}
+
+	// Registriere eine Callback-Funktion für unsere Observable Gauge
+	_, err = meter.RegisterCallback(
+		func(_ context.Context, o metric.Observer) error {
+			hostname, _ := os.Hostname()
+			currentDate := time.Now().Format("2006-01-02")
+			localIP := getLocalIP()
+			podName := os.Getenv("POD_NAME")
+			if podName == "" {
+				podName = "unknown"
+			}
+			currentTime := time.Now().Format(time.RFC3339) // Aktueller Zeitstempel im RFC3339 Format
+
+			siemEvent := SiemEvent{
+				CustomerID:           "289347a29038534df52352t34112",
+				Title:                "use_case_name",
+				Description:          "several incorrect login attempts to the system detected",
+				Severity:             "WARN", // Neu: Severity auf WARN gesetzt
+				Status:               "Open",
+				Environment:          "pu",
+				Date:                 currentDate,
+				Host:                 hostname,
+				IP:                   localIP,
+				CaseID:               2323,
+				Category:             "security-alert",
+				MitreAttackTactic:    []string{},
+				MitreAttackTechnique: []string{},
+				Product:              "TI-Gateway",
+				Reference:            []string{"https://www.tenable.com/plugins/nessus/182691"},
+				Disposition:          "false-positive",
+				DispositionComment:   "user has entered his password incorrectly because caps lock was activated",
+				PodName:              podName,     // Neu: PodName hinzugefügt
+				Timestamp:            currentTime, // Neu: Zeitstempel hinzugefügt
+			}
+
+			eventJSON, err := json.Marshal(siemEvent)
+			if err != nil {
+				log.Printf("[ERROR] Failed to marshal siem_event to JSON: %v", err)
+				return err
+			}
+
+			// Attribute für das SIEM Event erstellen, das JSON als String Attribut
+			attrs := []attribute.KeyValue{
+				attribute.String("event.data", string(eventJSON)),
+			}
+
+			o.ObserveFloat64(counter, 1.0, metric.WithAttributes(attrs...))
+			return nil
+		},
+		counter,
+	)
+
+	if err != nil {
+		log.Printf("[ERROR] Failed to register siem_event callback: %v", err)
+		return
+	}
+
+	log.Println("[INFO] Siem event metric registered")
+}
+
 func main() {
 	log.Println("[INFO] Starting rs-vsdm2-app service...")
 
@@ -433,6 +544,15 @@ func main() {
 
 	// Berichte Produkt-Info-Metrik mit dem Meter Provider
 	reportProductInfoMetric(mp)
+
+	// Berichte Siem Event Metrik jede Minute
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			reportSiemEvent(mp)
+		}
+	}()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/vsdservice/v1/vsdmbundle", getVSDMBundleHandler(tracer))
