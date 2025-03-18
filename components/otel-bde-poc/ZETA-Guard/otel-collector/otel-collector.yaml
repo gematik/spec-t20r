@@ -112,6 +112,13 @@ data:
             match_type: strict
             metric_names:
               - product_info
+      filter/siem-event-metrics: # <----- Filter für siem_event Metriken
+        error_mode: ignore
+        metrics:
+          include:
+            match_type: strict
+            metric_names:
+              - siem_event
       batch:
     
     connectors:
@@ -162,5 +169,5 @@ data:
           exporters: [prometheus, debug]
         metrics/gematik-siem: # <----- Pipeline für gematik SIEM
           receivers: [otlp]
-          processors: [filter/product-info-metrics, batch] # <----- Filter HIER eingefügt
+          processors: [filter/siem-event-metrics, batch] # <----- Filter HIER eingefügt
           exporters: [otlp/gematik-siem] # <----- Nur otlp/gematik-siem Exporter in dieser Pipeline
