@@ -6,20 +6,23 @@ set -e  # Beendet das Skript bei einem Fehler
 CLUSTER_NAME="zeta-guard"
 INGRESS_PORT=80  # Standardport für Ingress
 WORKER_COUNT=4   # Standardanzahl Worker Nodes
+ISTIO=false # Standardmäßig Istio deaktiviert
 
 # Hilfe-Funktion
 usage() {
-    echo "Usage: $0 [-c|--cluster <name>] [-w|--workers <count>] [-h|--help]"
+    echo "Usage: $0 [-c|--cluster <name>] [-w|--workers <count>] [-i|--istio] [-h|--help]"
     echo ""
     echo "Optionen:"
     echo "  -c, --cluster <name>  Setzt den Namen des Kind-Clusters (Standard: zeta-guard)"
     echo "  -w, --workers <count> Setzt die Anzahl der Worker Nodes (Standard: 4)"
+    echo "  -i, --istio           Installiert 'istio' im Cluster (Standard: deaktiviert)"
     echo "  -h, --help            Zeigt diese Hilfe an"
     echo ""
     echo "Requirements:"
     echo "  - docker   (https://docs.docker.com/get-docker/)"
     echo "  - kind     (https://kind.sigs.k8s.io/docs/user/quick-start/#installation)"
     echo "  - kubectl  (https://kubernetes.io/docs/tasks/tools/)"
+    echo "  - istioctl (https://istio.io/latest/docs/setup/getting-started/)"
     echo ""
     echo "Hinweis: Die Installation mit snap (Ubuntu) führt zu Fehlern."
     echo "         Verwende apt install."
@@ -37,6 +40,10 @@ while [[ $# -gt 0 ]]; do
             WORKER_COUNT="$2"
             shift 2
             ;;
+        -i|--istio)
+            ISTIO=true
+            shift 1
+            ;;
         -h|--help)
             usage
             ;;
@@ -50,6 +57,11 @@ done
 echo "🚀 Verwende Cluster-Name: ${CLUSTER_NAME}"
 echo "🌐 Ingress wird auf Port ${INGRESS_PORT} gebunden"
 echo "⚙️ Anzahl Worker Nodes: ${WORKER_COUNT}"
+if $ISTIO; then
+    echo "ℹ️ istio wird in ${CLUSTER_NAME} installiert."
+else
+    echo "ℹ️ istio wird nicht in ${CLUSTER_NAME} installiert. Verwende Option '-i' oder '--istio' um istio zu installieren."
+fi
 
 # Generiere die kind-config.yaml mit dynamischem Port und Worker Anzahl
 CONFIG_FILE="./kind-config-${CLUSTER_NAME}.yaml"
@@ -118,6 +130,22 @@ if ! command -v kind &>/dev/null; then
     echo "❌ 'kind' ist nicht installiert. Installiere es mit:"
     echo "👉 https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
     exit 1
+fi
+
+# Prüfen, ob kubectl installiert ist
+if ! command -v kubectl &>/dev/null; then
+    echo "❌ 'kubectl' ist nicht installiert. Installiere es mit:"
+    echo "👉 https://kubernetes.io/docs/tasks/tools/"
+    exit 1
+fi
+
+# Prüfen, ob istioctl installiert ist, falls Option gesetzt
+if $ISTIO; then
+    if ! command -v istioctl &>/dev/null; then
+        echo "❌ 'istioctl' ist nicht installiert. Installiere es mit:"
+        echo "👉 https://istio.io/latest/docs/setup/getting-started/"
+        exit 1
+    fi
 fi
 
 # Erstellen des Docker-Images für den Resource Server
@@ -203,6 +231,16 @@ kubectl get pods -A
 echo "🔄 Rollout restart für alle Deployments -im namespace projectcontour..."
 kubectl rollout restart deployment -n projectcontour
 
+# Istio Installation
+if $ISTIO; then
+    echo "🚀 Installiere istio in ${CLUSTER_NAME}..."
+    istioctl install --set profile=ambient --skip-confirmation
+    #kubectl label namespace default istio-injection=enabled
+    #kubectl apply -f samples/addons
+    kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || \
+    kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.1/standard-install.yaml
+
+fi
 echo "✅ Skript erfolgreich abgeschlossen."
 echo "Der Cluster ${CLUSTER_NAME} wurde erstellt."
 echo ""
