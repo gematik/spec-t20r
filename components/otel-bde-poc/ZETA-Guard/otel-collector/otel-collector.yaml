@@ -33,6 +33,12 @@ spec:
           name: otlp-grpc
         - containerPort: 4318 # OTLP HTTP
           name: otlp-http
+        env:
+        - name: GEMATIK_SIEM_ACCESS_TOKEN # <----- Neue Umgebungsvariable für gematik SIEM
+          valueFrom:
+            secretKeyRef:
+              name: gematik-siem-access-token
+              key: access-token
       volumes: # Hinzugefügter Volumes-Abschnitt
       - name: otel-collector-config-vol
         configMap:
@@ -88,6 +94,8 @@ data:
           insecure: true
       otlp/gematik-siem: # <----- Neuer Exporter für gematik SIEM
         endpoint: "default.main.jolly-morse-ztibejl.cribl.cloud:4317"
+        headers:  # <----- Access Token als Header
+          "Authorization": "Bearer ${env:GEMATIK_SIEM_ACCESS_TOKEN}" # <----- Access Token als Bearer Token im Header
       debug:
         verbosity: normal
   
@@ -104,6 +112,13 @@ data:
             match_type: strict
             metric_names:
               - product_info
+      filter/siem-event-metrics: # <----- Filter für siem_event Metriken
+        error_mode: ignore
+        metrics:
+          include:
+            match_type: strict
+            metric_names:
+              - siem_event
       batch:
     
     connectors:
@@ -154,5 +169,5 @@ data:
           exporters: [prometheus, debug]
         metrics/gematik-siem: # <----- Pipeline für gematik SIEM
           receivers: [otlp]
-          processors: [filter/product-info-metrics, batch] # <----- Filter HIER eingefügt
+          processors: [filter/siem-event-metrics, batch] # <----- Filter HIER eingefügt
           exporters: [otlp/gematik-siem] # <----- Nur otlp/gematik-siem Exporter in dieser Pipeline

@@ -1,0 +1,148 @@
+@startuml "SM-B-Auth-2.0"
+autonumber "(00)"
+skinparam defaultFontSize 10
+skinparam defaultFontName Helvetica
+skinparam DefaultMonospacedFontName Courier
+skinparam lengthAdjust none
+
+!pragma teoz true
+
+Actor User
+box "LEI" #GhostWhite
+  box "Primärsystem" #Lavender
+    box "ZETA Client" #SandyBrown
+      participant Client as "ZETA\nClient"
+    end box
+    participant TPM as "TPM"
+  end box
+  participant Konnektor as "Konnektor or\nTI-Gateway"
+  participant SMB as "SM(C)-B"
+end box
+
+box "Anbieter" #TECHNOLOGY
+  box "ZETA Guard" #SandyBrown
+    participant HP as "PEP\nhttp Proxy"
+    participant AS as "PDP\nAuthorization Server" 
+    participant PE as "PDP\nPolicy Engine"
+  end box
+    box TI 2.0 Dienst #DarkSeaGreen
+      participant RS as "Resource Server"
+    end box
+end box
+
+== Discovery ==
+activate Client
+alt Client has no Authorization Server FQDN (AS-FQDN) but Resource Server FQDN (RS-FQDN)
+  Client -> HP: GET /.well-known/oauth-protected-resource Host: RS-FQDN
+  activate HP
+  HP --> Client: Client: 200 OK; json body with Well-Known json Document (RFC8414)
+  deactivate HP
+else Client has Authorization Server FQDN
+  Client -> AS: GET /.well-known/oauth-authorization-server Host: AS-FQDN
+  activate AS
+  AS --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
+  deactivate AS
+end
+
+== Client Registration ==
+
+box "Anbieter" #TECHNOLOGY
+    box "ZETA Guard" #SandyBrown
+        participant AuthS as "PDP\nAuthS"
+        participant PEP as "PEP\nHTTP Proxy"
+        participant PEA as "PDP\nPolicy Engine"
+    end box
+    box "TI 2.0\nDienst" #DarkSeaGreen
+        participant RS as "Resource\nServer"
+    end box
+end box
+
+== Dynamic client registration ==
+
+User -> Client: User Starts Registration
+activate Client
+Client -> Client: Generate Client Key Pair\nfor Client registration
+Client -> Client: Create client statement
+Client -> Client: Sign client statement
+Client -> TPM: Sign client statement
+activate TPM
+TPM --> Client: client statement Signature (Attestation Statement)
+deactivate TPM
+
+Client -> AuthS: Client Registration Request
+note right: client_statement.yaml\nIncludes attestation statement, public key,\nand client statement
+activate AuthS
+AuthS --> Client: Client Registration Response\n(client_id)
+deactivate AuthS
+
+== Token Request ==
+Client -> Client: generate DPoP key pair
+
+alt Client has no valid refresh token
+Client -> AS: GET /nonce
+activate AS
+AS --> Client: return 200 OK new-nonce: nonce
+Client -> Client: create Client Assertion JWT with nonce\n  Client and OS Information\n  DPoP Thumbprint
+Client -> Konnektor: externalAuthenticate JWT-hash
+activate Konnektor
+Konnektor -> SMB: sign JWT-hash
+activate SMB
+SMB -> Konnektor: JWT-Signature
+deactivate SMB
+Konnektor -> Client: JWT-signature
+deactivate Konnektor
+
+Client -> Client: add SM-B Signature to Client Assertion JWT\n\
+cC4h... (Client Assertion JWT)
+Client -> Client: create DPoP JWT with nonce
+Client -> AS: POST /token\n\
+  Content-Type: application/x-www-form-urlencoded\n\
+  DPoP: ... (DPoP JWT)\n\
+  grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer\n\
+  assertion=eyJh... (Client Assertion JWT)
+note left of AS
+  RFC7523 (JWT Client Assertion), RFC9449 (DPoP)
+end note
+AS -> AS: verify Client Assertion JWT and DPoP JWT
+AS -> AS: Create state for Identity/App/Device
+
+else Client has valid Refresh token
+Client -> Client: create DPoP JWT without nonce
+Client -> AS: POST /token\n\
+  DPoP: ... (DPoP JWT)\n\
+  grant_type=refresh_token\n\
+  refresh_token= ... (Refresh token)
+AS -> AS: verify Refresh token and DPoP JWT
+AS -> AS: invalidate Refresh token
+end
+
+AS -> PE: POST /v1/data/authz, json body {  "input": {...}} 
+activate PE
+PE --> AS: 200 OK, json body {"result": {"allow": true,\n\
+"access_token_attributes": {...}}
+deactivate PE
+AS -> AS: issue Access and Refresh token with DPoP Binding\n\
+  and Access token attributes
+AS --> Client: 200 OK, Access token, Refresh token, bound to DPoP
+deactivate AS
+
+Client -> Client: Create DPoP Proof for RS
+Client -> HP: GET /resource\n\
+  Authorization: DPoP ... (Accesss token)\n\
+  DPoP: ... (DPoP token)
+activate HP
+HP -> HP: verify Access token and DPoP Proof
+HP -> HP: additional checks according to\n\
+Access token attributes
+HP -> RS: forward GET /resource\n\
+with header and header content as json
+activate RS
+RS -> RS: provide\nresource\naccess
+RS --> HP: 200 OK, resource
+deactivate RS
+HP --> Client: 200 OK, resource
+deactivate HP
+deactivate RS
+deactivate Client
+
+@enduml
