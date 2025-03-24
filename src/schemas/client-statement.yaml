@@ -4,31 +4,9 @@ $schema: "http://json-schema.org/draft-07/schema#"
 client_statement:
 type: object
 properties:
-  name:
-    type: string
-    description: The name of the client instance, chosen by the user of the client
   product_id:
     type: string
     description: The product identifier
-  product_name:
-    type: string
-    description: The product name
-  product_version:
-    type: string
-    description: The product version
-  manufacturer_id:
-    type: string
-    description: The manufacturer identifier
-  manufacturer_name:
-    type: string
-    description: The manufacturer name
-  platform:
-    type: string
-    description: The platform of the client instance
-  platform_product_id:
-    oneOf:
-      - $ref: "./product-id-apple.yaml"
-      - $ref: "./product-id-android.yaml"
   posture:
     description: The posture of the client instance
     $ref: "./posture.yaml"
@@ -36,12 +14,6 @@ properties:
     description: The attestation information of the client instance
     $ref: "./attestation-info.yaml"
 required:
-  - name
   - product_id
-  - product_name
-  - product_version
-  - manufacturer_id
-  - manufacturer_name
-  - platform
   - posture
   - attestation

@@ -10,7 +10,11 @@ properties:
   arch:
     type: string
     description: Hardware Architecture
+  public_key:
+    type: string
+    description: The public self signed signing key (PEM or base64 DER encoded).
 required:
   - os
   - os_version
   - arch
+  - public_key

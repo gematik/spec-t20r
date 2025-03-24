@@ -1,0 +1,40 @@
+# Posture schema for generic software clients with tpm attestation
+# 
+$schema: "http://json-schema.org/draft-07/schema#"
+posture_software_tpm:
+  type: object
+  properties:
+    os:
+      type: string
+      description: Operating system name
+    os_version:
+      type: string
+      description: Operating system version
+    arch:
+      type: string
+      description: Hardware Architecture
+    tpm_public_key:
+      type: string
+      description: The public key of the TPM-resident signing key (PEM or base64 DER encoded).
+    tpm_certify_attestation:
+      type: object
+      description: TPM Certify attestation proving the key was generated inside a TPM.
+      properties:
+        certify_info:
+          type: string
+          description: The TPM2B_ATTEST structure containing the certified key information (base64 encoded).
+        certify_signature:
+          type: string
+          description: The signature over the certify_info structure (base64 encoded).
+    tpm_ek_certificate_chain:
+      type: array
+      description: The endorsement key certificate chain from the TPM manufacturer (PEM or base64 DER encoded).
+      items:
+        type: string
+  required:
+    - os
+    - os_version
+    - arch
+    - tpm_public_key
+    - tpm_certify_attestation
+    - tpm_ek_certificate_chain
