@@ -7,6 +7,8 @@ CLUSTER_NAME="zeta-guard"
 INGRESS_PORT=80  # Standardport für Ingress
 WORKER_COUNT=4   # Standardanzahl Worker Nodes
 ISTIO=false # Standardmäßig Istio deaktiviert
+DOCKERFILE_PATH="resource-server/src/Dockerfile" # Docker-Image, das in den Cluster geladen werden soll
+DOCKER_IMAGE="rs-vsdm2-app:latest" # Docker-Image-Name
 
 # Hilfe-Funktion
 usage() {
@@ -109,10 +111,6 @@ METRICS_SERVER_FILE="metrics-server/metrics-server.yaml"
 HPA_FILE="metrics-server/horizontal-pod-autoscaler.yaml"
 INGRESS_TRACING_FILE="ingress/ingress-tracing.yaml"
 
-# Docker-Image, das in den Cluster geladen werden soll
-DOCKERFILE_PATH="resource-server/src/Dockerfile"
-DOCKER_IMAGE="rs-vsdm2-app:latest"
-
 # Prüfen, ob Docker installiert ist
 if ! command -v docker &>/dev/null; then
     echo "❌ 'docker' ist nicht installiert. Installiere es mit:"
@@ -149,10 +147,6 @@ if $ISTIO; then
     fi
 fi
 
-# Erstellen des Docker-Images für den Resource Server
-echo "📦 Erstelle das Docker-Image ${DOCKER_IMAGE} aus ${DOCKERFILE_PATH}..."
-docker build --no-cache -t "${DOCKER_IMAGE}" -f "${DOCKERFILE_PATH}" resource-server/src
-
 # Prüfen, ob der Kind-Cluster existiert
 if kind get clusters | grep -q "^${CLUSTER_NAME}$"; then
     echo "Cluster ${CLUSTER_NAME} existiert bereits. Lösche den Cluster..."
@@ -170,6 +164,10 @@ rm "${CONFIG_FILE}"
 echo "Warten, bis der Cluster verfügbar ist..."
 echo ""
 sleep 5  # Kleine Verzögerung, um sicherzustellen, dass der Cluster bereit ist
+
+# Erstellen des Docker-Images für den Resource Server
+echo "📦 Erstelle das Docker-Image ${DOCKER_IMAGE} aus ${DOCKERFILE_PATH}..."
+docker build --no-cache -t "${DOCKER_IMAGE}" -f "${DOCKERFILE_PATH}" resource-server/src
 
 # Docker-Image in Kind-Cluster laden
 echo "Lade das Docker-Image ${DOCKER_IMAGE} in den Kind-Cluster..."
