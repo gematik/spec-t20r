@@ -37,36 +37,64 @@ activate Client
 group ZETA Client has Resource Server FQDN (RS-FQDN)
   Client -> HP: GET /.well-known/oauth-protected-resource Host: RS-FQDN
   activate HP
-  HP --> Client: Client: 200 OK; json body with Well-Known json Document (RFC8414)
+  HP --> Client: Client: 200 OK; json body with Well-Known json Document (RFC draft-ietf-oauth-resource-metadata)
   deactivate HP
   Client -> AuthS: GET /.well-known/oauth-authorization-server Host: AuthS-FQDN
   activate AuthS
   AuthS --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
   deactivate AuthS
+  
+  note right of Client
+    Offene Fragen:
+    - Werden die Well-known JSON Dokumente signiert?
+    - Wenn ja, welches Zertifikat wird für die Signatur verwendet?
+    - Wie wird die Signatur überprüft?
+  end note
+
 end
 
-== Dynamic client registration ==
-alt Client has no TPM Key Pair
-  Client -> User: Require Admin\naccess to TPM
-  User --> Client: TPM Admin\naccess
-  Client -> TPM: Create Client Key Pair\nin TPM
+== Dynamic Client Registration ==
+
+alt Client has no Key Pair for Client Attestation
+  alt Client uses TPM
+    Client -> User: Require Admin\naccess to TPM
+    User --> Client: TPM Admin access
+    Client -> TPM: Create Client Attestation Key Pair in TPM
+    activate TPM
+    TPM --> Client: Public Attestation Key
+    deactivate TPM
+  else Client uses self signed Key (deprecated)
+    Client -> Client: Create Client Key Pair
+  end
+end
+
+group Client Registration
+  Client -> Client: Create client statement
+  Client -> AuthS: GET /nonce
+  activate AuthS
+  AuthS --> Client: return 200 OK new-nonce: nonce  
+  Client -> TPM: Sign client statement
   activate TPM
-  TPM -> TPM: Create Client Key Pair\nin TPM
-  TPM --> Client: Public Client Key
+  TPM --> Client: client statement Signature (Attestation Statement)
+    Client -> TPM: Create "Certify Key" Quote for Attestation Key
+    TPM --> Client: "Certify Key" Quote
+
   deactivate TPM
+
+  Client -> AuthS: Client Registration Request
+  note right: client_statement.yaml\nIncludes attestation statement, public key,\nand client statement
+  AuthS --> Client: Client Registration Response\n(client_id)
+  deactivate AuthS
+
+  note right of Client
+    Offene Fragen:
+    - Wie wird die Signatur des Attestation Statements überprüft?
+    - Wie wird die Signatur des Attestation Statements erstellt?
+    - Beschreibung Client Registration Endpoint (RFC7591) in gemSpec_ZETA
+    - Beschreibung Client Configuration Endpoint (RFC7592) in gemSpec_ZETA
+  end note
+
 end
-Client -> Client: Create client statement
-Client -> TPM: Sign client statement
-activate TPM
-TPM --> Client: client statement Signature (Attestation Statement)
-deactivate TPM
-
-Client -> AuthS: Client Registration Request
-note right: client_statement.yaml\nIncludes attestation statement, public key,\nand client statement
-activate AuthS
-AuthS --> Client: Client Registration Response\n(client_id)
-deactivate AuthS
-
 == Token Exchange (under construction) ==
 Client -> Client: generate DPoP key pair
 

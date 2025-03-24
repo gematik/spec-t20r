@@ -7,7 +7,7 @@ properties:
     enum:
       - android-key-id-attestation
       - apple-attestation
-      - tmp2
+      - tpm2
       - fido2
       - none
   timestamp:
