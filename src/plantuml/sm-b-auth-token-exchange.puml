@@ -54,7 +54,7 @@ group ZETA Client has Resource Server FQDN (RS-FQDN)
 
 end
 
-== Dynamic Client Registreation ==
+== Dynamic Client Registration ==
 alt Client has no client_id
 
   Client -> AuthS: POST /register (RFC7591)
