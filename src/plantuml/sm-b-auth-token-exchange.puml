@@ -26,7 +26,7 @@ box "Anbieter" #TECHNOLOGY
     participant PE as "PDP\nPolicy Engine"
   end box
     box TI 2.0 Dienst #DarkSeaGreen
-      participant RS as "Resource Server"
+      participant RS as "Resource\nServer"
     end box
 end box
 
@@ -60,6 +60,7 @@ alt Client has no client_id
   Client -> AuthS: POST /register (RFC7591)
   activate AuthS
   AuthS --> Client: Client Information Response with client_id (RFC7591)
+  deactivate AuthS
 end
 
 == Key Generation ==
@@ -117,6 +118,7 @@ alt Client has no valid refresh token
 
   group Client Attestation PoP and DPoP JWT
     Client -> AuthS: **GET /nonce**
+    activate AuthS
     AuthS --> Client: return 200 OK new-nonce: nonce
     Client -> Client: **Generate Client Attestation PoP JWT**\n("typ": "oauth-client-attestation-pop+jwt", "nonce"\nsign with the private Client Instance Key)
     Client -> Client: **Generate DPoP JWT**\n("nonce", sign with the private DPoP Key)
@@ -166,11 +168,12 @@ end
 
 AuthS -> PE: POST /v1/data/authz, body {  "input": {...}} 
 activate PE
-PE --> AuthS: 200 OK, body {"result": {"allow": true,\n\
-"access_token_attributes": {...}}
+PE --> AuthS: 200 OK, body {"allow": true,\n\
+"access_token_ttl": "360",\n\
+"refresh_token_ttl": "43200",\n\
+"scope": "RS specific scopes"}
 deactivate PE
-AuthS -> AuthS: issue Access and Refresh token\nwith DPoP Binding and\n\
-Access token attributes
+AuthS -> AuthS: issue Access and Refresh token\nwith DPoP Binding
 AuthS --> Client: 200 OK, Access token, Refresh token, bound to DPoP
 deactivate AuthS
 
@@ -180,17 +183,16 @@ Client -> HP: GET /resource\n\
   DPoP: ... (DPoP token)
 activate HP
 HP -> HP: verify Access token\nand DPoP Proof
-HP -> HP: additional checks according to\n\
-Access token attributes
 HP -> RS: forward GET /resource\n\
 with header and\nPEP header as json
 activate RS
 RS -> RS: provide\nresource\naccess
-RS --> HP: 200 OK, resource
+RS --> HP: 200 OK, Resource
 deactivate RS
-HP --> Client: 200 OK, resource
+HP --> Client: 200 OK, Resource
 deactivate HP
 deactivate RS
+Client --> User: Resource
 deactivate Client
 
 @enduml
