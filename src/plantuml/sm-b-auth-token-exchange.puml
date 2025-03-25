@@ -54,10 +54,7 @@ group ZETA Client has Resource Server FQDN (RS-FQDN)
 
 end
 
-== Token Exchange ==
-
-alt Client has no valid refresh token
-
+== Dynamic Client Registreation ==
 alt Client has no client_id
 
   Client -> AuthS: POST /register (RFC7591)
@@ -65,24 +62,27 @@ alt Client has no client_id
   AuthS --> Client: Client Information Response with client_id (RFC7591)
 end
 
-group Token Generation
+== Key Generation ==
 
-  alt Client has no Client Attestation Key Pair
-    alt Client uses TPM
-      Client -> User: Obtain Admin\naccess to TPM
-      User --> Client: TPM Admin access
-      Client -> TPM: Create Client Attestation Key Pair in TPM
-      activate TPM
-      TPM --> Client: Public Attestation Key
-      deactivate TPM
-    else Client uses self signed Attestation Key (deprecated)
-      Client -> Client: Create self signed Client Attestation Key Pair
-    end
+alt Client has no Client Attestation Key Pair
+  alt Client uses TPM
+    Client -> User: Obtain Admin\naccess to TPM
+    User --> Client: TPM Admin access
+    Client -> TPM: Create Client Attestation Key Pair in TPM
+    activate TPM
+    TPM --> Client: Public Attestation Key
+    deactivate TPM
+  else Client uses self signed Attestation Key (deprecated)
+    Client -> Client: Create self signed Client Attestation Key Pair
   end
+end
+alt Client has no Client Instance Key Pair
+  Client -> Client: Create Client Instance Key Pair
+end
 
-  alt Client has no Client Instance Key Pair
-    Client -> Client: Create Client Instance Key Pair
-  end
+alt Client has no valid refresh token
+
+== Token Generation ==
 
   group SM(C)-B Access Token JWT
 
@@ -104,9 +104,11 @@ group Token Generation
     Client -> Client: **Generate Client Attestation JWT**\n("typ": "oauth-client-attestation+jwt", "alg": "ES256"\n"sub": "client_id", "cnf" with public Client Instance Key)
     alt Client uses TPM
       Client -> TPM: Sign Client Attestation JWT with Client Attestation Key
+      activate TPM
       TPM --> Client: Client Attestation JWT Signature
       Client -> TPM: Get TPM evidence
       TPM --> Client: TPM2B_ATTEST Objekt and TPM EK certificate chain
+      deactivate TPM
     else Client uses self signed Attestation Key (deprecated)
       Client -> Client: Sign Client Attestation JWT with Client Key
     end
@@ -118,7 +120,8 @@ group Token Generation
     Client -> Client: **Generate Client Attestation PoP JWT**\n("typ": "oauth-client-attestation-pop+jwt", "nonce"\nsign with the private Client Instance Key)
     Client -> Client: **Generate DPoP JWT**\n("nonce", sign with the private DPoP Key)
   end
-end
+
+== Token Exchange ==
 
 Client -> AuthS: **POST /token**\n\
 POST /token HTTP/1.1\n\
@@ -147,6 +150,9 @@ AuthS -> AuthS: verify Client Attestation JWT and PoP JWT
 AuthS -> AuthS: Create state for Session, Identity and Client
 
 else Client has valid Refresh token
+
+== Refresh Token Exchange ==
+
 Client -> Client: create DPoP JWT without nonce
 Client -> AuthS: POST /token\n\
   DPoP: ... (DPoP JWT)\n\
