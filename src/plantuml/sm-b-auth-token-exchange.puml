@@ -103,11 +103,12 @@ alt Client has no valid refresh token
   group Client Attestation JWT
     Client -> Client: **Generate Client Attestation JWT**\n("typ": "oauth-client-attestation+jwt", "alg": "ES256"\n"sub": "client_id", "cnf" with public Client Instance Key)
     alt Client uses TPM
+      Client -> TPM: Get TPM evidence
+      TPM --> Client: TPM2B_ATTEST Objekt and TPM EK certificate chain
+      Client -> Client: Add TPM evidence to Client Attestation JWT
       Client -> TPM: Sign Client Attestation JWT with Client Attestation Key
       activate TPM
       TPM --> Client: Client Attestation JWT Signature
-      Client -> TPM: Get TPM evidence
-      TPM --> Client: TPM2B_ATTEST Objekt and TPM EK certificate chain
       deactivate TPM
     else Client uses self signed Attestation Key (deprecated)
       Client -> Client: Sign Client Attestation JWT with Client Key

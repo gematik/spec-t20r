@@ -29,7 +29,9 @@ client_attestation_jwt:
       required:
         - jkt
   required:
+    - sub
     - product_id
     - posture
     - attestation
     - nonce
+    - cnf
