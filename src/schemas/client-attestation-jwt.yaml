@@ -1,0 +1,35 @@
+# Schema for client statement
+# The Client Attestation JWT is used to register a client instance with the ZETA Guard AuthServer
+$schema: "http://json-schema.org/draft-07/schema#"
+client_attestation_jwt:
+  type: object
+  properties:
+    sub:
+      type: string
+      description: The OAuth client_id of the client instance
+    product_id:
+      type: string
+      description: The product identifier
+    posture:
+      description: The posture of the client instance
+      $ref: "./posture.yaml"
+    attestation:
+      description: The attestation information of the client instance
+      $ref: "./attestation-info.yaml"
+    nonce:
+      type: string
+      description: A random nonce to prevent replay attacks
+    cnf:
+      type: object
+      description: The confirmation key of the client instance
+      properties:
+        jkt:
+          type: string
+          description: "SHA-256 hash of the public key used in the PoP proof."
+      required:
+        - jkt
+  required:
+    - product_id
+    - posture
+    - attestation
+    - nonce
