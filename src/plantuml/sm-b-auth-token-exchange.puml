@@ -88,7 +88,7 @@ alt Client has no valid refresh token
 
     Client -> Client: generate DPoP key pair
 
-    Client -> Client: **Generate SM(C)-B Access Token JWT**\n("typ": "JWT", "alg": "ES256"\n"sub": "telematik_id",\n"scope": "token_exchange" "cnf": with public Client Attestation Key)
+    Client -> Client: **Generate SM(C)-B Access Token JWT**\n("typ": "JWT", "alg": "ES256"\n"sub": "telematik_id",\n"scope": "RS specific scopes" "cnf": with public Client Attestation Key)
     Client -> Konnektor: externalAuthenticate SM(C)-B Access Token JWT-hash
     activate Konnektor
     Konnektor -> SMB: sign JWT-hash
