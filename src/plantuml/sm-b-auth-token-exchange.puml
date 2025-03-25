@@ -146,8 +146,9 @@ Client -> AuthS: **POST /token**\n\
 note left of AuthS
   RFC7523 (JWT Client Assertion), RFC9449 (DPoP)
 end note
-AuthS -> AuthS: verify SM(C)-B Access Token JWT
-AuthS -> AuthS: verify Client Attestation JWT and PoP JWT
+AuthS -> AuthS: verify\n\
+SM(C)-B Access Token JWT and DPoP JWT\n\
+Client Attestation JWT and PoP JWT
 AuthS -> AuthS: Create state for Session, Identity and Client
 
 else Client has valid Refresh token
@@ -163,13 +164,13 @@ AuthS -> AuthS: verify Refresh token and DPoP JWT
 AuthS -> AuthS: invalidate Refresh token
 end
 
-AuthS -> PE: POST /v1/data/authz, json body {  "input": {...}} 
+AuthS -> PE: POST /v1/data/authz, body {  "input": {...}} 
 activate PE
-PE --> AuthS: 200 OK, json body {"result": {"allow": true,\n\
+PE --> AuthS: 200 OK, body {"result": {"allow": true,\n\
 "access_token_attributes": {...}}
 deactivate PE
-AuthS -> AuthS: issue Access and Refresh token with DPoP Binding\n\
-  and Access token attributes
+AuthS -> AuthS: issue Access and Refresh token\nwith DPoP Binding and\n\
+Access token attributes
 AuthS --> Client: 200 OK, Access token, Refresh token, bound to DPoP
 deactivate AuthS
 
@@ -178,11 +179,11 @@ Client -> HP: GET /resource\n\
   Authorization: DPoP ... (Accesss token)\n\
   DPoP: ... (DPoP token)
 activate HP
-HP -> HP: verify Access token and DPoP Proof
+HP -> HP: verify Access token\nand DPoP Proof
 HP -> HP: additional checks according to\n\
 Access token attributes
 HP -> RS: forward GET /resource\n\
-with header and header content as json
+with header and\nPEP header as json
 activate RS
 RS -> RS: provide\nresource\naccess
 RS --> HP: 200 OK, resource
