@@ -1,0 +1,65 @@
+@startuml "SM-B-Auth-token-exchange"
+autonumber "(00)"
+skinparam defaultFontSize 10
+skinparam defaultFontName Helvetica
+skinparam DefaultMonospacedFontName Courier
+skinparam lengthAdjust none
+skinparam sequenceReferenceBackgroundColor White
+skinparam SequenceReferenceFontSize 12
+/'skinparam SequenceReferenceFontStyle bold
+'/
+
+
+!pragma teoz true
+
+Actor User
+box "LEI" #GhostWhite
+  box "Primärsystem" #Lavender
+    box "ZETA Client" #SandyBrown
+      participant Client as "ZETA\nClient"
+    end box
+    participant TPM as "TPM"
+  end box
+  participant Konnektor as "Konnektor or\nTI-Gateway"
+  participant SMB as "SM(C)-B"
+end box
+
+box "Anbieter" #TECHNOLOGY
+  box "ZETA Guard" #SandyBrown
+    participant HP as "PEP\nhttp Proxy"
+    participant AuthS as "PDP\nAuthorization Server" 
+    participant PE as "PDP\nPolicy Engine"
+  end box
+    box TI 2.0 Dienst #DarkSeaGreen
+      participant RS as "Resource\nServer"
+    end box
+end box
+
+User -> Client: User wants to\naccess resource\non Resource Server
+activate Client
+
+ref over Client, HP, AuthS: **Discovery and Configuration**
+alt Client has no client_id
+    ref over Client, AuthS: **Dynamic Client Registration**
+end
+
+alt Client has no Client Attestation Key Pair or Client Instance Key Pair
+    ref over User, Client, TPM
+        **Key Generation**
+        (Client Attestation Key Pair, Client Instance Key Pair)
+    end ref
+end
+
+alt Client has no valid refresh token
+    ref over Client, TPM, Konnektor, SMB, AuthS
+        **Token Generation**
+        (SM(C)-B Access Token JWT, Client Attestation JWT, Client Attestation PoP JWT and DPoP JWT)
+    end ref
+    ref over Client, AuthS, PE: **Token Exchange**
+else Client has valid Refresh token
+    ref over Client, AuthS, PE: **Refresh Token Exchange**
+end
+
+ref over User, Client, HP, RS: **Resource Access**
+
+@enduml

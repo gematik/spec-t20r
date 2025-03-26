@@ -33,7 +33,7 @@ end box
 User -> Client: User wants to\naccess resource\non Resource Server
 activate Client
 
-== Discovery ==
+== Discovery and Configuration ==
 
 group ZETA Client has Resource Server FQDN (RS-FQDN)
   Client -> HP: GET /.well-known/oauth-protected-resource Host: RS-FQDN
