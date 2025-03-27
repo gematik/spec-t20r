@@ -1,0 +1,72 @@
+@startuml "SM-B-Auth-token-exchange"
+autonumber "(00)"
+skinparam defaultFontSize 10
+skinparam defaultFontName Helvetica
+skinparam DefaultMonospacedFontName Courier
+skinparam lengthAdjust none
+skinparam sequenceReferenceBackgroundColor White
+skinparam SequenceReferenceFontSize 12
+/'skinparam SequenceReferenceFontStyle bold
+'/
+
+
+!pragma teoz true
+
+Actor User
+box "LEI" #GhostWhite
+  box "Primärsystem" #Lavender
+    box "ZETA Client" #SandyBrown
+      participant Client as "ZETA\nClient"
+    end box
+    participant TPM as "TPM"
+  end box
+  participant Konnektor as "Konnektor or\nTI-Gateway"
+  participant SMB as "SM(C)-B"
+end box
+
+box "Anbieter" #TECHNOLOGY
+  box "ZETA Guard" #SandyBrown
+    participant HP as "PEP\nhttp Proxy"
+    participant AuthS as "PDP\nAuthorization Server" 
+    participant PE as "PDP\nPolicy Engine"
+  end box
+    box TI 2.0 Dienst #DarkSeaGreen
+      participant RS as "Resource\nServer"
+    end box
+end box
+
+activate Client
+Client -> AuthS: **POST /token**\n\
+POST /token HTTP/1.1\n\
+Host: auths.example.com\n\
+Content-Type: application/x-www-form-urlencoded\n\
+DPoP: <DPoP JWT>\n\
+OAuth-Client-Attestation: <Base64url-kodiertes Client Attestation JWT>\n\
+OAuth-Client-Attestation-PoP: <Base64url-kodiertes Client Attestation PoP JWT>\n\
+grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&\n\
+subject_token=<SM(C)-B Access Token JWT>&\n\
+subject_token_type=urn%3Aexample%3Asmc-b-jwt&\n\
+audience=https%3A%2F%2Fbackend.example.com%2Fapi
+activate AuthS
+
+
+note left of AuthS
+  RFC8693 (OAuth 2.0 Token Exchange), RFC9449 (DPoP)
+end note
+AuthS -> AuthS: verify\n\
+SM(C)-B Access Token JWT and DPoP JWT\n\
+Client Attestation JWT and PoP JWT
+AuthS -> AuthS: Create state for Session, Identity and Client
+
+AuthS -> PE: POST /v1/data/authz, body {  "input": {...}} 
+activate PE
+PE --> AuthS: 200 OK, body {"allow": true,\n\
+"access_token_ttl": "360",\n\
+"refresh_token_ttl": "43200",\n\
+"scope": "RS specific scopes"}
+deactivate PE
+AuthS -> AuthS: issue Access and Refresh token\nwith DPoP Binding
+AuthS --> Client: 200 OK, Access token, Refresh token, bound to DPoP
+deactivate AuthS
+
+@enduml
