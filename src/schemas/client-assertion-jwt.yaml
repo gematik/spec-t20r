@@ -6,9 +6,6 @@ client_assertion_jwt:
     nonce:
       type: string
       description: A **unique value** to prevent replay attacks.
-    sub:
-      type: string
-      description: The **client_id** of the OAuth Client (Subject Claim according to RFC 7523).
     product_id:
       type: string
       description: The **product identifier** (according to).
