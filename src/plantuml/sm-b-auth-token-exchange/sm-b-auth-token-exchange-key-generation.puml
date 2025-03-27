@@ -1,0 +1,57 @@
+@startuml "SM-B-Auth-token-exchange"
+autonumber "(00)"
+skinparam defaultFontSize 10
+skinparam defaultFontName Helvetica
+skinparam DefaultMonospacedFontName Courier
+skinparam lengthAdjust none
+skinparam sequenceReferenceBackgroundColor White
+skinparam SequenceReferenceFontSize 12
+/'skinparam SequenceReferenceFontStyle bold
+'/
+
+
+!pragma teoz true
+
+Actor User
+box "LEI" #GhostWhite
+  box "Primärsystem" #Lavender
+    box "ZETA Client" #SandyBrown
+      participant Client as "ZETA\nClient"
+    end box
+    participant TPM as "TPM"
+  end box
+  participant Konnektor as "Konnektor or\nTI-Gateway"
+  participant SMB as "SM(C)-B"
+end box
+
+box "Anbieter" #TECHNOLOGY
+  box "ZETA Guard" #SandyBrown
+    participant HP as "PEP\nhttp Proxy"
+    participant AuthS as "PDP\nAuthorization Server" 
+    participant PE as "PDP\nPolicy Engine"
+  end box
+    box TI 2.0 Dienst #DarkSeaGreen
+      participant RS as "Resource\nServer"
+    end box
+end box
+
+activate Client
+alt Client has no Client Attestation Key Pair
+  alt Client uses TPM
+    Client -> User: Obtain Admin\naccess to TPM
+    User --> Client: TPM Admin access
+    Client -> TPM: Create Client Attestation Key Pair in TPM
+    activate TPM
+    TPM --> Client: Public Attestation Key
+    deactivate TPM
+  else Client uses self signed Attestation Key (deprecated)
+    Client -> Client: Create self signed Client Attestation Key Pair
+  end
+end
+alt Client has no Client Instance Key Pair
+  Client -> Client: Create Client Instance Key Pair
+end
+
+deactivate Client
+
+@enduml

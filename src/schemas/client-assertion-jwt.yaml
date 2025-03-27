@@ -1,44 +1,26 @@
-# Schema for the client assertion jwt object. Issuer is a ZETA Client.
+# Schema for the Client Assertion JWT (RFC 7523) object with TPM Attestation. Issuer is a ZETA Client.
 $schema: "http://json-schema.org/draft-07/schema#"
 client_assertion_jwt:
   type: object
   properties:
     nonce:
       type: string
-      description: Nonce from the authorization server.
-    iss:
-      type: string
-      description: Unique identifier of the issuer (e.g., Telematik ID).
+      description: A **unique value** to prevent replay attacks.
     sub:
       type: string
-      description: The client ID of the OAuth client.
-    aud:
+      description: The **client_id** of the OAuth Client (Subject Claim according to RFC 7523).
+    product_id:
       type: string
-      description: The URL of the authorization server.
-    iat:
-      type: integer
-      description: The timestamp when the JWT was issued.
-    exp:
-      type: integer
-      description: The expiration time of the JWT.
-    cnf:
-      type: object
-      description: Confirmation information.
-      properties:
-        jkt:
-          type: string
-          description: The thumbprint of the DPoP key.
-      required:
-        - jkt
-    "urn:telematik:client-self-assessment":
-      description: Information about the client instance.
-      $ref: "./client-instance.yaml#/client_instance"
+      description: The **product identifier** (according to).
+    posture:
+      description: The posture of the client instance
+      $ref: "./posture.yaml"
+    attestation:
+      description: The attestation information of the client instance
+      $ref: "./attestation-info.yaml"
   required:
     - nonce
-    - iss
     - sub
-    - aud
-    - iat
-    - exp
-    - cnf
-    - "urn:telematik:client-self-assessment"
+    - product_id
+    - posture
+    - attestation
