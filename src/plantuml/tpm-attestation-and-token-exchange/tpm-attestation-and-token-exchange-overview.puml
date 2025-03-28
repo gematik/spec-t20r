@@ -9,7 +9,6 @@ skinparam SequenceReferenceFontSize 12
 /'skinparam SequenceReferenceFontStyle bold
 '/
 
-
 !pragma teoz true
 
 Actor User
