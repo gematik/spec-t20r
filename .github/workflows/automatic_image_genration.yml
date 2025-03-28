@@ -45,7 +45,7 @@ jobs:
         echo "CHANGED_FILES: $CHANGED_FILES"
       shell: bash
 
-    - name: Debug changed files
+    - name: Debug changed files (Added)
       run: |
         echo "Debug: Changed files are ${{ env.CHANGED_FILES }}"
 
