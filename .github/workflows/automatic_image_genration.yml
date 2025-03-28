@@ -39,11 +39,22 @@ jobs:
     - name: Generate images from PlantUML files
       id: generate_plantuml
       run: |
-        set -e
-        GENERATED_COUNT=0
-        shopt -s nullglob # Ensure loop doesn't run if find returns nothing
-        while IFS= read -r -d $'\0' file; do
-          echo "Checking PlantUML file: $file"
+        BASE_SHA=$(git rev-parse HEAD^1)
+        CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD | grep -E 'src/plantuml/.*\.puml|src/drawio/.*\.drawio' || true)
+        echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
+        echo "::set-output name=changed_files::$CHANGED_FILES"
+        echo "CHANGED_FILES: $CHANGED_FILES"
+        shell: bash
+
+    - name: Debug changed files
+      run: |
+        echo "Debug: Changed files are ${{ steps.changed_files.outputs.changed_files }}"
+
+    - name: Generate images from changed PlantUML files
+      if: ${{ steps.changed_files.outputs.changed_files }} != ''
+      run: |
+        for file in $(echo "${{ steps.changed_files.outputs.changed_files }}" | grep 'src/plantuml/.*\.puml' || true); do
+          echo "Processing PlantUML file: $file"
           output_dir=$(dirname "$file" | sed 's|^src/plantuml|images|')
           image_base=$(basename "$file" .puml)
           png_path="$output_dir/$image_base.png"
