@@ -41,7 +41,8 @@ jobs:
         echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
         echo "::set-output name=changed_files::$CHANGED_FILES"
         echo "CHANGED_FILES: $CHANGED_FILES"
-        
+        shell: bash
+
     - name: Debug changed files
       run: |
         echo "Debug: Changed files are ${{ steps.changed_files.outputs.changed_files }}"
