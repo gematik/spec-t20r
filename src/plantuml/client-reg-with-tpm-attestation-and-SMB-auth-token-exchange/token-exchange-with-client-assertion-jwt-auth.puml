@@ -1,0 +1,138 @@
+@startuml "token-exchange-with-client-assertion-jwt-auth"
+autonumber "(00)"
+skinparam defaultFontSize 10
+skinparam defaultFontName Helvetica
+skinparam DefaultMonospacedFontName Courier
+skinparam lengthAdjust none
+skinparam sequenceReferenceBackgroundColor White
+skinparam SequenceReferenceFontSize 12
+/'skinparam SequenceReferenceFontStyle bold
+'/
+
+
+!pragma teoz true
+
+Actor User
+box "LEI" #GhostWhite
+  box "Primärsystem" #Lavender
+    box "ZETA Client" #SandyBrown
+      participant Client as "ZETA\nClient"
+    end box
+    participant TPM as "TPM"
+  end box
+  participant Konnektor as "Konnektor or\nTI-Gateway"
+  participant SMB as "SM(C)-B"
+end box
+
+box "Anbieter" #TECHNOLOGY
+  box "ZETA Guard" #SandyBrown
+    participant HP as "PEP\nhttp Proxy"
+    participant AuthS as "PDP\nAuthorization Server" 
+    participant PE as "PDP\nPolicy Engine"
+  end box
+    box TI 2.0 Dienst #DarkSeaGreen
+      participant RS as "Resource\nServer"
+    end box
+end box
+
+Client ++
+Client -> Client : Create "SM(C)-B Access Token" (JWT)
+note right #lightblue
+    **SM(C)-B Access Token Claims:**
+    {
+      "iss": "<client_id>", // Issuer is the client
+      "sub": "<Telematik-ID from SM(C)-B>", // Subject is the institution
+      "aud": "<AS_Token_Endpoint_URL>", // Audience is the AS
+      "exp": ..., // Short-lived
+      "iat": ...,
+      "jti": "...",
+      "nonce": "<Challenge from DCR>", // Binding to DCR
+      "scope": ... // As required for the Resource Server access
+    }
+end note
+
+Client -> Konnektor ++ : externalAuthenticate (JWT-hash)
+Konnektor -> SMB ++ : sign (JWT-hash)
+SMB -> Konnektor -- : JWT-Signature
+Konnektor -->> Client -- : JWT-signature
+
+Client -> Client : Create DPoP Key Pair (for Token Exchange)
+' note right: Session-based Key Pair for DPoP binding.
+Client -> Client : Create DPoP Proof JWT for Token Exchange
+note right #lightblue
+    **DPoP Proof JWT Claims (for Token Exchange):**
+    {
+      "typ": "dpop+jwt",
+      "alg": "ES256",
+      "jwk": {
+        "kty": "EC",
+        "x": "...",
+        "y": "...",
+        "crv": "P-256"
+      }
+    }.{
+      "jti": "...",
+      "htm": "POST",
+      "htu": "<AS_Token_Endpoint_URL>",
+      "iat": ...
+    }.(sig by DPoP_Private_Key)
+end note
+
+Client -> Client : Create Client Assertion JWT for Token Exchange (for Auth)
+note right #lightblue
+    **Client Assertion JWT Claims (for Auth):**
+    {
+      "iss": "<client_id>",
+      "sub": "<client_id>",
+      "aud": "<AS_Token_Endpoint_URL>",
+      "exp": ..., // Short-lived
+      "jti": "...",
+      // Include DPoP public key hash
+      "cnf": { "jkt": "<Base64URL(SHA256(DPoP_Public_JWK))>" }
+    }
+    (sig by Client_Instance_Private_Key)
+end note
+
+Client -> AuthS ++ : POST /token (RFC 8693)
+note right of Client #lightblue
+    **Token Exchange Request Body:**
+      grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+      &subject_token=<SM(C)-B_Assertion_Token>
+      &subject_token_type=urn:ietf:params:oauth:token-type:jwt // Or custom
+      &client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+      &client_assertion=<Client_Assertion_JWT_for_Auth>
+      &resource=<Optional: Target Resource URI>
+      &audience=<Optional: Target Audience>
+end note
+
+AuthS -> AuthS : Validate client_assertion (sig by Client_Instance_PK, claims)
+AuthS -> AuthS : Validate subject_token (sig by SM(C)-B_PK, claims)
+AuthS -> AuthS : Check if client_id is bound to the SM(C)-B identity (sub claim in subject_token)
+alt Validations Successful
+    AuthS -> AuthS : Generate AS Access Token (AT) and Refresh Token (RT)
+    ' note right: AT is bound to DPoP key (cnf.jkt claim)\nAT contains claims about client_id and SM(C)-B Identity
+    AuthS -->> Client: 200 OK
+    note right of AuthS #lightgreen
+        **Token Response Body:**
+        {
+          "access_token": "<AS_Access_Token>",
+          "token_type": "DPoP", // Indicate DPoP is required
+          "expires_in": 3600,
+          "refresh_token": "<AS_Refresh_Token>" // Optional
+          // ... other parameters
+        }
+    end note
+else Validation Failed
+    AuthS -->> Client -- : 400 Bad Request
+    note right of AuthS #pink
+        **Error Response:**
+        {
+          "error": "invalid_grant", // Or "invalid_client"
+          "error_description": "Token exchange validation failed."
+        }
+    end note
+end alt
+
+Client --
+
+@enduml

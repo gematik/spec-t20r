@@ -1,0 +1,52 @@
+@startuml
+participant "ZETA Client" as Client
+participant "ZETA Guard AS\n(PDP Authorization Server)" as AS
+database "PDP Client Registry" as Registry
+
+note over Client: Generates: **TPM Attestation Key Pair**
+Client -> AS: POST /.well-known/openid-configuration
+note right of AS: Retrieves AS Configuration (e.g., registration_endpoint)
+AS --> Client: 200 OK
+note left of Client: Contains registration_endpoint
+
+Client -> AS: POST /reg
+note right of AS: Dynamic Client Registration Request (RFC 7591)
+note right of AS: Includes metadata and TPM Attestation Statement
+note right of AS: The Attestation Statement proves the origin of the key from TPM
+AS -> Registry: Validate TPM Attestation
+Registry --> AS: OK or Failure
+alt Registration Successful
+    AS --> Client: 201 Created
+    note left of Client: Contains **Client ID** and **Client Secret** (if applicable)
+    note left of Client: Generates: **Client Instance Key Pair** (for DPoP)
+else Registration Failed
+    AS --> Client: 400 Bad Request
+    note left of Client: Contains error details
+end
+
+Client -> AS: POST /token
+note right of AS: Token Request (OAuth Token Exchange - RFC 8693)
+note right of AS: grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+note right of AS: subject_token=<**SMC-B signed Access Token created by Client**>
+note right of AS: subject_token_type=urn:ietf:params:oauth:token-type:access_token
+note right of AS: client_id=<**Client ID**>
+note right of AS: **DPoP**: <**DPoP Proof JWT (signed with DPoP Private Key)**>
+note right of AS: **cnf**: { jkt: <**Thumbprint of DPoP Public Key**> }
+
+AS -> Registry: Retrieve Client Information
+Registry --> AS: Client Details
+
+AS -> "Policy Engine": Evaluate Access Token Exchange Policy
+note left of AS: Input: SMC-B signed token, Client ID, DPoP information
+"Policy Engine" --> AS: Decision (Permit/Deny)
+
+alt Token Exchange Successful
+    AS --> Client: 200 OK
+    note left of Client: Contains **ZETA Guard AS Access Token**
+    note left of Client: Contains **Refresh Token** (optional)
+else Token Exchange Failed
+    AS --> Client: 400 Bad Request or 401 Unauthorized
+    note left of Client: Contains error details
+end
+
+@enduml

@@ -1,0 +1,98 @@
+@startuml "dynamic-client-registration-with-tpm-attestation"
+autonumber "(00)"
+skinparam defaultFontSize 10
+skinparam defaultFontName Helvetica
+skinparam DefaultMonospacedFontName Courier
+skinparam lengthAdjust none
+skinparam sequenceReferenceBackgroundColor White
+skinparam SequenceReferenceFontSize 12
+/'skinparam SequenceReferenceFontStyle bold
+'/
+
+!pragma teoz true
+
+Actor User
+box "LEI" #GhostWhite
+  box "Primärsystem" #Lavender
+    box "ZETA Client" #SandyBrown
+      participant Client as "ZETA\nClient"
+    end box
+    participant TPM as "TPM"
+  end box
+  participant Konnektor as "Konnektor or\nTI-Gateway"
+  participant SMB as "SM(C)-B"
+end box
+
+box "Anbieter" #TECHNOLOGY
+  box "ZETA Guard" #SandyBrown
+    participant HP as "PEP\nhttp Proxy"
+    participant AuthS as "PDP\nAuthorization Server" 
+    participant PE as "PDP\nPolicy Engine"
+  end box
+    box TI 2.0 Dienst #DarkSeaGreen
+      participant RS as "Resource\nServer"
+    end box
+end box
+
+alt Client has no client_id
+
+Client ++
+Client -> Client : Generate Client Instance Key Pair (for Client Auth)
+note right: Key Pair for private_key_jwt \n(could potentially be TPM-backed, but distinct from Attestation Key)
+Client -> TPM ++ : Trigger Generation of TPM Attestation Key Pair
+note right: Key Pair generated securely in TPM.\nPrivate key does not leave TPM.
+TPM --> Client: Return Attestation Public Key / Certificate Chain
+TPM --
+
+== 2. Dynamic Client Registration (DCR) with TPM Attestation ==
+Client -> TPM ++ : Request Attestation Statement for Registration
+' note right: Attestation includes:\n- Attestation Key signature\n- Device identifiers\n- Boot state, Verified Boot state\n- OS Version, Patch Level\n- App ID, App Version, App Signature Hash
+TPM -->> Client -- : Return Attestation Statement (e.g., Certificate Chain with Extension Data)
+
+Client -> AuthS ++ : POST /register (RFC 7591)
+note right of Client #lightblue
+    **DCR Request Body:**
+    {
+      "redirect_uris": ["..."],
+      "client_name": "...",
+      "token_endpoint_auth_method": "private_key_jwt",
+      "grant_types": ["urn:ietf:params:oauth:grant-type:token-exchange","refresh_token"],
+      "jwks": { "keys": [ <Client_Instance_Public_Key_JWK> ] },
+      // Custom parameter for attestation:
+      "urn:gematik:params:oauth:client-attestation-type:tpm2": {
+         "attestation_data": "<Base64(TPM Attestation Statement)>",
+         "attestation_format": "tpm-attestation-jwt"
+       }
+    }
+end note
+
+AuthS -> AuthS : Validate TPM Attestation Statement
+note right: Check signature against trusted roots.\nExtract device/OS/App status.\nVerify Attestation Key properties.
+alt Attestation valid
+    AuthS -> AuthS : Generate client_id
+    AuthS -> AuthS : Store client metadata, incl. Client Instance Key
+    AuthS -> AuthS: Generate Nonce (Challenge)\n// Short-lived for Client to SM(C)-B Binding
+    AuthS -->> Client -- : 201 Created
+    note right of Client #lightgreen
+        **DCR Response Body:**
+        {
+          "client_id": "<generated-client-id>",
+          "client_id_issued_at": ...,
+          "client_name": "...",
+          "token_endpoint_auth_method": "private_key_jwt",
+          "grant_types": ["urn:ietf:params:oauth:grant-type:token-exchange","refresh_token"],
+          "jwks": { <Client_Instance_Public_Key_JWK> }, // Confirming registered key
+          // ... other registered metadata
+          "registration_access_token": "...", // Optional for config updates
+          "registration_client_uri": "...", // Optional for config updates
+          "challenge": "<random_nonce_value>" // For Client to SM(C)-B Binding during Token Exchange
+        }
+    end note
+else Attestation invalid
+    AuthS -->> Client -- : 400 Bad Request
+end alt
+
+Client --
+end
+
+@enduml
