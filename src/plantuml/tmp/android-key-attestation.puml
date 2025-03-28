@@ -1,0 +1,93 @@
+@startuml "Android Key Attestation Sequenzdiagramm"
+
+participant "App" as App
+participant "Android Keystore API" as KeystoreAPI
+participant "Keystore/Keymaster HAL" as HAL
+participant "Sichere Hardware (TEE/SE)" as TEE
+participant "Zero Trust System\n(PEP/PDP)" as ZT
+
+activate App
+
+' 1. App fordert die Generierung eines neuen Schlüssels mit Attestierung an
+App -> KeystoreAPI: Schlüsselpaar-Generierung anfordern\n(mit Attestation Challenge `challenge`)
+activate KeystoreAPI
+note left: Spezifiziert Alias, Zweck, Algorithmus,\nund fordert Attestierung mit `challenge` an.
+
+' 2. Keystore API leitet die Anfrage an die Hardware Abstraction Layer (HAL) weiter
+KeystoreAPI -> HAL: Schlüsselpaar generieren (Parameter, `challenge`)
+activate HAL
+
+' 3. HAL leitet die Anfrage an die sichere Hardware weiter
+HAL -> TEE: Schlüsselpaar generieren (Parameter, `challenge`)
+activate TEE
+
+' 4. Sichere Hardware generiert das Schlüsselpaar
+TEE -> TEE: Neues Schlüsselpaar generieren\n(Privater Schlüssel `privKey` verbleibt in TEE)
+TEE -> TEE: Öffentlichen Schlüssel `pubKey` extrahieren
+
+' 5. Sichere Hardware erstellt das Attestierungszertifikat
+TEE -> TEE: Attestierungszertifikat erstellen
+note right of TEE: - Fügt `pubKey` hinzu\n- Fügt `challenge` hinzu\n- Fügt Geräteeigenschaften hinzu\n  (Boot-Status, OS-Version, Patch-Level,\n   Verified Boot Status, TEE/SE Details etc.)\n- Verwendet Attestierungsschlüssel zum Signieren
+
+' 6. Sichere Hardware erstellt die Zertifikatskette
+TEE -> TEE: Zertifikatskette zusammenstellen\n(Blattzertifikat + Zwischenzertifikate + Root)
+
+' 7. Sichere Hardware gibt Kette und öffentlichen Schlüssel zurück
+TEE --> HAL: `pubKey` + Attestierungszertifikatskette `certChain`
+deactivate TEE
+
+' 8. HAL gibt die Ergebnisse an die Keystore API zurück
+HAL --> KeystoreAPI: `pubKey` + `certChain`
+deactivate HAL
+
+' 9. Keystore API gibt die Ergebnisse an die App zurück
+KeystoreAPI --> App: `pubKey` + `certChain`
+deactivate KeystoreAPI
+note left: App hat nun `pubKey` und `certChain`,\nwelche die Herkunft und den Gerätestatus belegen.
+
+' === Zero Trust Interaktion ===
+
+' 10. App initiiert Registrierung/Zugriff beim Zero Trust PEP
+App -> ZT: Registrierungs-/Zugriffsanfrage\n(sendet `certChain`, `challenge`, [ggf. User-Auth])
+activate ZT
+note left: Dies ist der Punkt, an dem der Client versucht,\nZugriff zu erhalten oder sich zu registrieren.\nDer PEP fängt die Anfrage ab.
+
+' 11. PEP leitet Informationen zur Policy-Entscheidung an den PDP weiter
+ZT -> ZT: (PEP -> PDP) Anfragekontext & Signale\n(`certChain`, `challenge`, User-Info, etc.)
+activate ZT #LightBlue 
+
+' 12. PDP validiert die Attestierung und prüft die Zero Trust Policy
+ZT -> ZT: Zertifikatskette validieren\n(Signaturen, Gültigkeit, Root CA Vertrauen, Sperrstatus)
+ZT -> ZT: Attestation Extension Daten parsen & prüfen\n- `challenge` muss übereinstimmen\n- Gerätestatus prüfen (Bootloader, Verified Boot etc.)\n- Security Level (TEE/SE) prüfen\n- OS-Version/Patch-Level prüfen (optional)
+note right of ZT: **PDP Logik:**\nAbgleich der Geräte-Posture\n(aus Attestierung) und anderer Signale\n(User, Standort, etc.) mit definierten\nZero Trust Policies.
+
+' 13. PDP trifft die Zugriffsentscheidung
+ZT -> ZT: Zugriffsentscheidung treffen (Erlauben/Verweigern)
+deactivate ZT #LightBlue
+
+' 14. PDP informiert PEP über die Entscheidung
+ZT -> ZT: (PDP -> PEP) Entscheidung (Erlauben/Verweigern)
+
+' 15. PEP setzt die Entscheidung durch
+alt Entscheidung == Erlauben
+    ZT -> ZT: (PEP) Entscheidung durchsetzen:\n- Gerät/Schlüssel registrieren (bei Erstregistrierung)\n- Sitzungstoken ausstellen\n- Zugriff auf Ressource gewähren
+    note right: Der attestierte `pubKey` ist nun als\nvertrauenswürdig für dieses Gerät bekannt.
+else Entscheidung == Verweigern
+    ZT -> ZT: (PEP) Zugriff verweigern
+end
+
+' 16. PEP sendet das Ergebnis an die App zurück
+ZT --> App: Registrierungs-/Zugriffsergebnis\n(Erfolg/Fehler, [Sitzungstoken])
+deactivate ZT
+
+' 17. App reagiert auf das Ergebnis
+alt Erfolgreiche Registrierung/Zugriff
+    App -> App: Aktion durchführen (z.B. Registrierung speichern,\nauf geschützte Ressource zugreifen,\nSitzungstoken verwenden)
+    note left: Für zukünftige Anfragen kann die App\nden `privKey` (im TEE) zum Signieren\nvon Challenges verwenden, um sich\nauthentifizieren, ohne die ganze\n`certChain` erneut senden zu müssen.
+else Fehlgeschlagene Registrierung/Zugriff
+    App -> App: Fehlermeldung anzeigen / Aktion ablehnen
+end
+
+deactivate App
+
+@enduml

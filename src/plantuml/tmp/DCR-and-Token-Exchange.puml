@@ -1,0 +1,275 @@
+@startuml "ZETA Client Registrierung und Authentifizierung (TPM + SM(C)-B + DPoP)"
+!theme plain
+title ZETA Client Registrierung und Authentifizierung (TPM + SM(C)-B + DPoP)
+
+participant "ZETA Client" as Client
+database "Client TPM" as TPM
+database "SM(C)-B Card" as SMCB
+participant "Authorization Server (AS)" as AuthS
+participant "Resource Server (RS)" as RS
+
+== 1. Key Generation ==
+Client -> Client ++ : Generate Client Instance Key Pair (for Client Auth)
+note right: Key Pair for private_key_jwt \n(could potentially be TPM-backed, but distinct from Attestation Key)
+Client -> TPM: Trigger Generation of TPM Attestation Key Pair
+note right: Key Pair generated securely in TPM.\nPrivate key does not leave TPM.
+TPM --> Client: Return Attestation Public Key / Certificate Chain
+Client -> Client: Generate DPoP Key Pair (for API calls)
+note right: Ephemeral or session-based Key Pair for DPoP Proofs.
+
+== 2. Dynamic Client Registration (DCR) with TPM Attestation ==
+Client -> TPM ++ : Request Attestation Statement for Registration
+' note right: Attestation includes:\n- Attestation Key signature\n- Device identifiers\n- Boot state, Verified Boot state\n- OS Version, Patch Level\n- App ID, App Version, App Signature Hash
+TPM -->> Client -- : Return Attestation Statement (e.g., Certificate Chain with Extension Data)
+
+Client -> AuthS ++ : POST /register (RFC 7591)
+note right of Client #lightblue
+    **DCR Request Body:**
+    {
+      "redirect_uris": ["..."],
+      "client_name": "...",
+      "token_endpoint_auth_method": "private_key_jwt",
+      "grant_types": ["urn:ietf:params:oauth:grant-type:token-exchange","refresh_token"],
+      "jwks": { "keys": [ <Client_Instance_Public_Key_JWK> ] },
+      // Custom parameter for attestation:
+      "urn:gematik:params:oauth:client-attestation-type:tpm2": {
+         "attestation_data": "<Base64(TPM Attestation Statement)>",
+         "attestation_format": "tpm-attestation-jwt"
+       }
+    }
+end note
+
+AuthS -> AuthS : Validate TPM Attestation Statement
+note right: Check signature against trusted roots.\nExtract device/OS/App status.\nVerify Attestation Key properties.
+alt Attestation valid
+    AuthS -> AuthS : Generate client_id
+    AuthS -> AuthS : Store client metadata, incl. Client Instance Key
+    AuthS -> AuthS: Generate Nonce (Challenge) // Short-lived for Client to SM(C)-B Binding
+    AuthS -->> Client -- : 201 Created
+    note right of AuthS #lightgreen
+        **DCR Response Body:**
+        {
+          "client_id": "<generated-client-id>",
+          "client_id_issued_at": ...,
+          "client_name": "...",
+          "token_endpoint_auth_method": "private_key_jwt",
+          "grant_types": ["urn:ietf:params:oauth:grant-type:token-exchange","refresh_token"],
+          "jwks": { <Client_Instance_Public_Key_JWK> }, // Confirming registered key
+          // ... other registered metadata
+          "registration_access_token": "...", // Optional for config updates
+          "registration_client_uri": "...", // Optional for config updates
+          "challenge": "<random_nonce_value>" // For Client to SM(C)-B Binding during Token Exchange
+        }
+    end note
+else Attestation invalid
+    AuthS -->> Client -- : 400 Bad Request
+end alt
+
+== 3. SM(C)-B Binding ==
+Client -> AuthS ++ : POST /bind-smcb (oder spezifischer Request)
+note right of Client #lightblue
+    **Binding Request:**
+    Headers:
+      Authorization: <Calculated based on Client Assertion>
+    Body:
+      client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+      client_assertion=<JWT signed by Client_Instance_Private_Key>
+      smcb_certificate=<Base64(SM(C)-B Certificate)>
+    ---
+    **Client Assertion JWT Claims:**
+    { "iss": "<client_id>", "sub": "<client_id>",
+      "aud": "<AS_Binding_Endpoint_URL>", "jti": "...", "exp": ... }
+      (sig by Client_Instance_Private_Key)
+end note
+
+AuthS -> AuthS : Validate client_assertion (sig, claims)
+AuthS -> AuthS : Generate Nonce (Challenge)
+AuthS -->> Client -- : 200 OK (or 201 Created for challenge resource)
+note right of AuthS #lightgreen
+    **Challenge Response:**
+    {
+      "challenge": "<random_nonce_value>",
+      "expires_in": 300
+    }
+end note
+
+Client -> SMCB ++ : Sign Challenge with SM(C)-B Private Key
+SMCB -->> Client -- : Return Signature
+
+Client -> AuthS ++ : POST /bind-smcb/verify (oder spezifischer Request)
+note right of Client #lightblue
+    **Verification Request:**
+    Headers:
+      Authorization: <Calculated based on Client Assertion>
+    Body:
+      client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+      client_assertion=<JWT signed by Client_Instance_Private_Key>
+      challenge="<random_nonce_value>"
+      smcb_signature=<Base64(Signature from SM(C)-B)>
+    ---
+    **Client Assertion JWT Claims:**
+    { "iss": "<client_id>", "sub": "<client_id>",
+      "aud": "<AS_Binding_Verification_Endpoint_URL>", "jti": "...", "exp": ... }
+      (sig by Client_Instance_Private_Key)
+end note
+
+AuthS -> AuthS : Validate client_assertion (sig, claims)
+AuthS -> AuthS : Retrieve previously submitted SM(C)-B Certificate for client_id
+AuthS -> AuthS : Verify smcb_signature against challenge and SM(C)-B Public Key
+AuthS -> AuthS : Validate SM(C)-B Certificate Chain (Trust, Revocation)
+alt SM(C)-B Signature and Certificate Valid
+    AuthS -> AuthS : Associate SM(C)-B Identity (e.g., Telematik-ID) with client_id
+    AuthS -->> Client -- : 200 OK / 204 No Content
+    note right of AuthS #lightgreen
+        **Success Response:** (Binding Complete)
+    end note
+else SM(C)-B Verification Failed
+    AuthS -->> Client -- : 400 Bad Request / 401 Unauthorized
+    note right of AuthS #pink
+        **Error Response:**
+        {
+          "error": "invalid_grant", // Or a more specific error
+          "error_description": "SM(C)-B signature or certificate validation failed."
+        }
+    end note
+end alt
+
+== 4. Token Acquisition (Token Exchange) ==
+Client -> Client : Create "SM(C)-B Access Token" (JWT)
+note right #lightblue
+    **SM(C)-B Access Token Claims:**
+    {
+      "iss": "<client_id>", // Issuer is the client
+      "sub": "<Telematik-ID from SM(C)-B>", // Subject is the institution
+      "aud": "<AS_Token_Endpoint_URL>", // Audience is the AS
+      "exp": ..., // Short-lived
+      "iat": ...,
+      "jti": "...",
+      "nonce": "<Challenge from DCR>", // Binding to DCR
+      "scope": ... // As required for the Resource Server access
+    }
+    (sig by SM(C)-B_Private_Key)
+end note
+
+Client -> Client : Create DPoP Key Pair (for Token Exchange)
+' note right: Session-based Key Pair for DPoP binding.
+Client -> Client : Create DPoP Proof JWT for Token Exchange
+note right #lightblue
+    **DPoP Proof JWT Claims (for Token Exchange):**
+    {
+      "typ": "dpop+jwt",
+      "alg": "ES256",
+      "jwk": {
+        "kty": "EC",
+        "x": "...",
+        "y": "...",
+        "crv": "P-256"
+      }
+    }.
+    {
+      "jti": "...",
+      "htm": "POST",
+      "htu": "<AS_Token_Endpoint_URL>",
+      "iat": ...
+    }.
+    (sig by DPoP_Private_Key)
+end note
+
+Client -> Client : Create Client Assertion JWT for Token Exchange (for Auth)
+note right #lightblue
+    **Client Assertion JWT Claims (for Auth):**
+    {
+      "iss": "<client_id>",
+      "sub": "<client_id>",
+      "aud": "<AS_Token_Endpoint_URL>",
+      "exp": ..., // Short-lived
+      "jti": "...",
+      // Include DPoP public key hash
+      "cnf": { "jkt": "<Base64URL(SHA256(DPoP_Public_JWK))>" }
+    }
+    (sig by Client_Instance_Private_Key)
+end note
+
+Client -> AuthS ++ : POST /token (RFC 8693)
+note right of Client #lightblue
+    **Token Exchange Request Body:**
+      grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+      &subject_token=<SM(C)-B_Assertion_Token>
+      &subject_token_type=urn:ietf:params:oauth:token-type:jwt // Or custom
+      &client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+      &client_assertion=<Client_Assertion_JWT_for_Auth>
+      &resource=<Optional: Target Resource URI>
+      &audience=<Optional: Target Audience>
+end note
+
+AuthS -> AuthS : Validate client_assertion (sig by Client_Instance_PK, claims)
+AuthS -> AuthS : Validate subject_token (sig by SM(C)-B_PK, claims)
+AuthS -> AuthS : Check if client_id is bound to the SM(C)-B identity (sub claim in subject_token)
+alt Validations Successful
+    AuthS -> AuthS : Generate AS Access Token (AT) and Refresh Token (RT)
+    ' note right: AT is bound to DPoP key (cnf.jkt claim)\nAT contains claims about client_id and SM(C)-B Identity
+    AuthS -->> Client -- : 200 OK
+    note right of AuthS #lightgreen
+        **Token Response Body:**
+        {
+          "access_token": "<AS_Access_Token>",
+          "token_type": "DPoP", // Indicate DPoP is required
+          "expires_in": 3600,
+          "refresh_token": "<AS_Refresh_Token>" // Optional
+          // ... other parameters
+        }
+    end note
+else Validation Failed
+    AuthS -->> Client -- : 400 Bad Request
+    note right of AuthS #pink
+        **Error Response:**
+        {
+          "error": "invalid_grant", // Or "invalid_client"
+          "error_description": "Token exchange validation failed."
+        }
+    end note
+end alt
+
+== 5. Resource Access using DPoP ==
+Client -> Client : Create DPoP Proof JWT
+note right #lightblue
+    **DPoP Proof JWT Header:**
+    { "typ": "dpop+jwt", "alg": "ES256", "jwk": <DPoP_Public_JWK> }
+    **DPoP Proof JWT Payload:**
+    {
+      "jti": "...", "htm": "GET",
+      "htu": "<Resource_Server_URL>",
+      "iat": ...,
+      "ath": "<Base64URL(SHA256(AS_Access_Token))>"
+    }
+    (sig by DPoP_Private_Key)
+end note
+
+Client -> RS ++ : GET /resource
+note right of Client #lightblue
+    **API Request Headers:**
+    Authorization: DPoP <AS_Access_Token>
+    DPoP: <DPoP_Proof_JWT>
+end note
+
+RS -> AuthS : (Optional) Introspect/Validate Token
+AuthS --> RS : Token Information (valid, active, claims, cnf.jkt)
+
+RS -> RS : Validate DPoP Proof
+' note right: Verify signature using JWK from DPoP header.\nCheck jwk hash matches cnf.jkt from AT.\nCheck htu, htm match request.\nCheck ath matches AT hash.\nCheck iat, jti (replay prevention).
+alt DPoP Proof and Token Valid
+    RS -> RS : Process Request, Access Resource
+    RS -->> Client -- : 200 OK
+    note right of RS #lightgreen
+        **API Response Body:**
+        { ... Resource Data ... }
+    end note
+else DPoP Proof or Token Invalid
+    RS -->> Client -- : 401 Unauthorized
+    note right of RS #pink
+        **Error Response Headers:**
+        WWW-Authenticate: DPoP error="invalid_token" / "invalid_proof"
+    end note
+end alt
+
+@enduml

@@ -1,0 +1,55 @@
+# Schema for TPM Attestation JWT Payload
+# The TPM Attestation JWT is used in the OAuth dynamic client registration flow with the ZETA Guard AuthServer
+# It is signed by a TPM resident signing Key and contains information about the client instance and its attestation
+# JWT Header: 
+# {
+#   "alg": "ES256",
+#   "typ": "JWT",
+#   "kid": "SHA-256 hash of the public signing key used."
+# }
+# JWT Payload:
+$schema: "http://json-schema.org/draft-07/schema#"
+tpm_attestation_jwt:
+  type: object
+  properties:
+    sub:
+      type: string
+      description: The name of the client 
+    jti:
+      type: string
+      description: The JWT ID
+    iss:
+      type: string
+      description: The issuer of the JWT
+    product_id:
+      type: string
+      description: The product identifier as provided by gematik
+    product_version:
+      type: string
+      description: The product version
+    posture:
+      description: The posture of the client instance
+      $ref: "./posture.yaml"
+    attestation:
+      description: The attestation information of the client instance
+      $ref: "./attestation-info.yaml"
+    nonce:
+      type: string
+      description: A random nonce to prevent replay attacks
+    cnf:
+      type: object
+      description: The confirmation key (client instance key)
+      properties:
+        jkt:
+          type: string
+          description: "SHA-256 hash of the public key used in the PoP proof."
+      required:
+        - jkt
+  required:
+    - sub
+    - product_id
+    - product_version
+    - posture
+    - attestation
+    - nonce
+    - cnf
