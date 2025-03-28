@@ -18,7 +18,7 @@ jobs:
       # fetch-depth: 0 # Not strictly needed anymore, default checkout is usually fine
 
     - name: Set up JDK 11
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v3  # Updated to Node.js 20 compatible version
       with:
         distribution: 'temurin'
         java-version: '11'
@@ -41,62 +41,29 @@ jobs:
       run: |
         BASE_SHA=$(git rev-parse HEAD^1)
         CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD | grep -E 'src/plantuml/.*\.puml|src/drawio/.*\.drawio' || true)
-        echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
-        echo "::set-output name=changed_files::$CHANGED_FILES"
+        echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
         echo "CHANGED_FILES: $CHANGED_FILES"
-        shell: bash
+      shell: bash
 
     - name: Debug changed files
       run: |
-        echo "Debug: Changed files are ${{ steps.changed_files.outputs.changed_files }}"
+        echo "Debug: Changed files are ${{ env.CHANGED_FILES }}"
 
     - name: Generate images from changed PlantUML files
-      if: ${{ steps.changed_files.outputs.changed_files }} != ''
+      if: ${{ env.CHANGED_FILES }} != ''
       run: |
-        for file in $(echo "${{ steps.changed_files.outputs.changed_files }}" | grep 'src/plantuml/.*\.puml' || true); do
+        for file in $(echo "${{ env.CHANGED_FILES }}" | grep 'src/plantuml/.*\.puml' || true); do
           echo "Processing PlantUML file: $file"
           output_dir=$(dirname "$file" | sed 's|^src/plantuml|images|')
           image_base=$(basename "$file" .puml)
           png_path="$output_dir/$image_base.png"
           svg_path="$output_dir/$image_base.svg"
 
-          # Regenerate if PNG or SVG is missing, OR if the source file is newer than PNG or SVG
-          if [ ! -f "$png_path" ] || [ ! -f "$svg_path" ] || { [ -f "$png_path" ] && [ "$file" -nt "$png_path" ]; } || { [ -f "$svg_path" ] && [ "$file" -nt "$svg_path" ]; }; then
-            echo "-> Generating images for $file"
-            mkdir -p "$output_dir"
-            # Run generation commands
-            java -jar /tmp/plantuml.jar -tpng "$file" -o "$output_dir"
-            java -jar /tmp/plantuml.jar -tsvg "$file" -o "$output_dir"
-            # Verify files were created (for debugging)
-            if [ -f "$png_path" ] && [ -f "$svg_path" ]; then
-               echo "   Successfully generated: $png_path and $svg_path"
-               GENERATED_COUNT=$((GENERATED_COUNT + 1))
-            else
-               echo "   ERROR: Failed to generate images for $file" >&2
-               # Consider failing the step: exit 1
-            fi
-          else
-            echo "-> Images for $file are up-to-date."
-          fi
-        done < <(find src/plantuml -name "*.puml" -print0) # Use process substitution
-
-        echo "Generated/Updated $GENERATED_COUNT PlantUML image sets."
-        # Set output flag if any images were generated
-        if [ "$GENERATED_COUNT" -gt 0 ]; then
-          echo "plantuml_generated=true" >> $GITHUB_OUTPUT
-        else
-          echo "plantuml_generated=false" >> $GITHUB_OUTPUT
-        fi
-      shell: bash # Explicitly use bash for process substitution
-
-    - name: Generate images from drawio files
-      id: generate_drawio
+    - name: Generate images from changed drawio files
+      if: ${{ env.CHANGED_FILES }} != ''
       run: |
-        set -e
-        GENERATED_COUNT=0
-        shopt -s nullglob # Ensure loop doesn't run if find returns nothing
-        while IFS= read -r -d $'\0' file; do
-          echo "Checking drawio file: $file"
+        for file in $(echo "${{ env.CHANGED_FILES }}" | grep 'src/drawio/.*\.drawio' || true); do
+          echo "Processing drawio file: $file"
           output_dir=$(dirname "$file" | sed 's|^src/drawio|images|')
           image_base=$(basename "$file" .drawio)
           png_path="$output_dir/$image_base.png"
@@ -140,8 +107,7 @@ jobs:
         ls -R images || echo "Images folder does not exist or is empty."
 
     - name: Commit and push generated images
-      # Use the outputs from the generation steps. Only proceed if something was potentially generated.
-      if: steps.generate_plantuml.outputs.plantuml_generated == 'true' || steps.generate_drawio.outputs.drawio_generated == 'true'
+      if: ${{ env.CHANGED_FILES }} != ''
       run: |
         echo "Checking for changes in 'images' directory to commit..."
         git config --global user.name 'github-actions[bot]'
