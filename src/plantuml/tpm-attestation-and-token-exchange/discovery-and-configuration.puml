@@ -36,16 +36,12 @@ box "Anbieter" #TECHNOLOGY
 end box
 
 group ZETA Client has Resource Server FQDN (RS-FQDN)
-  activate Client
-  Client -> HP: GET /.well-known/oauth-protected-resource Host: RS-FQDN
-  activate HP
-  HP --> Client: Client: 200 OK; json body with Well-Known json Document (RFC draft-ietf-oauth-resource-metadata)
-  deactivate HP
+  Client ++
+  Client -> HP ++ : GET /.well-known/oauth-protected-resource Host: RS-FQDN
+  HP --> Client -- : Client: 200 OK; json body with Well-Known json Document (RFC draft-ietf-oauth-resource-metadata)
   Client -> Client: Update Resource Server and ZETA Guard Configuration
-  Client -> AuthS: GET /.well-known/oauth-authorization-server Host: AuthS-FQDN
-  activate AuthS
-  AuthS --> Client: 200 OK; json body with Well-Known json Document (RFC8414)
-  deactivate AuthS
+  Client -> AuthS ++ : GET /.well-known/oauth-authorization-server Host: AuthS-FQDN
+  AuthS --> Client -- : 200 OK; json body with Well-Known json Document (RFC8414)
   Client -> Client: Update Authorization Server Configuration
   
   note right of Client
