@@ -24,8 +24,7 @@ end group
 idp --> c --: 302 Redirect url_with_authorization_code
 c -> c: generate key pair (for DPoP)
 
-c -> aas: Request App/Device attestation\nParameter: nonce
-activate aas
+c -> aas ++ : Request App/Device attestation\nParameter: nonce
 aas --> c: signed_attestation_token
 deactivate aas
 
