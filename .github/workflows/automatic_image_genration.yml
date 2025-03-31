@@ -5,7 +5,8 @@ on:
     paths:
       - 'src/plantuml/**'
       - 'src/drawio/**'
-  workflow_dispatch:
+      - '.github/workflows/generate_images.yml' # Optional: Trigger regeneration if the workflow itself changes
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
   generate_images:
@@ -14,8 +15,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      # No fetch-depth needed as we don't rely on git diff history anymore
 
     - name: Set up JDK 11
       uses: actions/setup-java@v3
@@ -26,89 +26,110 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y graphviz xdotool xvfb
+        sudo apt-get install -y --no-install-recommends graphviz xvfb
+        # Install drawio via snap (or alternative if available/preferred)
         sudo snap install drawio --classic
+        # Wait a moment for snap changes to propagate if needed
+        sleep 5 
 
     - name: Download PlantUML jar
       run: |
-        wget https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -O /usr/local/bin/plantuml.jar
-
-        - name: Check for changed or missing image files
-        id: check_files
-        run: |
-          CHANGED_FILES=""
-          MISSING_FILES=""
-  
-          # Get base commit
-          BASE_SHA=$(git rev-parse HEAD^1)
-  
-          # Check for changed files
-          CHANGED_FILES_TEMP=$(git diff --name-only $BASE_SHA HEAD | grep -E 'src/plantuml/.*\.puml|src/drawio/.*\.drawio' || true)
-          CHANGED_FILES="$CHANGED_FILES_TEMP"
-  
-          # Check for missing image files
-          while IFS= read -r -d '' file; do
-            image_dir=$(dirname "$file" | sed 's|^src/plantuml|images|')
-            image_base=$(basename "$file" .puml)
-            if [ ! -f "$image_dir/$image_base.png" ] || [ ! -f "$image_dir/$image_base.svg" ]; then
-              MISSING_FILES="$MISSING_FILES $file"
-            fi
-          done < <(find src/plantuml -name "*.puml" -print0)
-  
-          while IFS= read -r -d '' file; do
-            image_dir=$(dirname "$file" | sed 's|^src/drawio|images|')
-            image_base=$(basename "$file" .drawio)
-            if [ ! -f "$image_dir/$image_base.png" ] || [ ! -f "$image_dir/$image_base.svg" ]; then
-              MISSING_FILES="$MISSING_FILES $file"
-            fi
-          done < <(find src/drawio -name "*.drawio" -print0)
-  
-          # Combine changed and missing files
-          ALL_FILES="$CHANGED_FILES $MISSING_FILES"
-          echo "CHANGED_FILES=$ALL_FILES" >> $GITHUB_ENV
-  
-          echo "CHANGED_FILES: $CHANGED_FILES"
-          echo "MISSING_FILES: $MISSING_FILES"
-      shell: bash
-  
-    - name: Debug changed files
-      run: |
-        echo "Debug: Changed files are ${{ env.CHANGED_FILES }}"
+        wget https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -O /tmp/plantuml.jar
+        # Optional: Verify checksum if desired
 
     - name: Generate images from PlantUML files
-      if: ${{ env.CHANGED_FILES }} != ''
+      id: generate_plantuml
       run: |
-        for file in $(echo "${{ env.CHANGED_FILES }}" | grep 'src/plantuml/.*\.puml' || true); do
-          echo "Processing PlantUML file: $file"
+        set -e # Exit immediately if a command exits with a non-zero status.
+        GENERATED_COUNT=0
+        # Use find with -print0 and while read -d '' for safe filename handling
+        find src/plantuml -name "*.puml" -print0 | while IFS= read -r -d $'\0' file; do
+          echo "Checking PlantUML file: $file"
           output_dir=$(dirname "$file" | sed 's|^src/plantuml|images|')
-          mkdir -p "$output_dir"
-          java -jar /usr/local/bin/plantuml.jar -tpng "$file" -o "${PWD}/$output_dir"
-          java -jar /usr/local/bin/plantuml.jar -tsvg "$file" -o "${PWD}/$output_dir"
+          image_base=$(basename "$file" .puml)
+          png_path="$output_dir/$image_base.png"
+          svg_path="$output_dir/$image_base.svg"
+
+          # Regenerate if PNG or SVG is missing, OR if the source file is newer than PNG or SVG
+          if [ ! -f "$png_path" ] || [ ! -f "$svg_path" ] || [ "$file" -nt "$png_path" ] || [ "$file" -nt "$svg_path" ]; then
+            echo "-> Generating images for $file"
+            mkdir -p "$output_dir"
+            java -jar /tmp/plantuml.jar -tpng "$file" -o "$output_dir"
+            java -jar /tmp/plantuml.jar -tsvg "$file" -o "$output_dir"
+            GENERATED_COUNT=$((GENERATED_COUNT + 1))
+          else
+            echo "-> Images for $file are up-to-date."
+          fi
         done
+        echo "Generated $GENERATED_COUNT PlantUML image sets."
+        # Set output flag if any images were generated
+        if [ "$GENERATED_COUNT" -gt 0 ]; then
+          echo "plantuml_generated=true" >> $GITHUB_OUTPUT
+        else
+          echo "plantuml_generated=false" >> $GITHUB_OUTPUT
+        fi
 
     - name: Generate images from drawio files
-      if: ${{ env.CHANGED_FILES }} != ''
+      id: generate_drawio
       run: |
-        for file in $(echo "${{ env.CHANGED_FILES }}" | grep 'src/drawio/.*\.drawio' || true); do
-          echo "Processing drawio file: $file"
+        set -e # Exit immediately if a command exits with a non-zero status.
+        GENERATED_COUNT=0
+        # Use find with -print0 and while read -d '' for safe filename handling
+        find src/drawio -name "*.drawio" -print0 | while IFS= read -r -d $'\0' file; do
+          echo "Checking drawio file: $file"
           output_dir=$(dirname "$file" | sed 's|^src/drawio|images|')
-          mkdir -p "$output_dir"
-          xvfb-run -a drawio -x -f png -o "${PWD}/$output_dir/$(basename "$file" .drawio).png" "$file"
-          xvfb-run -a drawio -x -f svg -o "${PWD}/$output_dir/$(basename "$file" .drawio).svg" "$file"
+          image_base=$(basename "$file" .drawio)
+          png_path="$output_dir/$image_base.png"
+          svg_path="$output_dir/$image_base.svg"
+
+          # Regenerate if PNG or SVG is missing, OR if the source file is newer than PNG or SVG
+          if [ ! -f "$png_path" ] || [ ! -f "$svg_path" ] || [ "$file" -nt "$png_path" ] || [ "$file" -nt "$svg_path" ]; then
+            echo "-> Generating images for $file"
+            mkdir -p "$output_dir"
+            # Use xvfb-run for headless execution. Ensure drawio command uses absolute paths or correct relative paths.
+            # Note: drawio CLI's -o flag expects the *full output filepath*, not just the directory.
+            xvfb-run --auto-servernum drawio --export --format png --output "$png_path" "$file"
+            xvfb-run --auto-servernum drawio --export --format svg --output "$svg_path" "$file"
+            GENERATED_COUNT=$((GENERATED_COUNT + 1))
+          else
+            echo "-> Images for $file are up-to-date."
+          fi
         done
+        echo "Generated $GENERATED_COUNT drawio image sets."
+        # Set output flag if any images were generated
+        if [ "$GENERATED_COUNT" -gt 0 ]; then
+          echo "drawio_generated=true" >> $GITHUB_OUTPUT
+        else
+          echo "drawio_generated=false" >> $GITHUB_OUTPUT
+        fi
 
     - name: Debug images folder
+      if: steps.generate_plantuml.outputs.plantuml_generated == 'true' || steps.generate_drawio.outputs.drawio_generated == 'true'
       run: |
-        echo "Contents of the images folder:"
-        ls -R images
+        echo "Contents of the images folder after generation:"
+        ls -R images || echo "Images folder does not exist or is empty."
 
     - name: Commit and push generated images
-      if: ${{ env.CHANGED_FILES }} != '' && test -n "$(git status --porcelain)"
+      # Run only if git status shows changes in the 'images' directory or untracked files within it
       run: |
-        git config --global user.name 'github-actions'
-        git config --global user.email 'github-actions@github.com'
-        git add -A images
-        git commit -m "Generate images from changed or missing PlantUML and drawio files"
+        # Check if there are any changes staged or untracked in the images directory
+        git add images # Stage potentially new or modified files in images
+        if ! git diff --staged --quiet -- images && [ -z "$(git ls-files --others --exclude-standard --directory -- images)" ]; then
+           echo "No changes detected in the 'images' directory. Nothing to commit."
+           exit 0 # Exit cleanly
+        fi
+
+        echo "Changes detected in 'images' directory. Committing..."
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        # git add images # Already added above to check status
+        # Check again if adding staged anything (handles case where only ignored files were in 'images')
+        if git diff --staged --quiet -- images ; then
+           echo "No staged changes after git add. Nothing to commit."
+           exit 0
+        fi
+        git commit -m "chore: Generate/update images from source files" -m "Generated by GitHub Action."
+        echo "Pushing changes..."
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
