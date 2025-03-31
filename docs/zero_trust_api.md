@@ -33,6 +33,7 @@ Voraussetzungen: Informationen über benötigte Tools, Bibliotheken oder SDKs.
 ## 1.3 Voraussetzungen für die ZETA Client Nutzung
 
 Der FQDN des Resource Servers wird vom ZETA Client benötigt, um die ZETA Guard API zu erreichen.
+
 Für Anwendungsfälle in denen ein PoPP Token benötigt wird, muss das PoPP Token im Header PoPP an den ZETA Client übergeben werden.
 
 ## 1.4. Authentifizierung und Autorisierung
