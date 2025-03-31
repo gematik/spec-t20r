@@ -29,10 +29,7 @@ aas --> c -- : signed_attestation_token
 
 c -> as: POST /register\n[signed_attestation_token, jkt]
 as --> as: creaate and sign\njwt device_registration_token
-as --> c: [jwt device_registration_token; includes jkt]
-deactivate as
-
-
+as --> c -- : [jwt device_registration_token; includes jkt]
 
 deactivate c
 
