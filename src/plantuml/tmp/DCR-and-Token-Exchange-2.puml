@@ -1,4 +1,4 @@
-@startuml
+@startuml "DCR-and-Token-Exchange-2"
 participant "ZETA Client" as Client
 participant "ZETA Guard AS\n(PDP Authorization Server)" as AS
 database "PDP Client Registry" as Registry

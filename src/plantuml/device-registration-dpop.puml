@@ -1,4 +1,4 @@
-@startuml ""
+@startuml "device-registration-dpop"
 
 actor u as "User"
 participant c as "Client"

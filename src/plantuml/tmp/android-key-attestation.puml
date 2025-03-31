@@ -1,4 +1,4 @@
-@startuml "Android Key Attestation Sequenzdiagramm"
+@startuml "android-key-attestation"
 
 participant "App" as App
 participant "Android Keystore API" as KeystoreAPI

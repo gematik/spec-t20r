@@ -1,4 +1,4 @@
-@startuml "client-reg-with-tpm-attestation-and-SMB-auth-token-exchange-overview"
+@startuml "tpm-attestation-and-token-exchange-overview"
 autonumber "(00)"
 skinparam defaultFontSize 10
 skinparam defaultFontName Helvetica

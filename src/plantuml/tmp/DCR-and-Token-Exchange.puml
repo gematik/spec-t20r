@@ -1,4 +1,4 @@
-@startuml "ZETA Client Registrierung und Authentifizierung (TPM + SM(C)-B + DPoP)"
+@startuml "DCR-and-Token-Exchange"
 !theme plain
 title ZETA Client Registrierung und Authentifizierung (TPM + SM(C)-B + DPoP)
 

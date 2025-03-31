@@ -1,4 +1,4 @@
-@startuml "oidc_flow_with_PAR_high_level"
+@startuml "oidc-flow-with-PAR-high-level"
 participant cl as "Client"
 participant AuthS as "Authorization Server"
 participant IDP

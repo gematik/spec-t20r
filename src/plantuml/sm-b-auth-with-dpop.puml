@@ -1,4 +1,4 @@
-@startuml "SM-B_Auth_with_DPoP"
+@startuml "sm-b-auth-with-dpop"
 autonumber "(00)"
 skinparam defaultFontSize 10
 skinparam defaultFontName Helvetica
