@@ -9,8 +9,7 @@ participant idp as "IDP"
 
 c ++
 
-c -> as: https GET /fd_ressource
-activate as
+c -> as ++ : https GET /fd_ressource
 as --> c: 401 Unauthorized {"supported_idp_list":[...], "attestation_required": "true",\n"DPoP_required": "true"}
 
 c -> as: GET /register/choosen_idp
