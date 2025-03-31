@@ -7,7 +7,7 @@ participant as as "PEP\nAuthorization Server"
 participant fd as "Fachdienst"
 participant idp as "IDP"
 
-activate c
+c ++
 
 c -> as: https GET /fd_ressource
 activate as
