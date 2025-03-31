@@ -13,8 +13,7 @@ c -> as ++ : https GET /fd_ressource
 as --> c: 401 Unauthorized {"supported_idp_list":[...], "attestation_required": "true",\n"DPoP_required": "true"}
 
 c -> as: GET /register/choosen_idp
-as -> idp: POST /par
-activate idp
+as -> idp ++ : POST /par
 idp --> as: 200 OK
 as --> c: Redirect\nlocation: idp_url
 
