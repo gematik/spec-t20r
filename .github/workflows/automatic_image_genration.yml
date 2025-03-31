@@ -37,44 +37,44 @@ jobs:
       run: |
         wget https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -O /tmp/plantuml.jar
 
-    - name: Check for changed or missing image files
-      id: check_files
-      run: |
-        CHANGED_FILES=""
-        MISSING_FILES=""
-
-        # Check for changed files
-        BASE_SHA=$(git rev-parse HEAD^1)
-        CHANGED_FILES_TEMP=$(git diff --name-only $BASE_SHA HEAD | grep -E 'src/plantuml/.*\.puml|src/drawio/.*\.drawio' || true)
-        if [ -n "$CHANGED_FILES_TEMP" ]; then
+        - name: Check for changed or missing image files
+        id: check_files
+        run: |
+          CHANGED_FILES=""
+          MISSING_FILES=""
+  
+          # Get base commit
+          BASE_SHA=$(git rev-parse HEAD^1)
+  
+          # Check for changed files
+          CHANGED_FILES_TEMP=$(git diff --name-only $BASE_SHA HEAD | grep -E 'src/plantuml/.*\.puml|src/drawio/.*\.drawio' || true)
           CHANGED_FILES="$CHANGED_FILES_TEMP"
-        fi
-
-        # Check for missing image files
-        find src/plantuml -name "*.puml" -print0 | while IFS= read -r -d $'\0' file; do
-          image_dir=$(dirname "$file" | sed 's|^src/plantuml|images|')
-          image_base=$(basename "$file" .puml)
-          if [ ! -f "$image_dir/$image_base.png" ] || [ ! -f "$image_dir/$image_base.svg" ]; then
-            MISSING_FILES="$MISSING_FILES $file"
-          fi
-        done
-
-        find src/drawio -name "*.drawio" -print0 | while IFS= read -r -d $'\0' file; do
-          image_dir=$(dirname "$file" | sed 's|^src/drawio|images|')
-          image_base=$(basename "$file" .drawio)
-          if [ ! -f "$image_dir/$image_base.png" ] || [ ! -f "$image_dir/$image_base.svg" ]; then
-            MISSING_FILES="$MISSING_FILES $file"
-          fi
-        done
-
-        # Combine changed and missing files
-        if [ -n "$CHANGED_FILES" ] || [ -n "$MISSING_FILES" ]; then
-          echo "CHANGED_FILES=$CHANGED_FILES $MISSING_FILES" >> $GITHUB_ENV
-        fi
-        echo "CHANGED_FILES: $CHANGED_FILES"
-        echo "MISSING_FILES: $MISSING_FILES"
+  
+          # Check for missing image files
+          while IFS= read -r -d '' file; do
+            image_dir=$(dirname "$file" | sed 's|^src/plantuml|images|')
+            image_base=$(basename "$file" .puml)
+            if [ ! -f "$image_dir/$image_base.png" ] || [ ! -f "$image_dir/$image_base.svg" ]; then
+              MISSING_FILES="$MISSING_FILES $file"
+            fi
+          done < <(find src/plantuml -name "*.puml" -print0)
+  
+          while IFS= read -r -d '' file; do
+            image_dir=$(dirname "$file" | sed 's|^src/drawio|images|')
+            image_base=$(basename "$file" .drawio)
+            if [ ! -f "$image_dir/$image_base.png" ] || [ ! -f "$image_dir/$image_base.svg" ]; then
+              MISSING_FILES="$MISSING_FILES $file"
+            fi
+          done < <(find src/drawio -name "*.drawio" -print0)
+  
+          # Combine changed and missing files
+          ALL_FILES="$CHANGED_FILES $MISSING_FILES"
+          echo "CHANGED_FILES=$ALL_FILES" >> $GITHUB_ENV
+  
+          echo "CHANGED_FILES: $CHANGED_FILES"
+          echo "MISSING_FILES: $MISSING_FILES"
       shell: bash
-
+  
     - name: Debug changed files
       run: |
         echo "Debug: Changed files are ${{ env.CHANGED_FILES }}"
