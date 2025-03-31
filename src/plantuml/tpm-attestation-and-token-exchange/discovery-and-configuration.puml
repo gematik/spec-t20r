@@ -1,4 +1,4 @@
-@startuml "discovery and configuration"
+@startuml "discovery-and-configuration"
 autonumber "(00)"
 skinparam defaultFontSize 10
 skinparam defaultFontName Helvetica

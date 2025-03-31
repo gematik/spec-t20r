@@ -1,4 +1,4 @@
-@startuml "native_client_attestation_oidc_and_oauth"
+@startuml "native-client-attestation-oidc-and-oauth"
 
 skinparam defaultFontSize 10
 skinparam DefaultMonospacedFontName Courier

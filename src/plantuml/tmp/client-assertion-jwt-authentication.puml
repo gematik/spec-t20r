@@ -1,4 +1,4 @@
-@startuml "Client_Assertion_JWT_Authentication"
+@startuml "client-assertion-jwt-authentication"
 participant Client
 participant AS
 participant RS

@@ -1,4 +1,4 @@
-@startuml "Beziehungen zwischen Session-, Nutzer- und Client-Daten sowie Token"
+@startuml "pdp-db-entity-relation"
 
 entity "Session" as Session {
   * accesstoken_jti : String
