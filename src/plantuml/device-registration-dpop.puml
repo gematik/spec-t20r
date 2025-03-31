@@ -25,8 +25,7 @@ idp --> c --: 302 Redirect url_with_authorization_code
 c -> c: generate key pair (for DPoP)
 
 c -> aas ++ : Request App/Device attestation\nParameter: nonce
-aas --> c: signed_attestation_token
-deactivate aas
+aas --> c -- : signed_attestation_token
 
 c -> as: POST /register\n[signed_attestation_token, jkt]
 as --> as: creaate and sign\njwt device_registration_token
