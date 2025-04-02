@@ -39,6 +39,8 @@ alt Client has no client_id
 Client ++
 Client -> Client : Generate Client Instance Key Pair (for Client Auth)
 note right: Key Pair for private_key_jwt \n(could potentially be TPM-backed, but distinct from Attestation Key)
+Client -> User ++ : Obtain Admin\naccess to TPM
+User --> Client -- : TPM Admin access
 Client -> TPM ++ : Trigger Generation of TPM Attestation Key Pair
 note right: Key Pair generated securely in TPM.\nPrivate key does not leave TPM.
 TPM --> Client: Return Attestation Public Key / Certificate Chain
