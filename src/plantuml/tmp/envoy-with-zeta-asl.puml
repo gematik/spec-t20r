@@ -1,0 +1,22 @@
+@startuml
+    participant Client as Client
+    participant "Envoy (WASM Filter)" as Envoy
+    participant "Key Service (HTTP)" as KS
+    participant "ValKey DB" as ValKey
+    participant "Upstream Service" as US
+
+    Client ++
+    Client->Envoy ++: HTTPS Request\n(Header: con-id, Encrypted Body)
+    Envoy->Envoy: Read 'con-id' Header
+    Envoy->KS ++: GET /keys/{con-id}
+    KS->ValKey ++: GET key_for:<con-id>
+    ValKey--> KS --: Return Key
+    KS--> Envoy --: Return Key in HTTP Response
+    Envoy->Envoy: Decrypt Request Body using Key
+    Note right of Envoy: Store Key for Response
+    Envoy->US ++: Forward Decrypted HTTP Request
+    US--> Envoy --: HTTP Response (Plaintext Body)
+    Envoy->Envoy: Encrypt Response Body using stored Key
+    Envoy--> Client --: HTTPS Response\n(Encrypted Body)
+
+@enduml
