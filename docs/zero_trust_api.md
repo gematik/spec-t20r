@@ -36,6 +36,8 @@ Der FQDN des Resource Servers wird vom ZETA Client benötigt, um die ZETA Guard 
 
 Für Anwendungsfälle in denen ein PoPP Token benötigt wird, muss das PoPP Token im Header PoPP an den ZETA Client übergeben werden.
 
+Die roots.json Datei wird vom ZETA Client benötigt, um die Trust Chain zu validieren. Diese Datei muss regelmäßig aktualisiert werden.
+
 ## 1.4. Authentifizierung und Autorisierung
 
 Wie können Entwickler sich authentifizieren und welche Berechtigungen gibt es?
