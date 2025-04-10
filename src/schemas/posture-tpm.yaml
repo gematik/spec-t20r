@@ -13,19 +13,15 @@ posture_software_tpm:
     arch:
       type: string
       description: Hardware Architecture
-    tpm_public_key:
+    tpm_attestation_key:
       type: string
-      description: The public key of the TPM-resident signing key (PEM or base64 DER encoded).
-    tpm_certify_attestation:
-      type: object
-      description: TPM Certify attestation proving the key was generated inside a TPM.
-      properties:
-        certify_info:
-          type: string
-          description: The TPM2B_ATTEST structure containing the certified key information (base64 encoded).
-        certify_signature:
-          type: string
-          description: The signature over the certify_info structure (base64 encoded).
+      description: The public key of the TPM-resident attestation key (PEM or base64 DER encoded).
+    tpm_quote:
+      type: string
+      description: The TPM quote of the client instance
+    tpm_event_log:
+      type: string
+      description: The TPM event log of the client instance
     tpm_ek_certificate_chain:
       type: array
       description: The endorsement key certificate chain from the TPM manufacturer (PEM or base64 DER encoded).
@@ -35,6 +31,7 @@ posture_software_tpm:
     - os
     - os_version
     - arch
-    - tpm_public_key
-    - tpm_certify_attestation
+    - tpm_attestation_key
+    - tpm_quote
+    - tpm_event_log
     - tpm_ek_certificate_chain

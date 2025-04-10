@@ -1,0 +1,173 @@
+@startuml
+title Sicherer Installations- und Update-Ablauf für Client mit TPM-Service
+
+actor "Admin/Benutzer" as User
+participant "Installer (.msi/.exe)" as Installer
+participant "Betriebssystem (Windows)" as OS
+participant "Client Anwendung" as ClientApp
+participant "Windows Service (TPM Agent)" as Service
+database "TPM" as TPM
+participant "Verifier/Server" as Verifier #LightGray
+
+skinparam sequenceMessageAlign center
+
+group Sichere Erstinstallation
+
+    User -> Installer : Startet Installation (erfordert Admin-Rechte)
+    activate Installer
+
+    Installer -> OS : Fordert Rechteerhöhung an
+    activate OS
+    OS --> User : UAC-Prompt (Benutzer muss zustimmen)
+    OS --> Installer : Erhöhte Rechte erteilt
+    deactivate OS
+
+    Installer -> OS : Prüft Signatur des Installers
+    note right of Installer : WICHTIG:\nInstaller muss selbst\nvertrauenswürdig sein\n(Code Signing!)
+    activate OS
+    OS --> Installer : Signatur gültig (Annahme)
+    deactivate OS
+
+    Installer -> Installer : Entpackt und kopiert Dateien
+    Installer -> ClientApp ** : Kopiert Anwendungsdateien
+    Installer -> Service ** : Kopiert Service-Dateien
+
+    Installer -> OS : Registriert Windows Service (TPM Agent)
+    activate OS
+    note right of OS : Service wird konfiguriert,\num mit erhöhten Rechten zu laufen\n(z.B. Local System)
+    OS --> Installer : Service registriert
+    deactivate OS
+
+    Installer -> Service : Startet Service (oder initiiert Aktion nach Neustart)
+    activate Service
+
+    Service -> TPM : Prüft TPM-Präsenz/Status
+    activate TPM
+    TPM --> Service : TPM OK (Annahme)
+    deactivate TPM
+
+    Service -> TPM : Prüft auf vorhandenen Attestation Key (AK) für diese App
+    activate TPM
+    alt AK nicht vorhanden oder ungültig
+        Service -> TPM : Erstellt neuen Attestation Key (AK)
+        TPM --> Service : Neuer AK erstellt (privater Teil im TPM)
+        note right of Service : Öffentlicher Teil des AK muss dem\nVerifier bekannt gemacht werden\n(z.B. separate Registrierung, hier nicht gezeigt)
+    else AK vorhanden
+        TPM --> Service : AK Handle zurückgegeben
+    end
+    deactivate TPM
+
+    Service -> ClientApp : Liest App ID, Version, Signatur-Hash\n(aus Manifest oder Executable)
+    activate ClientApp
+    ClientApp --> Service : App-Metadaten
+    deactivate ClientApp
+
+    Service -> TPM : Erweitert PCR[22] mit Hash(App-Metadaten)
+    note right of Service : PCR 22 als Beispiel\nfür anwendungsspezifische Messung
+    activate TPM
+    TPM --> Service : PCR erweitert
+    deactivate TPM
+
+    Service -> OS : Schreibt detaillierten Eintrag ins TCG Event Log
+    activate OS
+    note right of OS : Log enthält: PCR Index (22), Event Typ,\nHash der Metadaten,\nBeschreibung (App ID, Version, SigHash)
+    OS --> Service : Log geschrieben
+    deactivate OS
+
+    Installer --> User : Installation erfolgreich
+    deactivate Installer
+    deactivate Service
+
+end group
+
+... Zeit vergeht ...
+
+group Sicherer Update-Prozess
+
+    User -> Installer : Startet Update-Installation (erfordert Admin-Rechte)
+    activate Installer
+
+    Installer -> OS : Fordert Rechteerhöhung an
+    activate OS
+    OS --> User : UAC-Prompt
+    OS --> Installer : Erhöhte Rechte erteilt
+    deactivate OS
+
+    Installer -> OS : Prüft Signatur des Update-Installers
+    activate OS
+    note right of Installer : WICHTIG:\nUpdate-Installer muss\nvertrauenswürdig sein!
+    OS --> Installer : Signatur gültig (Annahme)
+    deactivate OS
+
+    Installer -> Service : Stoppt laufenden Service (TPM Agent)
+    activate Service
+    Service --> Installer : Service gestoppt
+    deactivate Service
+
+    Installer -> Installer : Ersetzt Dateien mit neuen Versionen
+    Installer -> ClientApp !! : Ersetzt Anwendungsdateien (NEUE Version)
+    Installer -> Service !! : Ersetzt Service-Dateien (NEUE Version, falls geändert)
+
+    Installer -> Service : Startet aktualisierten Service
+    activate Service
+
+    ' Der aktualisierte Service führt nun die Messung der NEUEN Version durch
+    Service -> ClientApp : Liest NEUE App ID, Version, Signatur-Hash
+    activate ClientApp
+    ClientApp --> Service : NEUE App-Metadaten
+    deactivate ClientApp
+
+    Service -> TPM : Erweitert PCR[22] mit Hash(NEUE App-Metadaten)
+    note right of Service : Gleicher PCR (22) wird mit\nNEUER Messung erweitert.\nDer PCR-Wert ändert sich!
+    activate TPM
+    TPM --> Service : PCR erweitert
+    deactivate TPM
+
+    Service -> OS : Schreibt NEUEN Eintrag ins TCG Event Log
+    activate OS
+    note right of OS : Log enthält Beschreibung\nder NEUEN Version
+    OS --> Service : Log geschrieben
+    deactivate OS
+
+    Installer --> User : Update erfolgreich
+    deactivate Installer
+    deactivate Service
+
+end group
+
+... Laufzeit ...
+
+group Attestierungs-Anforderung (Beispiel)
+
+    ClientApp -> Service : Fordere TPM Quote an (via IPC, z.B. Named Pipe)
+    note left of ClientApp : Client App läuft mit\nBenutzerrechten
+    activate Service
+
+    Verifier -> Service : Sendet Nonce (Zufallszahl) für Quote
+    note right of Verifier : Verifier ist die entfernte\nPrüfinstanz
+    activate Verifier
+
+    Service -> TPM : Fordert TPM2_Quote an\n(inkl. Nonce, spez. PCRs wie 0-7, 10, 22)
+    activate TPM
+    TPM --> Service : TPM Quote (signierte PCR-Werte + Nonce)
+    deactivate TPM
+
+    Service -> OS : Liest TCG Event Log
+    activate OS
+    OS --> Service : TCG Event Log Daten
+    deactivate OS
+
+    Service --> Verifier : Sendet TPM Quote + TCG Event Log
+    deactivate Service
+
+    Verifier -> Verifier : Prüft Signatur der Quote (mit bekanntem öffentl. AK)\nPrüft Nonce\nPrüft Event Log gegen PCR-Werte in Quote\nPrüft PCR[22] auf erwartete App ID/Version/SigHash
+    alt Prüfung erfolgreich
+        Verifier --> Service : Vertrauenswürdig / Zugriff gewährt
+    else Prüfung fehlgeschlagen
+        Verifier --> Service : Nicht vertrauenswürdig / Zugriff verweigert
+    end
+    deactivate Verifier
+
+end group
+
+@enduml
