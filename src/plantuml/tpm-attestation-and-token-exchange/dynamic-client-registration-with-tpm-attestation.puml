@@ -80,8 +80,8 @@ alt Client has no client_id
       }
   end note
   AuthS -> AuthS : Validate nonce
-  AuthS -> AuthS : Validate TPM\nAttestation Statement
-  note right: Check signature against trusted roots.\nExtract device/OS/App status.\nVerify Attestation Key properties.
+  AuthS -> AuthS : Validate TPM\nAttestation
+  note right: Check signature against trusted roots\n(https://go.microsoft.com/fwlink/?linkid=2097925).\nExtract device/OS/App status.\nVerify Attestation Key properties.
   alt Attestation valid
     AuthS -> PDPDB ++ : Check if Client\nalready exists
     PDPDB --> AuthS:
