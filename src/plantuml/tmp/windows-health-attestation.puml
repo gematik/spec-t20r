@@ -1,0 +1,116 @@
+@startuml
+
+autonumber "(00)"
+title Dynamic Client Registration (RFC 7591) using WHA Attestation with Request/Response Details
+
+box "Windows Device" #GhostWhite
+    participant "Client Application" as Client
+    participant "Windows Health\nAttestation Service (WHA)\n(System Privileges)" as WHAService
+    participant "TPM" as TPM
+end box
+participant "Authorization Server (AuthS)\n(DCR Endpoint)" as AuthS
+
+note over Client, AuthS: Dynamic Client Registration (RFC 7591) with WHA
+
+Client ++
+' Optional, but good practice: Get fresh Nonce before attestation
+Client -> AuthS ++: Request Nonce
+note right of Client
+GET /nonce HTTP/1.1
+Host: auths.example.com
+Accept: application/json
+end note
+
+AuthS -> AuthS: Generate Nonce
+AuthS --> Client --: Return Nonce
+
+' Client App (Standard User) requests Attestation from WHA Service
+Client -> WHAService ++: Request Health Attestation\n(using Nonce")
+
+' WHA Service (System) orchestrates the Attestation
+WHAService -> WHAService: Gather device health data
+WHAService -> TPM ++: Request TPM Quote (incl. Nonce")
+TPM -> TPM: Create signed Quote
+TPM --> WHAService --: Return Quote
+WHAService -> WHAService: Get AIK Cert & TCG Log
+WHAService -> WHAService: Create WHA Attestation Blob
+WHAService --> Client --: Return WHA Attestation Blob (binary data)
+
+' Client App sends RFC 7591 DCR Request including the WHA Blob
+Client -> AuthS ++: POST DCR Request with WHA Blob
+note right of Client
+POST /register HTTP/1.1
+Host: auths.example.com
+Content-Type: application/json
+
+{
+  "redirect_uris": ["https://client.example.com/callback"],
+  "client_name": "My Secure Windows App",
+  "grant_types": ["authorization_code", "refresh_token"],
+  "token_endpoint_auth_method": "client_secret_basic",
+  "scope": "api:read api:write",
+  "contacts": ["tech@client.example.com"],
+  "policy_uri": "https://client.example.com/policy",
+  "jwks_uri": "https://client.example.com/.well-known/jwks.json",
+  "software_id": "unique-software-guid",
+  "software_version": "1.2.3",
+  "windows_attestation_blob": "AAEFAwoAAAAPQlpoOTFBWSZTWXhv...",
+  "attestation_nonce": "aFp40Nn7lYkLqXyW..."
+}
+end note
+
+
+' AuthS validates the DCR Request and the WHA Blob
+AuthS -> AuthS: Verify DCR Request & WHA Blob:
+note right
+  - Parse DCR Metadata (redirect_uris etc.)
+  - Extract `windows_attestation_blob` & `attestation_nonce`
+  - **Verify WHA Blob:**
+    - Nonce matches `attestation_nonce` ("aFp40Nn7lYkLqXyW...")?
+    - AIK Cert Chain & Validity?
+    - Quote Signature valid?
+    - Event Log Replay => PCRs == Quote PCRs?
+    - OS Health Claims ok?
+  - **Policy Check:** DCR Metadata valid & Device compliant?
+end note
+
+alt DCR Request valid & Device compliant
+    AuthS -> AuthS: Register Client (Generate client_id, client_secret)
+    AuthS --> Client --: 201 Created - Registration successful
+    note left of AuthS
+HTTP/1.1 201 Created
+Content-Type: application/json
+Cache-Control: no-store
+
+{
+  "client_id": "s6BhdRkqt3",
+  "client_secret": "cf136dc3c1fc93f31185",
+  "client_secret_expires_at": 0,
+  "registration_access_token": "reg-token-123",
+  "registration_client_uri": "https://auths.example.com/register/s6BhdRkqt3",
+  "client_id_issued_at": 1678886400,
+  "redirect_uris": ["https://client.example.com/callback"],
+  "client_name": "My Secure Windows App",
+  "grant_types": ["authorization_code", "refresh_token"],
+  "token_endpoint_auth_method": "client_secret_basic",
+  "scope": "api:read api:write",
+  // ... other registered parameters reflecting the request
+}
+    end note
+    Client -> Client: Registration successful, store credentials ("s6BhdRkqt3", "cf136...")
+else DCR Request invalid or Device not compliant
+    AuthS --> Client --: 400 Bad Request - Registration denied
+    note left of AuthS
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+Cache-Control: no-store
+
+{
+  "error": "invalid_request", // or "unmet_attestation_policy"
+  "error_description": "Device attestation failed policy checks: PCR[7] mismatch."
+}
+    end note
+    Client -> Client: Registration failed
+end
+
+@enduml
