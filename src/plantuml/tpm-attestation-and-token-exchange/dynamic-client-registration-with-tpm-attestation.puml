@@ -11,12 +11,12 @@ skinparam SequenceReferenceFontSize 12
 
 !pragma teoz true
 
-Actor User
 box "LEI" #GhostWhite
   box "Primärsystem" #Lavender
     box "ZETA Client" #SandyBrown
       participant Client as "ZETA\nClient"
     end box
+    participant ZAS as "ZETA Attestation Service\n(Admin rights)"
     participant TPM as "TPM"
   end box
 end box
@@ -33,29 +33,34 @@ end box
 
 Client ++
 alt Client has no client_id
-  Client -> Client : Generate Client Instance Key Pair (for Client Auth)
+  Client -> Client : Generate Client Instance\nKey Pair (for Client Auth)
   note right: Key Pair for private_key_jwt \n(could potentially be TPM-backed, but distinct from Attestation Key)
   Client -> AuthS ++ : GET /nonce
   AuthS --> Client --: return 200 OK new-nonce: nonce
 
-  alt Client has no TPM Attestation Key
-    Client -> User ++ : Obtain Admin\naccess to TPM
-    User --> Client -- : TPM Admin access
-    Client -> TPM ++ : Trigger Generation of TPM Attestation Key Pair
-    TPM --> Client: Return Attestation Public Key / Certificate Chain
-  else
-    Client -> TPM: Load existing TPM Attestation Key
-    TPM --> Client: Return Attestation Public Key / Certificate Chain
+  alt ZETA Attestation Service available
+    Client -> ZAS ++ : Get Attestation
+    alt ZETA TPM Service has no TPM Attestation Key
+      ZAS -> TPM ++ : Generate Attestation Key Pair
+      TPM --> ZAS: Return Attestation Public Key
+      ZAS -> TPM: Get Certificate Chain
+      TPM --> ZAS: Return Certificate Chain    
+      ZAS -> ZAS: Store AK Handle, AK Public Key\nand Certificate Chain
+    end
+
+    ZAS -> ZAS: Select AK Handle
+    ZAS -> ZAS: Get TCG Event Log (from OS/Firmware)
+    ZAS -> TPM: Get TPM Quote for PCRs (4, 5, 7, 10, 11, 22 oder 23)\nand nonce, signed with AK
+    note right: PCR 4: Boot Loader Code, Digest\nPCR 5: Boot Loader Configuration, Digest\nPCR 7: Secure Boot State / Policy, Digest\nPCR   10:OS Kernel / IMA, Digest\nPCR 11: OS Components / VSM, Digest,\nPCR 22 oder 23 (wenn frei) App Data (ID, Version,\nSignature Hash),   Digest
+    TPM --> ZAS --: Return TPM Quote
+    note right: Quote contains:\n- nonce\n- Attested Data (PCR Select, PCR Digest),\n- Signature
+    ZAS --> Client --: Return Attestation
+    Client -> Client: Create Client Statement\nwith posture-tpm
+  else ZETA Attestation 'Service is not available
+    Client -> Client: Create Client Statement\nwith posture-software
   end
+  note right: Attestation Statement includes:\n- product_id\n- product_version\n- posture\n- attestation
 
-  Client -> Client: Get TCG Event Log (from OS/Firmware)
-  note right: Trusted Computing Group Event Log contains:\n- Device identifiers\n- Boot state, Verified Boot state\n- OS Version, Patch Level\n- (optional with WDAC) App ID, App Version, App Signature Hash
-  Client -> TPM: Get TPM Quote for PCRs 0, 1, 2 (with nonce, signed with AIK)
-  TPM --> Client --: Return Quote
-  note right: Quote contains:\n- Signed nonce\n- Device identifiers\n- Boot state, Verified Boot state\n- OS Version, Patch Level\n- App ID, App Version, App Signature Hash
-
-  Client -> Client: Create Client Statement
-  note right: Attestation Statement includes:\n- Signed nonce\n- Device identifiers\n- Boot state, Verified Boot state\n- OS Version, Patch Level\n- App ID, App Version, App Signature Hash
 
   Client -> AuthS ++ : POST /register (RFC 7591)
   note right of Client #lightblue
@@ -69,8 +74,8 @@ alt Client has no client_id
         "nonce": "<nonce>", // Replay protection
         // Custom parameter for attestation:
         "urn:gematik:params:oauth:client-attestation-type:tpm2": {
-           "attestation_data": "<Base64(TPM Attestation Statement)>",
-           "attestation_format": "tpm-attestation-jwt"
+           "client_statement": "<Base64(Client Statement)>",
+           "client_statement_format": "client-statement-jwt"
          }
       }
   end note
@@ -78,7 +83,7 @@ alt Client has no client_id
   AuthS -> AuthS : Validate TPM\nAttestation Statement
   note right: Check signature against trusted roots.\nExtract device/OS/App status.\nVerify Attestation Key properties.
   alt Attestation valid
-    AuthS -> PDPDB ++ : Check if Client already exists
+    AuthS -> PDPDB ++ : Check if Client\nalready exists
     PDPDB --> AuthS:
     note right of PDPDB
       Check if client_id already exists in DB for
