@@ -1,4 +1,4 @@
-@startuml "dynamic-client-registration-with-tpm-attestation"
+@startuml "dynamic-client-registration-with-tpm-attestation-keybinding"
 autonumber "(00)"
 skinparam defaultFontSize 10
 skinparam defaultFontName Helvetica
@@ -23,7 +23,7 @@ end box
 
 box "Anbieter" #TECHNOLOGY
   box "ZETA Guard" #SandyBrown
-    participant AuthS as "PDP\nAuthorization Server" 
+    participant AuthS as "PDP\nAuthorization Server"
     participant PDPDB as "PDP DB"
   end box
     box TI 2.0 Dienst #DarkSeaGreen
@@ -34,32 +34,35 @@ end box
 Client ++
 alt Client has no client_id
   Client -> Client : Generate Client Instance\nKey Pair (for Client Auth)
-  note right: Key Pair for private_key_jwt \n(could potentially be TPM-backed, but distinct from Attestation Key)
+  note right: Key Pair for private_key_jwt \n(Public Key MUST be bound\nto TPM Attestation)
   Client -> AuthS ++ : GET /nonce
   AuthS --> Client --: return 200 OK new-nonce: nonce
 
   alt ZETA Attestation Service available
-    Client -> ZAS ++ : Get Attestation
+    Client -> Client: Calculate Public Key Hash\n(e.g., SHA256(PublicKeyJWK))
+    Client -> Client: Calculate Combined Data for TPM\n`combined_data = HASH(nonce + pubKeyHash)`
+    Client -> ZAS ++ : Get Attestation\nwith `combined_data`
     alt ZETA TPM Service has no TPM Attestation Key
       ZAS -> TPM ++ : Generate Attestation Key Pair
       TPM --> ZAS: Return Attestation Public Key
       ZAS -> TPM: Get Certificate Chain
-      TPM --> ZAS: Return Certificate Chain    
+      TPM --> ZAS: Return Certificate Chain
       ZAS -> ZAS: Store AK Handle, AK Public Key\nand Certificate Chain
     end
 
     ZAS -> ZAS: Select AK Handle
-    ZAS -> ZAS: Get TCG Event Log (from OS/Firmware)
-    ZAS -> TPM: Get TPM Quote for PCRs (4, 5, 7, 10, 11, 22 oder 23)\nand nonce, signed with AK
+    ZAS -> TPM: Get TPM Quote for PCRs (4, 5, 7, 10, 11, 22 oder 23)\nand `combined_data` (as qualifyingData), signed with AK
+    note left: **Binding:** `combined_data` enthält Hash des\nClient Instance Public Keys und die Nonce.\nTPM signiert PCRs + `combined_data`.
     note right: PCR 4: Boot Loader Code, Digest\nPCR 5: Boot Loader Configuration, Digest\nPCR 7: Secure Boot State / Policy, Digest\nPCR   10:OS Kernel / IMA, Digest\nPCR 11: OS Components / VSM, Digest,\nPCR 22 oder 23 (wenn frei) App Data (ID, Version,\nSignature Hash),   Digest
+    ZAS -> ZAS: Get TCG Event Log (from OS/Firmware)
     TPM --> ZAS --: Return TPM Quote
-    note right: Quote contains:\n- nonce\n- Attested Data (PCR Select, PCR Digest),\n- Signature
-    ZAS --> Client --: Return Attestation
-    Client -> Client: Create Client Statement\nwith posture-tpm
+    note right: Quote contains:\n- `combined_data` (as qualifyingData)\n- Attested Data (PCR Select, PCR Digest),\n- Signature
+    ZAS --> Client --: Return Attestation (Quote, EventLog, CertChain)
+    Client -> Client: Create Client Statement JWT\nwith posture-tpm,\nincludes Attestation\nSigned with Client Instance **Private** Key
   else ZETA Attestation 'Service is not available
-    Client -> Client: Create Client Statement\nwith posture-software
+    Client -> Client: Create Client Statement JWT\nwith posture-software\nSigned with Client Instance Key
   end
-  note right: Attestation Statement includes:\n- product_id\n- product_version\n- posture\n- attestation
+  note right: Attestation Statement includes:\n- product_id\n- product_version\n- posture\n- attestation (containing Quote etc.)
 
 
   Client -> AuthS ++ : POST /register (RFC 7591)
@@ -71,60 +74,60 @@ alt Client has no client_id
         "token_endpoint_auth_method": "private_key_jwt",
         "grant_types": ["urn:ietf:params:oauth:grant-type:token-exchange","refresh_token"],
         "jwks": { "keys": [ <Client_Instance_Public_Key_JWK> ] },
-        "nonce": "<nonce>", // Replay protection
+        "nonce": "<nonce>", // From GET /nonce, for replay protection & binding check
         // Custom parameter for attestation:
         "urn:gematik:params:oauth:client-attestation-type:tpm2": {
-           "client_statement": "<Base64(Client Statement)>",
+           "client_statement": "<Base64(Client Statement JWT)>",
            "client_statement_format": "client-statement-jwt"
          }
       }
   end note
-  AuthS -> AuthS : Validate nonce
-  AuthS -> AuthS : Validate TPM\nAttestation
-  note right: Check signature against trusted roots\n(https://go.microsoft.com/fwlink/?linkid=2097925).\nExtract device/OS/App status.\nVerify Attestation Key properties.
-  alt Attestation valid
-    AuthS -> PDPDB ++ : Check if Client\nalready exists
+  AuthS -> AuthS : Validate nonce (Replay Check)
+  AuthS -> AuthS : Validate Client Assertion JWT\n(Signature with Public Key from jwks)
+  AuthS -> AuthS : Calculate expected_combined_data\nHASH(nonce + HASH(PublicKeyFromJWKS))
+  AuthS -> AuthS : Verify qualifyingData in Quote == expected_combined_data
+  AuthS -> AuthS : Validate Client Statement JWT\n(Signature with Public Key from jwks)
+  AuthS -> AuthS : Extract TPM Quote & Cert Chain\nfrom Client Statement
+  AuthS -> AuthS : Validate TPM Quote Signature\n(using AK Cert Chain / Trusted Roots)
+  note right: Checks ensure:\n1. Client owns Private Key.\n2. TPM Quote is valid & from trusted TPM.\n3. **Quote was generated for *this specific* Client Key & Nonce.**\n4. Device state (PCRs) is compliant.\n5. Request is not a replay.
+  alt Attestation and Binding valid
+    AuthS -> PDPDB ++ : Check if Client\nalready exists (by PubKey Hash?)
     PDPDB --> AuthS:
     note right of PDPDB
       Check if client_id already exists in DB for
-      - Client_Instance_Public_Key_JWK
+       Client_Instance_Public_Key_JWK Thumbprint
+       (or potentially based on AK/EK cert if stable)
     end note
-    alt Client exists in DB
-      AuthS --> Client : 409 Conflict
+    alt Client exists in DB (based on Public Key)
+      AuthS --> Client : 409 Conflict (Client with this key already registered)
     else
       AuthS -> AuthS : Generate client_id
-      AuthS -> PDPDB: Store client metadata,\nincl. Client Instance Key
+      AuthS -> PDPDB: Store client metadata,\nincl. Client Instance Key Thumbprint, Attestation details
       note right of PDPDB
         Store client metadata in DB:
         - client_id
-        - client_instance_key
-        - attestation_data
-        - attestation_key
+        - client_instance_key_thumbprint
+        - attestation_data (PCRs, AK used)
+        - attestation_key_cert_thumbprint?
         - redirect_uris
         - client_name
         - token_endpoint_auth_method
         - grant_types
-        - state // Client registered but not yet activated
+        - state // Client registered but not yet activated?
       end note
       PDPDB --> AuthS --: 201 Created
+      AuthS -->> Client: 201 Created
+      note right of Client #lightgreen
+          **DCR Response Body:**
+          {
+            "client_id": "<generated-client-id>",
+            "client_id_issued_at": ...,
+            // ... other metadata
+          }
+      end note
     end
-    AuthS -->> Client: 201 Created
-    note right of Client #lightgreen
-        **DCR Response Body:**
-        {
-          "client_id": "<generated-client-id>",
-          "client_id_issued_at": ...,
-          "client_name": "...",
-          "token_endpoint_auth_method": "private_key_jwt",
-          "grant_types": ["urn:ietf:params:oauth:grant-type:token-exchange","refresh_token"],
-          "jwks": { <Client_Instance_Public_Key_JWK> }, // Confirming registered key
-          // ... other registered metadata
-          "registration_access_token": "...", // Optional for config updates
-          "registration_client_uri": "..." // Optional for config updates
-        }
-    end note
-  else Attestation invalid
-    AuthS -->> Client -- : 400 Bad Request
+  else Attestation or Binding invalid
+    AuthS -->> Client -- : 400 Bad Request (Attestation/Binding failed)
   end
 
   Client --

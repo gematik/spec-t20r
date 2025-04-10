@@ -17,6 +17,7 @@ box "LEI" #GhostWhite
     box "ZETA Client" #SandyBrown
       participant Client as "ZETA\nClient"
     end box
+    participant ZAS as "ZETA Attestation Service\n(Admin rights)"
     participant TPM as "TPM"
   end box
   participant Konnektor as "Konnektor or\nTI-Gateway"
