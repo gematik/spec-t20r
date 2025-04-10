@@ -26,38 +26,39 @@ end box
 
 box "Anbieter" #TECHNOLOGY
   box "ZETA Guard" #SandyBrown
-    participant HP as "PEP\nhttp Proxy"
     participant AuthS as "PDP\nAuthorization Server" 
     participant PE as "PDP\nPolicy Engine"
   end box
-    box TI 2.0 Dienst #DarkSeaGreen
-      participant RS as "Resource\nServer"
-    end box
 end box
 
-Client ++
-Client -> Client : Create "SM(C)-B Access Token" (JWT)
-note right #lightblue
-    **SM(C)-B Access Token Claims:**
-    {
-      "iss": "<client_id>", // Issuer is the client
-      "sub": "<Telematik-ID from SM(C)-B>", // Subject is the institution
-      "aud": "<AS_Token_Endpoint_URL>", // Audience is the AS
-      "exp": ..., // Short-lived
-      "iat": ...,
-      "jti": "...",
-      "nonce": "<Challenge from DCR>", // Binding to DCR
-      "scope": ... // As required for the Resource Server access
-    }
-end note
+alt Client has no valid refresh token
+  Client ++
+  Client -> Client : Create "SM(C)-B Access Token" (JWT)
+  note right #lightblue
+      **SM(C)-B Access Token Claims:**
+      {
+        "iss": "<client_id>", // Issuer is the client
+        "sub": "<Telematik-ID from SM(C)-B>", // Subject is the institution
+        "aud": "<AS_Token_Endpoint_URL>", // Audience is the AS
+        "exp": ..., // Short-lived
+        "iat": ...,
+        "jti": "...",
+        "nonce": "<Challenge from DCR>", // Binding to DCR
+        "scope": ... // As required for the Resource Server access
+      }
+  end note
 
-Client -> Konnektor ++ : externalAuthenticate (JWT-hash)
-Konnektor -> SMB ++ : sign (JWT-hash)
-SMB -> Konnektor -- : JWT-Signature
-Konnektor -->> Client -- : JWT-signature
+  Client -> Konnektor ++ : externalAuthenticate (JWT-hash)
+  Konnektor -> SMB ++ : sign (JWT-hash)
+  SMB -> Konnektor -- : JWT-Signature
+  Konnektor -->> Client -- : JWT-signature
+  Client -> Client : Create DPoP Key Pair (for Token Exchange)
+  ' note right: Session-based Key Pair for DPoP binding.
+end alt
 
-Client -> Client : Create DPoP Key Pair (for Token Exchange)
-' note right: Session-based Key Pair for DPoP binding.
+Client -> AuthS ++ : GET /nonce
+AuthS --> Client --: return 200 OK new-nonce: nonce
+
 Client -> Client : Create DPoP Proof JWT for Token Exchange
 note right #lightblue
     **DPoP Proof JWT Claims (for Token Exchange):**
@@ -74,6 +75,7 @@ note right #lightblue
       "jti": "...",
       "htm": "POST",
       "htu": "<AS_Token_Endpoint_URL>",
+      "nonce": "<Challenge from AS>", // Binding to AS
       "iat": ...
     }.(sig by DPoP_Private_Key)
 end note
@@ -93,24 +95,49 @@ note right #lightblue
     (sig by Client_Instance_Private_Key)
 end note
 
-Client -> AuthS ++ : POST /token (RFC 8693)
-note right of Client #lightblue
+alt Client uses SM(C)-B Access Token
+  Client -> AuthS ++ : POST /token (RFC 8693) DPoP: <signed_dpop_jwt>
+  note right of Client #lightblue
     **Token Exchange Request Body:**
-      grant_type=urn:ietf:params:oauth:grant-type:token-exchange
-      &subject_token=<SM(C)-B_Assertion_Token>
-      &subject_token_type=urn:ietf:params:oauth:token-type:jwt // Or custom
-      &client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer
-      &client_assertion=<Client_Assertion_JWT_for_Auth>
-      &resource=<Optional: Target Resource URI>
-      &audience=<Optional: Target Audience>
-end note
+    grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+    &requested_token_type=urn:ietf:params:oauth:token-type:access_token
+    &subject_token=<SM(C)-B_Access_Token>
+    &subject_token_type=urn:ietf:params:oauth:token-type:jwt // Or custom
+    &client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+    &client_assertion=<Client_Assertion_JWT_for_Auth>
+    &resource=<Target Resource URI>
+    &audience=<Target Audience>
+    &scope=<Requested Scopes>
+  end note
+  AuthS -> AuthS : Validate subject_token (sig by SM(C)-B_PK, claims)
+  AuthS -> AuthS : Check if client_id is bound to the SM(C)-B identity (sub claim in subject_token)
+
+else Client uses Refresh Token
+  Client -> AuthS: POST /token DPoP: <signed_dpop_jwt>
+  note right of Client #lightblue
+    **Token Exchange Request Body:**
+    grant_type=refresh_token
+    &refresh_token=<Refresh_Token>
+    &client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+    &client_assertion=<Client_Assertion_JWT_for_Auth>
+  end note
+  AuthS -> AuthS: verify Refresh token and DPoP JWT
+  AuthS -> AuthS: invalidate Refresh token
+end alt
 
 AuthS -> AuthS : Validate client_assertion (sig by Client_Instance_PK, claims)
-AuthS -> AuthS : Validate subject_token (sig by SM(C)-B_PK, claims)
-AuthS -> AuthS : Check if client_id is bound to the SM(C)-B identity (sub claim in subject_token)
+AuthS -> AuthS : Validate DPoP Proof JWT (sig by DPoP_Public_Key, claims)
+
 alt Validations Successful
+  ' note right: Policy Engine (PE) is called to check if the client has access to the requested resource
+  AuthS -> PE ++ : POST /v1/data/authz, body {  "input": {...}} 
+  PE --> AuthS --: 200 OK, body {"allow": true,\n\
+  "access_token_ttl": "360",\n\
+  "refresh_token_ttl": "43200",\n\
+  "scope": "RS specific scopes"}
+  alt Policy Decision allowed
     AuthS -> AuthS : Generate AS Access Token (AT) and Refresh Token (RT)
-    ' note right: AT is bound to DPoP key (cnf.jkt claim)\nAT contains claims about client_id and SM(C)-B Identity
+    note left: AT is bound to DPoP key (cnf.jkt claim)\nAT contains claims about client_id and SM(C)-B Identity
     AuthS -->> Client: 200 OK
     note right of AuthS #lightgreen
         **Token Response Body:**
@@ -122,6 +149,17 @@ alt Validations Successful
           // ... other parameters
         }
     end note
+  else Policy Decision denied
+    AuthS -->> Client: 403 Forbidden
+    note right of AuthS #pink
+        **Error Response:**
+        {
+          "error": "access_denied",
+          "error_description": "Policy decision denied."
+        }
+    end note
+    note right: The client can handle the error and decide whether to retry or not.
+  end alt
 else Validation Failed
     AuthS -->> Client -- : 400 Bad Request
     note right of AuthS #pink
