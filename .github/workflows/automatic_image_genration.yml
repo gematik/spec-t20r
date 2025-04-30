@@ -67,7 +67,7 @@ jobs:
             mkdir -p "$output_dir"
             
             # Generate PNG & SVG, check exit codes inline
-            java -jar /tmp/plantuml.jar -tpng "$file" -o "$output_dir" || echo "   WARNING: PNG generation command may have failed for $file (Exit Code: $?)" >&2
+            java -jar /tmp/plantuml.jar -tpng -scale 4 "$file" -o "$output_dir" || echo "   WARNING: PNG generation command may have failed for $file (Exit Code: $?)" >&2
             java -jar /tmp/plantuml.jar -tsvg "$file" -o "$output_dir" || echo "   WARNING: SVG generation command may have failed for $file (Exit Code: $?)" >&2
 
             # Verify files were created AFTER commands ran
@@ -131,7 +131,7 @@ jobs:
             drawio_svg_ok=true
 
             # Generate PNG & SVG, check exit codes inline
-            xvfb-run --auto-servernum drawio --no-sandbox --disable-gpu --export --format png --output "$png_path" "$abs_file" || drawio_png_ok=false
+            xvfb-run --auto-servernum drawio --no-sandbox --disable-gpu --export --format png --scale 4 --output "$png_path" "$abs_file" || drawio_png_ok=false
             xvfb-run --auto-servernum drawio --no-sandbox --disable-gpu --export --format svg --output "$svg_path" "$abs_file" || drawio_svg_ok=false
 
             if [ "$drawio_png_ok" = false ]; then
