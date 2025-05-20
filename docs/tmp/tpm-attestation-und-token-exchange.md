@@ -1,0 +1,38 @@
+# TPM-Attestierung und Token Exchange
+
+Der Gesamtprozess beginnt damit, dass ein **Nutzer** auf eine Ressource auf einem Resource Server zugreifen möchte. Dieser Zugriff wird vom **ZETA Client** im Auftrag des Nutzers ausgeführt.
+
+![tpm-attestation-and-token-exchange-overview](/images/tpm-attestation-and-token-exchange/tpm-attestation-and-token-exchange-overview.svg)
+
+Bevor der eigentliche Zugriff erfolgen kann, durchläuft der Client mehrere Phasen:
+
+## 1. Discovery und Konfiguration
+
+In dieser Phase ermittelt der ZETA Client die notwendigen Endpunkte und Konfigurationen von der ZETA Guard Komponente (PEP http Proxy und PDP Authorization Server). Der Client fragt bekannte Endpunkte (`/.well-known/oauth-protected-resource` und `/.well-known/oauth-authorization-server`) ab, um die Konfiguration des Resource Servers und des Authorization Servers zu erhalten.
+
+![tpm-attestation-and-token-exchange-overview](/images/tpm-attestation-and-token-exchange/discovery-and-configuration.svg)
+
+## 2. Dynamic Client Registration mit TPM Attestation
+
+Voraussetzung: Während der Installation des Primärsystems wird ein ZETA Attestation Service auf dem Host des Primärsystems installiert. Dieser Service hat Privilegien (Admin Rechte) um mit dem TPM kommunizieren zu können. Während der Installation wird ein hash der Primärsystem Software erzeugt und in das TPM PCR 22 oder PCR 23 geschrieben (falls noch nicht belegt). Dieser Wert wird vom ZETA Attestation Service als Baseline gespeichert. Während jedes Bootvorgangs wird die Primärsystem Software erneut gemessen und der Hash in das gleiche PCR (22 oder 23) geschrieben. Der ZETA Attestation Service ist in der Lage, den TCG Event Log zu lesen und die Integrität des Primärsystems zu garantieren. Der ZETA Client ist in der Lage, den ZETA Attestation Service zu kontaktieren und TPM Quoten zu erstellen.
+
+Sofern der ZETA Client noch keine `client_id` besitzt, durchläuft er den folgenden Prozess.
+Der ZETA Client registriert sich beim Authorization Server über den **Dynamic Client Registration** Flow. Dabei wird eine **TPM Attestation** durchgeführt, um die Integrität des Primärsystems zu garantieren.
+
+![tpm-attestation-and-token-exchange-overview](/images/tpm-attestation-and-token-exchange/dynamic-client-registration-with-tpm-attestation.svg)
+
+Hierbei generiert der ZETA Client zunächst ein **Client Instance Key Pair**, welches für die Client Authentifizierung (private_key_jwt) verwendet wird und dessen Public Key an eine TPM Attestierung gebunden werden MUSS.
+
+Um die Attestierung zu erhalten, fordert der ZETA Client eine Nonce vom Authorization Server an. Diese Nonce wird zusammen mit dem Hash des Client Instance Public Keys zu `combined_data` verrechnet. Der ZETA Client nutzt dann einen ZETA Attestation Service (falls verfügbar), um ein **TPM Quote** für spezifische PCRs (z.B. 4, 5, 7, 10, 11, 22/23) sowie die `combined_data` zu erhalten. Entweder PCR 22 oder PCR 23 wird genutzt, falls es bei der Installation des PS und des ZETA Attestation Service frei ist und enthält einen Hash, der die Integrität des PS garantiert. Das TPM signiert das Quote mit einem Attestation Key. Das Quote, der TCG Event Log und die Zertifikatskette des Attestation Keys werden zusammen als Attestierung an den ZETA Client zurückgegeben. Der ZETA Client erstellt dann ein **Client Statement JWT**, das die Attestierung enthält (oder eine Software-Attestierung, falls der ZETA Attestation Service nicht verfügbar ist), und signiert es mit dem Client Instance Private Key. Dieser Client Statement JWT wird im **RFC 7591** POST /register Request an den Authorization Server gesendet. Der Request enthält auch den Public Key des Client Instance Key Pairs, die Nonce vom AuthS (für Replay-Schutz und Binding-Check) sowie weitere Client-Metadaten. Der Authorization Server validiert den Request umfassend: er prüft die Nonce, die Signatur des Client Assertion JWT, verifiziert das TPM Quote und die Zertifikatskette, prüft, ob das Quote tatsächlich für diesen spezifischen Client Key und die Nonce generiert wurde (`qualifyingData` im Quote muss `expected_combined_data` entsprechen), und bewertet den Gerätezustand basierend auf den PCRs. Bei erfolgreicher Validierung und sofern der ZETA Client (basierend auf dem Public Key Thumbprint) noch nicht registriert ist, generiert der AuthS eine `client_id`, speichert die Client-Metadaten zusammen mit Attestierungsdetails und gibt die `client_id` an den ZETA Client zurück.
+
+Wie oft die Attestation erneuert werden muss, hängt von der Policy des Authorization Servers ab. Der Ablauf dafür ist hier noch nicht enthalten.
+
+## 3. Token Exchange mit Client Assertion JWT Auth
+
+Nachdem der Client registriert ist oder bereits über eine `client_id` verfügt, kann er einen **AS Access Token** vom Authorization Server erhalten.
+
+![tpm-attestation-and-token-exchange-overview](/images/tpm-attestation-and-token-exchange/token-exchange-with-client-assertion-jwt-auth.svg)
+
+Dies geschieht über einen **Token Exchange**. Der Client erstellt entweder einen SM(C)-B Access Token (wenn kein gültiger Refresh Token vorhanden ist) oder verwendet einen vorhandenen Refresh Token. Zusätzlich fordert der Client eine Nonce vom Authorization Server für den DPoP Proof an. Der Client generiert ein **DPoP Key Pair** (Session-basiert) und erstellt einen **DPoP Proof JWT**, signiert mit dem DPoP Private Key. Dieses JWT enthält den Public Key des DPoP Key Pairs (`jwk`-Claim) sowie Details zur Anfrage (`htm`, `htu`) und die Nonce. Parallel dazu erstellt der Client einen **Client Assertion JWT für die Authentifizierung** am Authorization Server. Dieser Assertion JWT wird mit dem **Client Instance Private Key** signiert. Wichtig ist, dass dieser Assertion JWT einen `cnf` Claim enthält, der den Hash (`jkt`) des Public Keys des DPoP Key Pairs referenziert. Der Client sendet einen POST /token Request an den Authorization Server. Dieser Request verwendet `grant_type=urn:ietf:params:oauth:grant-type:token-exchange` (oder `refresh_token`) und enthält entweder den SM(C)-B Access Token im `subject_token` (oder den Refresh Token) sowie den Client Assertion JWT im `client_assertion`. Zusätzlich wird der DPoP Proof JWT im `DPoP` Header übertragen. Der Authorization Server validiert das `subject_token` (falls SM(C)-B Token verwendet wird) und prüft dessen Bindung zur Client-Identität. Er validiert den Client Assertion JWT anhand des gespeicherten Client Instance Public Keys. Er validiert den DPoP Proof JWT anhand des Public Keys, der im DPoP Proof selbst enthalten ist, und prüft dessen Bindung an die Anfrage und die Nonce. Darüber hinaus prüft der AuthS, ob der Hash des DPoP Public Keys im Client Assertion JWT (`cnf.jkt`) mit dem Hash des Public Keys im DPoP Proof (`jwk`) übereinstimmt. Nach erfolgreicher technischer Validierung wird die **Policy Engine** aufgerufen, um basierend auf kontextbezogenen Daten (einschließlich Client-Identität und SM(C)-B Identität) die Zugriffsberechtigung für die angeforderte Ressource zu prüfen. Bei positivem Policy-Entscheid generiert der Authorization Server einen **AS Access Token** und optional einen Refresh Token. Der AS Access Token ist über den `cnf.jkt`-Claim an den DPoP Key gebunden, der im DPoP Proof verwendet wurde. Die Antwort an den Client enthält den Access Token und gibt über `token_type: DPoP` an, dass DPoP für die Nutzung des Tokens erforderlich ist.
+
+Mit dem erhaltenen AS Access Token und dem zugehörigen DPoP Private Key kann der Client anschließend die angeforderte Ressource auf dem Resource Server über den PEP http Proxy abrufen. Der PEP http Proxy validiert sowohl den Access Token als auch den DPoP Proof vor der Weiterleitung der Anfrage an den Resource Server.

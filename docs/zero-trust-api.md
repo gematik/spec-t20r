@@ -23,12 +23,13 @@ Voraussetzungen: Informationen über benötigte Tools, Bibliotheken oder SDKs.
     - [1.5.3. Datenstrukturen und Modelle](#153-datenstrukturen-und-modelle)
     - [1.5.4. Rate Limits und Einschränkungen](#154-rate-limits-und-einschränkungen)
   - [1.6. Versionierung](#16-versionierung)
-  - [1.7. Support und Kontaktinformationen](#17-support-und-kontaktinformationen)
-  - [1.8. FAQs und Troubleshooting](#18-faqs-und-troubleshooting)
-  - [1.9. Interaktive Dokumentation (optional)](#19-interaktive-dokumentation-optional)
-  - [1.10. Changelog](#110-changelog)
-  - [1.11. git Branch Modell](#111-git-branch-modell)
-  - [1.12. Lizenzbedingungen](#112-lizenzbedingungen)
+  - [1.7. Performance- und Lastannahmen](#17-performance--und-lastannahmen)
+  - [1.8. Support und Kontaktinformationen](#18-support-und-kontaktinformationen)
+  - [1.9. FAQs und Troubleshooting](#19-faqs-und-troubleshooting)
+  - [1.10. Interaktive Dokumentation (optional)](#110-interaktive-dokumentation-optional)
+  - [1.11. Changelog](#111-changelog)
+  - [1.12. git Branch Modell](#112-git-branch-modell)
+  - [1.13. Lizenzbedingungen](#113-lizenzbedingungen)
 
 ## 1.3 Voraussetzungen für die ZETA Client Nutzung
 
@@ -84,27 +85,39 @@ Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der AP
 API-Versionierung: Hinweise darauf, wie Versionen der API verwaltet werden und wie Benutzer zwischen verschiedenen Versionen wechseln können.
 Änderungsprotokoll: Ein Changelog, das alle wichtigen Änderungen und Updates dokumentiert.
 
-## 1.7. Support und Kontaktinformationen
+## 1.7. Performance- und Lastannahmen
+
+Leistungsanforderungen: Informationen über die erwartete Leistung der API, wie z.B. Antwortzeiten und Verfügbarkeit.
+Lastannahmen: Informationen über das erwartete Lastverhalten auf der API, wie z.B. die Anzahl der gleichzeitigen Benutzer oder Anfragen pro Sekunde.
+
+- SM(C)-B Signaturerstellung
+- TPM Attestation
+- ZETA Guard Clientregistrierung
+- ZETA Guard Authentifizierung
+- ZETA Guard PEP
+- ZETA Guard Refresh Token Exchange
+
+## 1.8. Support und Kontaktinformationen
 
 Hilfe: Informationen darüber, wo und wie Benutzer Unterstützung erhalten können (z.B. Forum, E-Mail-Support).
 Fehlerberichterstattung: Wie können Nutzer Bugs melden oder Feature-Anfragen stellen?
 
-## 1.8. FAQs und Troubleshooting
+## 1.9. FAQs und Troubleshooting
 
 Häufige Fragen: Antworten auf häufige Fragen zur Nutzung der API.
 Fehlerbehebung: Leitfaden zur Behebung häufiger Probleme.
 
-## 1.9. Interaktive Dokumentation (optional)
+## 1.10. Interaktive Dokumentation (optional)
 
 Swagger/OpenAPI: Ein interaktives Interface, mit dem Entwickler API-Endpunkte direkt aus der Dokumentation heraus testen können.
 API-Sandbox: Eine Testumgebung, in der Entwickler sicher mit der API experimentieren können.
 Eine gut strukturierte API-Dokumentation erleichtert es Entwicklern, die API effizient zu nutzen, und trägt dazu bei, häufige Fragen und Probleme zu minimieren.
 
-## 1.10. Changelog
+## 1.11. Changelog
 
 Ein detaillierter Verlauf der Änderungen an der API.
 
-## 1.11. git Branch Modell
+## 1.12. git Branch Modell
 
 In diesem Repository werden Branches verwendet um den Status der Weiterentwicklung und das Review von Änderungen abzubilden.
 
@@ -117,7 +130,7 @@ Folgende Branches werden verwendet
 - *concept/[name]* (in feature branches werden neue Konzepte entwickelt; basiert auf develop; dient der Abstimmung mit Dritten; es erfolgt kein merge; wird nach Bedarf gelöscht)
 - *misc/[name]* (nur für internen Gebrauch der gematik; es erfolgt kein merge; wird nach Bedarf gelöscht)
 
-## 1.12. Lizenzbedingungen
+## 1.13. Lizenzbedingungen
 
 Copyright (c) 2024 gematik GmbH
 
