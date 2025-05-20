@@ -1,6 +1,6 @@
 # TPM-Attestierung und Token Exchange
 
-Der Gesamtprozess beginnt damit, dass ein **Nutzer** auf eine Ressource auf einem Resource Server zugreifen möchte. Dieser Zugriff wird vom **ZETA Client** im Auftrag des Nutzers ausgeführt.
+Der Gesamtprozess beginnt damit, dass ein **Nutzer** auf eine Ressource auf einem Resource Server zugreifen möchte. Dieser Zugriff wird über das Primärsystem vom **ZETA Client** im Auftrag des Nutzers ausgeführt.
 
 ![tpm-attestation-and-token-exchange-overview](/images/tpm-attestation-and-token-exchange/tpm-attestation-and-token-exchange-overview.svg)
 
