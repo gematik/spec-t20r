@@ -59,7 +59,7 @@ alt Client has no client_id
     TPM --> ZAS --: Return TPM Quote
     note right: Quote contains:\n- `combined_data` (as qualifyingData)\n- Attested Data (PCR Select, PCR Digest),\n- Signature
     ZAS --> Client --: Return Attestation (Quote, EventLog, CertChain)
-    Client -> Client: Create Client Statement JWT\nwith posture-tpm,\nincludes Attestation\nSigned with Client Instance **Private** Key
+    Client -> Client: Create Client Statement JWT\nwith posture-tpm,\nincludes Attestation\nSigned with Client Instance Key
   else ZETA Attestation 'Service is not available
     Client -> Client: Create Client Statement JWT\nwith posture-software\nSigned with Client Instance Key
   end
