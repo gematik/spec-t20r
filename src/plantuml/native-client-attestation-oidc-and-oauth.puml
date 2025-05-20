@@ -29,9 +29,8 @@ end box
 
 box "Anbieter" #TECHNOLOGY
     box "ZETA Guard" #SandyBrown
-        participant AuthS as "PDP\nAuthS"
+        participant AuthS as "PDP\nAuthS and\nPolicy Engine"
         participant PEP as "PEP\nHTTP Proxy"
-        participant PEA as "PDP\nPolicy Engine"
     end box
     box "TI 2.0\nDienst" #DarkSeaGreen
         participant RS as "Resource\nServer"
@@ -73,9 +72,9 @@ activate AttService
 note right: AS A forwards attestation data\nto Attestation Service
 AttService -> AttService: Validate Attestation\nStatement
 AttService --> AuthS: Attestation Verification Result
-AuthS -> AuthS: Verify Email Confirmation JWT
+AuthS -> AuthS: Verify Email Confirmation JWT\nif exists
 deactivate AttService
-alt Email Confirmation Required
+alt Email Confirmation Required because E-Mail Confirmation JWT not\nprovided or Email Confirmation JWT expired
     AuthS -> AuthS: Generate Confirmation\nLink and send Email
     activate MUA
     MUA -> MUA: Receive Email
@@ -88,21 +87,8 @@ alt Email Confirmation Required
     AuthS -> AuthS: Verify Email\nConfirmation\nRequest
     AuthS -> AuthS: Generate Email\nConfirmation JWT
     note right: JWT Claims:\n - iss: AS_A_ID\n - sub: Client_id\n - aud: (all AS)\n - exp: (Policy Engine decision)\n - iat: (now)\n - Email_verified: true
-    AuthS -> PEA: Request Client\nRegistration Decision
-    activate PEA
-    note right: AS A sends input data to Policy Engine A\nfor registration request
-    PEA -> PEA: Evaluate Policy based\non Input Data
-    PEA --> AuthS: Client Registration\nDecision (Permit/Deny)
-    deactivate PEA
     AuthS --> Client: Client Registration Response\n(client_id, Email Confirmation JWT)
-    deactivate AuthS
-    else Email Confirmation already done
-    AuthS -> PEA: Request Client\nRegistration Decision
-    activate PEA
-    note right: AS A sends input data to Policy Engine A\nfor registration request
-    PEA -> PEA: Evaluate Policy based\non Input Data
-    PEA --> AuthS: Client Registration\nDecision (Permit/Deny)
-    deactivate PEA
+else Valid Email Confirmation was provided
     AuthS --> Client: Client Registration Response\n(client_id)
 end
 deactivate AuthS
@@ -154,13 +140,8 @@ note right: Enthält Authorization Code, DPoP Proof,\nclient_id, redirect_uri, c
 AuthS -> AuthS: Validate\nAuthorization Code
 AuthS -> AuthS: Validate DPoP Proof
 AuthS -> AuthS: Validate PKCE\nCode Verifier
-AuthS -> PEA: Request Token Issuance Decision
-activate PEA
-note right: AS A sends input data to Policy Engine A\nfor token request
-PEA -> PEA: Evaluate Policy based\non Input Data
-PEA --> AuthS: Token Issuance Decision (Permit/Deny)
-deactivate PEA
-    AuthS --> Client: Access Token, Refresh Token
+AuthS -> AuthS: Evaluate Policy based\non Input Data
+AuthS --> Client: Access Token, Refresh Token
 note left: Access Token bound to\nclient's DPoP public key
 deactivate AuthS
 
