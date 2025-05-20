@@ -43,6 +43,7 @@ alt Client has no client_id
     Client -> Client: Calculate Combined Data for TPM\n`combined_data = HASH(nonce + pubKeyHash)`
     Client -> ZAS ++ : Get Attestation\nwith `combined_data`
     alt ZETA TPM Service has no TPM Attestation Key
+      note right: The Primärsystem and the ZETA Attestation Service are in the same trust domain.\nAt the time of client installation, the ZETA Attestation Service computes a\ncryptographic hash of the Primärsystem software and extends this hash into a specific\nPCR (22 or 23) using TPM2_PCR_Extend. The ZETA Attestation Service reads\nand stores the resulting PCR value as a reference measurement or baseline.\nAt every boot of the Primärsystem, the ZETA Attestation Service measures the Primärsystem\nsoftware and extends the resulting hash into the same PCR (22 or 23) using\nTPM2_PCR_Extend.
       ZAS -> TPM ++ : Generate Attestation Key Pair
       TPM --> ZAS: Return Attestation Public Key
       ZAS -> TPM: Get Certificate Chain
@@ -51,9 +52,9 @@ alt Client has no client_id
     end
 
     ZAS -> ZAS: Select AK Handle
-    ZAS -> TPM: Get TPM Quote for PCRs (4, 5, 7, 10, 11, 22 oder 23)\nand `combined_data` (as qualifyingData), signed with AK
+    ZAS -> TPM: Get TPM Quote for PCRs (4, 5, 7, 10, 11, 22 or 23)\nand `combined_data` (as qualifyingData), signed with AK
     note left: **Binding:** `combined_data` enthält Hash des\nClient Instance Public Keys und die Nonce.\nTPM signiert PCRs + `combined_data`.
-    note right: PCR 4: Boot Loader Code, Digest\nPCR 5: Boot Loader Configuration, Digest\nPCR 7: Secure Boot State / Policy, Digest\nPCR   10:OS Kernel / IMA, Digest\nPCR 11: OS Components / VSM, Digest,\nPCR 22 oder 23 (wenn frei) App Data (ID, Version,\nSignature Hash),   Digest
+    note right: PCR 4: Boot Loader Code, Digest\nPCR 5: Boot Loader Configuration, Digest\nPCR 7: Secure Boot State / Policy, Digest\nPCR   10:OS Kernel / IMA, Digest\nPCR 11: OS Components / VSM, Digest,\nPCR 22 or 23 (if available) App Data (ID, Version,\nSignature Hash),   Digest
     ZAS -> ZAS: Get TCG Event Log (from OS/Firmware)
     TPM --> ZAS --: Return TPM Quote
     note right: Quote contains:\n- `combined_data` (as qualifyingData)\n- Attested Data (PCR Select, PCR Digest),\n- Signature
