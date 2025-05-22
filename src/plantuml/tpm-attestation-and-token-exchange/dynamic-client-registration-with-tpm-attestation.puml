@@ -1,4 +1,4 @@
-@startuml "dynamic-client-registration-with-tpm-attestation-keybinding"
+@startuml "dynamic-client-registration-with-tpm-attestation"
 autonumber "(00)"
 skinparam defaultFontSize 10
 skinparam defaultFontName Helvetica
