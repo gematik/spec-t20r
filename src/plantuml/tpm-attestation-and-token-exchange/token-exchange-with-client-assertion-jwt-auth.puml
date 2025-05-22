@@ -43,7 +43,7 @@ alt Client has no valid refresh token
         "exp": ..., // Short-lived
         "iat": ...,
         "jti": "...",
-        "nonce": "<Challenge from DCR>", // Binding to DCR
+        '"nonce": "<Challenge from DCR>", // Binding to DCR
         "scope": ... // As required for the Resource Server access
       }
   end note
