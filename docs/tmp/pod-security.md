@@ -16,6 +16,7 @@ Das Sichern eines Pods ist keine einmalige Aufgabe, sondern ein kontinuierlicher
   - [Datenschutz und Geheimnisverwaltung](#datenschutz-und-geheimnisverwaltung)
   - [Cluster- und Infrastruktur-Sicherheit (Wirkt sich auf Pods aus)](#cluster--und-infrastruktur-sicherheit-wirkt-sich-auf-pods-aus)
   - [Betriebliche und Prozessuale Maßnahmen](#betriebliche-und-prozessuale-maßnahmen)
+  - [Weiterführende Referenzen](#weiterführende-referenzen)
 
 ---
 
@@ -127,3 +128,13 @@ Das Sichern eines Pods ist keine einmalige Aufgabe, sondern ein kontinuierlicher
     - Behandeln Sie Ihre Pods als unveränderlich: Bei Änderungen werden Pods neu erstellt, nicht aktualisiert.
 
 ---
+
+## Weiterführende Referenzen
+
+- [OWASP Kubernetes Top Ten](https://owasp.org/www-project-kubernetes-top-ten/)
+- [Kubernetes Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)
+- [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/)
+- [Kubernetes Hardening Guide](https://kubernetes.io/docs/tasks/administer-cluster/securing-a-cluster/)
+- [CIS Kubernetes Benchmark](https://www.cisecurity.org/benchmark/kubernetes/)
+- [Kubernetes Security Whitepaper](https://www.cncf.io/wp-content/uploads/2020/04/CNCF-Kubernetes-Security-Whitepaper.pdf)
+- [Kubernetes Security Audit Tools](https://kubernetes.io/docs/tasks/administer-cluster/security-audit/)
