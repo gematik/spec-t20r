@@ -83,12 +83,9 @@ alt Client has no client_id
          }
       }
   end note
-  AuthS -> AuthS : Validate nonce (Replay Check)
-  AuthS -> AuthS : Validate Client Assertion JWT\n(Signature with Public Key from jwks)
-  AuthS -> AuthS : Calculate expected_combined_data\nHASH(nonce + HASH(PublicKeyFromJWKS))
-  AuthS -> AuthS : Verify qualifyingData in Quote == expected_combined_data
-  AuthS -> AuthS : Validate Client Statement JWT\n(Signature with Public Key from jwks)
-  AuthS -> AuthS : Extract TPM Quote & Cert Chain\nfrom Client Statement
+  AuthS -> AuthS : Validate Request
+  note right: Validate nonce (Replay Check)\nValidate Client Assertion JWT (Signature with Public Key from jwks)\nCalculate expected_combined_data = HASH(nonce + HASH(PublicKeyFromJWKS))\nVerify qualifyingData in Quote == expected_combined_data\nValidate Client Statement JWT (Signature with Public Key from jwks)\nExtract TPM Quote & Cert Chain\nfrom Client Statement
+
   AuthS -> AuthS : Validate TPM Quote Signature\n(using AK Cert Chain / Trusted Roots)
   note right: Checks ensure:\n1. Client owns Private Key.\n2. TPM Quote is valid & from trusted TPM.\n3. **Quote was generated for *this specific* Client Key & Nonce.**\n4. Device state (PCRs) is compliant.\n5. Request is not a replay.
   alt Attestation and Binding valid
