@@ -136,5 +136,4 @@ Das Sichern eines Pods ist keine einmalige Aufgabe, sondern ein kontinuierlicher
 - [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/)
 - [Kubernetes Hardening Guide](https://kubernetes.io/docs/tasks/administer-cluster/securing-a-cluster/)
 - [CIS Kubernetes Benchmark](https://www.cisecurity.org/benchmark/kubernetes/)
-- [Kubernetes Security Whitepaper](https://www.cncf.io/wp-content/uploads/2020/04/CNCF-Kubernetes-Security-Whitepaper.pdf)
 - [Kubernetes Security Audit Tools](https://kubernetes.io/docs/tasks/administer-cluster/security-audit/)
