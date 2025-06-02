@@ -16,45 +16,36 @@ Voraussetzungen: Informationen über benötigte Tools, Bibliotheken oder SDKs.
   - [1.1. Einführung](#11-einführung)
   - [1.2. Inhalt](#12-inhalt)
   - [1.3 Voraussetzungen für die ZETA Client Nutzung](#13-voraussetzungen-für-die-zeta-client-nutzung)
-  - [1.4. Authentifizierung und Autorisierung](#14-authentifizierung-und-autorisierung)
+  - [1.4 Abläufe](#14-abläufe)
+    - [1.4.1 Konfiguration und Discovery](#141-konfiguration-und-discovery)
+    - [1.4.2 Client-Registrierung](#142-client-registrierung)
+    - [1.4.3 Authentifizierung und Autorisierung](#143-authentifizierung-und-autorisierung)
   - [1.5. Endpunkte](#15-endpunkte)
     - [1.5.1 ZETA Guard API Endpunkte](#151-zeta-guard-api-endpunkte)
       - [1.5.1.1 OAuth Protected Resource Well-Known Endpoint](#1511-oauth-protected-resource-well-known-endpoint)
         - [1.5.1.1.1 Basis-URL](#15111-basis-url)
-        - [1.5.1.1.2 Beispielanfragen und -antworten](#15112-beispielanfragen-und--antworten)
-        - [1.5.1.2.3 Antworten und Statuscodes](#15123-antworten-und-statuscodes)
-        - [1.5.1.3.4 Datenstrukturen und Modelle](#15134-datenstrukturen-und-modelle)
-        - [1.5.1.4.5 Rate Limits und Einschränkungen](#15145-rate-limits-und-einschränkungen)
+        - [1.5.1.1.2 Anfragen](#15112-anfragen)
+        - [1.5.1.2.3 Antworten](#15123-antworten)
       - [1.5.1.2 Authorization Server Well-Known Endpoint](#1512-authorization-server-well-known-endpoint)
         - [1.5.1.2.1 Basis-URL](#15121-basis-url)
-        - [1.5.1.2.2 Beispielanfragen und -antworten](#15122-beispielanfragen-und--antworten)
-        - [1.5.1.2.3 Antworten und Statuscodes](#15123-antworten-und-statuscodes-1)
-        - [1.5.1.3.4 Datenstrukturen und Modelle](#15134-datenstrukturen-und-modelle-1)
-        - [1.5.1.4.5 Rate Limits und Einschränkungen](#15145-rate-limits-und-einschränkungen-1)
+        - [1.5.1.2.2 Anfragen](#15122-anfragen)
+        - [1.5.1.2.3 Antworten](#15123-antworten-1)
       - [1.5.1.3 Nonce Endpoint](#1513-nonce-endpoint)
         - [1.5.1.3.1 Basis-URL](#15131-basis-url)
-        - [1.5.1.3.2 Beispielanfragen und -antworten](#15132-beispielanfragen-und--antworten)
-        - [1.5.1.3.3 Antworten und Statuscodes](#15133-antworten-und-statuscodes)
-        - [1.5.1.3.4 Datenstrukturen und Modelle](#15134-datenstrukturen-und-modelle-2)
-        - [1.5.1.3.5 Rate Limits und Einschränkungen](#15135-rate-limits-und-einschränkungen)
+        - [1.5.1.3.2 Anfragen](#15132-anfragen)
+        - [1.5.1.3.3 Antworten](#15133-antworten)
       - [1.5.1.4 Dynamic Client Registration Endpoint](#1514-dynamic-client-registration-endpoint)
         - [1.5.1.4.1 Basis-URL](#15141-basis-url)
-        - [1.5.1.4.2 Beispielanfragen und -antworten](#15142-beispielanfragen-und--antworten)
-        - [1.5.1.4.3 Antworten und Statuscodes](#15143-antworten-und-statuscodes)
-        - [1.5.1.4.4 Datenstrukturen und Modelle](#15144-datenstrukturen-und-modelle)
-        - [1.5.1.4.5 Rate Limits und Einschränkungen](#15145-rate-limits-und-einschränkungen-2)
+        - [1.5.1.4.2 Anfragen](#15142-anfragen)
+        - [1.5.1.4.3 Antworten](#15143-antworten)
       - [1.5.1.5 Token Endpoint](#1515-token-endpoint)
         - [1.5.1.5.1 Basis-URL](#15151-basis-url)
-        - [1.5.1.5.2 Beispielanfragen und -antworten](#15152-beispielanfragen-und--antworten)
-        - [1.5.1.5.3 Antworten und Statuscodes](#15153-antworten-und-statuscodes)
-        - [1.5.1.5.4 Datenstrukturen und Modelle](#15154-datenstrukturen-und-modelle)
-        - [1.5.1.5.5 Rate Limits und Einschränkungen](#15155-rate-limits-und-einschränkungen)
+        - [1.5.1.5.2 Anfragen](#15152-anfragen)
+        - [1.5.1.5.3 Antworten](#15153-antworten)
       - [1.5.1.6 Resource Endpoint](#1516-resource-endpoint)
         - [1.5.1.6.1 Basis-URL](#15161-basis-url)
-        - [1.5.1.6.2 Beispielanfragen und -antworten](#15162-beispielanfragen-und--antworten)
-        - [1.5.1.6.3 Antworten und Statuscodes](#15163-antworten-und-statuscodes)
-        - [1.5.1.6.4 Datenstrukturen und Modelle](#15164-datenstrukturen-und-modelle)
-        - [1.5.1.6.5 Rate Limits und Einschränkungen](#15165-rate-limits-und-einschränkungen)
+        - [1.5.1.6.2 Anfragen](#15162-anfragen)
+        - [1.5.1.6.3 Antworten](#15163-antworten)
     - [1.5.2 Konnektor/TI-Gateway Endpunkte](#152-konnektorti-gateway-endpunkte)
       - [1.5.2.1 getCertificate](#1521-getcertificate)
       - [1.5.2.1 externalAuthenticate](#1521-externalauthenticate)
@@ -62,12 +53,13 @@ Voraussetzungen: Informationen über benötigte Tools, Bibliotheken oder SDKs.
       - [1.5.3.1 getAttestation](#1531-getattestation)
   - [1.6. Versionierung](#16-versionierung)
   - [1.7. Performance- und Lastannahmen](#17-performance--und-lastannahmen)
-  - [1.8. Support und Kontaktinformationen](#18-support-und-kontaktinformationen)
-  - [1.9. FAQs und Troubleshooting](#19-faqs-und-troubleshooting)
-  - [1.10. Interaktive Dokumentation (optional)](#110-interaktive-dokumentation-optional)
-  - [1.11. Changelog](#111-changelog)
-  - [1.12. git Branch Modell](#112-git-branch-modell)
-  - [1.13. Lizenzbedingungen](#113-lizenzbedingungen)
+        - [1.8 Rate Limits und Einschränkungen](#18-rate-limits-und-einschränkungen)
+  - [1.9. Support und Kontaktinformationen](#19-support-und-kontaktinformationen)
+  - [1.10. FAQs und Troubleshooting](#110-faqs-und-troubleshooting)
+  - [1.11. Interaktive Dokumentation (optional)](#111-interaktive-dokumentation-optional)
+  - [1.12. Changelog](#112-changelog)
+  - [1.13. git Branch Modell](#113-git-branch-modell)
+  - [1.14. Lizenzbedingungen](#114-lizenzbedingungen)
 
 ## 1.3 Voraussetzungen für die ZETA Client Nutzung
 
@@ -77,7 +69,13 @@ Für Anwendungsfälle in denen ein PoPP Token benötigt wird, muss das PoPP Toke
 
 Die roots.json Datei wird vom ZETA Client benötigt, um die Trust Chain zu validieren. Diese Datei muss regelmäßig aktualisiert werden.
 
-## 1.4. Authentifizierung und Autorisierung
+## 1.4 Abläufe
+
+### 1.4.1 Konfiguration und Discovery
+
+### 1.4.2 Client-Registrierung
+
+### 1.4.3 Authentifizierung und Autorisierung
 
 Wie können Entwickler sich authentifizieren und welche Berechtigungen gibt es?
 Welche Sicherheitsmaßnahmen sind getroffen?
@@ -88,8 +86,9 @@ Beispiele: Beispielanfragen für die Authentifizierung.
 
 ## 1.5. Endpunkte
 
-### 1.5.1 ZETA Guard API Endpunkte
 
+
+### 1.5.1 ZETA Guard API Endpunkte
 
 Basis-URL: Die grundlegende URL, von der alle API-Aufrufe ausgehen.
 Endpunkte: Detaillierte Beschreibung aller verfügbaren Endpunkte, einschließlich:
@@ -99,182 +98,172 @@ Query-Parameter: Parameter, die in der URL als Abfrage angehängt werden.
 Body-Parameter: Parameter, die im Body einer Anfrage gesendet werden.
 Mögliche Antwortformate (JSON, XML)
 
+Hier ist die API-Beschreibung für den OAuth Protected Resource Well-Known Endpoint, basierend auf den bereitgestellten RFCs und der YAML-Definition, strukturiert nach Ihren Vorgaben.
+
+---
+
 #### 1.5.1.1 OAuth Protected Resource Well-Known Endpoint
 
+Dieser Endpunkt bietet eine standardisierte Methode für OAuth Protected Resources (OPR), um ihre Fähigkeiten und Konfigurationsdetails zu veröffentlichen. Er ermöglicht es Clients und anderen Entitäten, die notwendigen Informationen über die OPR abzurufen, wie z.B. unterstützte Schemata, Verifizierungsmethoden, Token-Introspektion-Endpunkte und unterstützte Scopes. Der Endpunkt ist unter dem Pfad `/.well-known/oauth-protected-resource` relativ zur Basis-URL der Protected Resource erreichbar.
+
+---
 
 ##### 1.5.1.1.1 Basis-URL
 
+Die Basis-URL für den OAuth Protected Resource Well-Known Endpoint ist die Origin (Schema, Host und optionaler Port) der Protected Resource selbst. Der feste Pfad `/.well-known/oauth-protected-resource` wird an diese Basis-URL angehängt.
+
+**Format der URL:**
+`<Basis-URL der Protected Resource>/.well-known/oauth-protected-resource`
+
+**Beispiel:**
+Wenn die Protected Resource unter `https://api.example.com` gehostet wird, wäre die vollständige URL des Endpunkts:
+`https://api.example.com/.well-known/oauth-protected-resource`
+
+---
+
+##### 1.5.1.1.2 Anfragen
+
+Der Endpunkt wird über eine einfache HTTP GET-Anfrage ohne Body oder spezielle Header (außer ggf. `Accept: application/json`) aufgerufen.
+
+**Codebeispiele:**
+
+**Curl:**
+
+```bash
+curl -X GET "https://api.example.com/.well-known/oauth-protected-resource" \
+     -H "Accept: application/json"
+```
+
+---
+
+##### 1.5.1.2.3 Antworten
+
+Wie im obigen Abschnitt dargestellt, ist die typische erfolgreiche API-Antwort ein JSON-Objekt, das der im `opr-well-known.yaml`-Schema definierten Struktur entspricht. Der `Content-Type`-Header der Antwort ist `application/json`.
+
+**Statuscodes:**
+
+- **200 OK:**
+  - **Bedeutung:** Die Anfrage war erfolgreich, und die Konfigurationsdaten der Protected Resource wurden als JSON-Objekt im Antwort-Body zurückgegeben.
+  Eine erfolgreiche Anfrage liefert ein JSON-Objekt, das die Konfiguration der Protected Resource beschreibt. Die genauen Felder hängen von der Implementierung und den unterstützten Fähigkeiten der geschützten Resource ab.
+  - **Beispielantwort:**
+
+Content-Type: application/json
+
+```json
+{
+  "resource": "https://api.example.com",
+  "authorization_servers": [
+    "https://auth1.example.com",
+    "https://auth2.example.com"
+  ],
+  "jwks_uri": "https://api.example.com/.well-known/jwks.json",
+  "scopes_supported": [
+    "read",
+    "write",
+    "delete"
+  ],
+  "bearer_methods_supported": [
+    "header",
+    "body"
+  ],
+  "resource_signing_alg_values_supported": [
+    "RS256",
+    "ES256"
+  ],
+  "resource_name": "Example Protected API",
+  "resource_documentation": "https://docs.example.com/api",
+  "resource_policy_uri": "https://www.example.com/privacy",
+  "resource_tos_uri": "https://www.example.com/terms",
+  "tls_client_certificate_bound_access_tokens": true,
+  "authorization_details_types_supported": [
+    "payment_initiation",
+    "account_access"
+  ],
+  "dpop_signing_alg_values_supported": [
+    "ES256",
+    "RS512"
+  ],
+  "dpop_bound_access_tokens_required": false,
+  "signed_metadata": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZXNvdXJjZSI6Imh0dHBzOi8vYXBpLmV4YW1wbGUuY29tIn0.XYZ123abc456def789",
+  "zeta_asl_use": "required"
+}
+```
 
 
-##### 1.5.1.1.2 Beispielanfragen und -antworten
 
-Codebeispiele: Beispielcode in verschiedenen Programmiersprachen (z.B. Python, JavaScript, Curl), um die API-Aufrufe zu demonstrieren.
-Erwartete Antworten: Darstellung der typischen API-Antworten für die gegebenen Anfragen.
+- **404 Not Found:**
+  - **Bedeutung:** Der angeforderte Well-Known Endpoint konnte auf dem Server nicht gefunden werden. Dies kann daran liegen, dass die Protected Resource diesen Endpunkt nicht hostet oder falsch konfiguriert ist.
+  - **Beispielantwort:**
 
-##### 1.5.1.2.3 Antworten und Statuscodes
+Content-Type: application/problem+json
 
-Beispielantworten: JSON-, XML- oder andere Formatbeispiele der API-Antworten.
-Statuscodes: Liste der möglichen HTTP-Statuscodes mit Erklärungen (z.B. 200 OK, 404 Not Found, 500 Internal Server Error).
-Fehlermeldungen: Beschreibung der möglichen Fehler und wie sie zu beheben sind.
+```json
+{
+  "type": "https://example.com/probs/not-found",
+  "title": "OAuth Protected Resource Configuration Not Found",
+  "status": 404,
+  "detail": "The requested OAuth Protected Resource Well-Known configuration could not be found at this path. Please verify the  base URL.",
+  "instance": "/.well-known/oauth-protected-resource"
+}
+```
 
-##### 1.5.1.3.4 Datenstrukturen und Modelle
+- **500 Internal Server Error:**
+  - **Bedeutung:** Ein unerwarteter Fehler ist auf dem Server der Protected Resource aufgetreten, der die Verarbeitung der Anfrage verhindert hat.
+  - **Beispielantwort:** Ein leerer Body, ein generischer 
+Content-Type: application/problem+json
 
-Datenformate: Erklärung der verwendeten Datenformate (z.B. JSON, XML).
-Datenmodelle: Beschreibung der verwendeten Datenmodelle, inklusive aller Felder und Datentypen.
-Beziehungen: Erklärung von Beziehungen zwischen verschiedenen Datenmodellen, falls zutreffend.
+```json
+{
+  "type": "about:blank",
+  "title": "Internal Server Error",
+  "status": 500,
+  "detail": "An unexpected internal error occurred while processing your request. Please try again later or contact support.",
+  "instance": "/.well-known/oauth-protected-resource",
+  "error_id": "c1f7a9d3e8b2f1c5a7d6e4b0c9f8a1b2" // Optionale anwendungsspezifische Erweiterung
+}
+```
 
-##### 1.5.1.4.5 Rate Limits und Einschränkungen
-
-Rate Limits: Informationen über die Anzahl der erlaubten Anfragen pro Zeiteinheit.
-Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der API-Nutzung, wie z.B. die maximale Größe von Anfragen.
+---
 
 #### 1.5.1.2 Authorization Server Well-Known Endpoint
 
-
 ##### 1.5.1.2.1 Basis-URL
 
+##### 1.5.1.2.2 Anfragen
 
-
-##### 1.5.1.2.2 Beispielanfragen und -antworten
-
-Codebeispiele: Beispielcode in verschiedenen Programmiersprachen (z.B. Python, JavaScript, Curl), um die API-Aufrufe zu demonstrieren.
-Erwartete Antworten: Darstellung der typischen API-Antworten für die gegebenen Anfragen.
-
-##### 1.5.1.2.3 Antworten und Statuscodes
-
-Beispielantworten: JSON-, XML- oder andere Formatbeispiele der API-Antworten.
-Statuscodes: Liste der möglichen HTTP-Statuscodes mit Erklärungen (z.B. 200 OK, 404 Not Found, 500 Internal Server Error).
-Fehlermeldungen: Beschreibung der möglichen Fehler und wie sie zu beheben sind.
-
-##### 1.5.1.3.4 Datenstrukturen und Modelle
-
-Datenformate: Erklärung der verwendeten Datenformate (z.B. JSON, XML).
-Datenmodelle: Beschreibung der verwendeten Datenmodelle, inklusive aller Felder und Datentypen.
-Beziehungen: Erklärung von Beziehungen zwischen verschiedenen Datenmodellen, falls zutreffend.
-
-##### 1.5.1.4.5 Rate Limits und Einschränkungen
-
-Rate Limits: Informationen über die Anzahl der erlaubten Anfragen pro Zeiteinheit.
-Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der API-Nutzung, wie z.B. die maximale Größe von Anfragen.
+##### 1.5.1.2.3 Antworten
 
 #### 1.5.1.3 Nonce Endpoint
 
-
 ##### 1.5.1.3.1 Basis-URL
 
+##### 1.5.1.3.2 Anfragen
 
-
-##### 1.5.1.3.2 Beispielanfragen und -antworten
-
-Codebeispiele: Beispielcode in verschiedenen Programmiersprachen (z.B. Python, JavaScript, Curl), um die API-Aufrufe zu demonstrieren.
-Erwartete Antworten: Darstellung der typischen API-Antworten für die gegebenen Anfragen.
-
-##### 1.5.1.3.3 Antworten und Statuscodes
-
-Beispielantworten: JSON-, XML- oder andere Formatbeispiele der API-Antworten.
-Statuscodes: Liste der möglichen HTTP-Statuscodes mit Erklärungen (z.B. 200 OK, 404 Not Found, 500 Internal Server Error).
-Fehlermeldungen: Beschreibung der möglichen Fehler und wie sie zu beheben sind.
-
-##### 1.5.1.3.4 Datenstrukturen und Modelle
-
-Datenformate: Erklärung der verwendeten Datenformate (z.B. JSON, XML).
-Datenmodelle: Beschreibung der verwendeten Datenmodelle, inklusive aller Felder und Datentypen.
-Beziehungen: Erklärung von Beziehungen zwischen verschiedenen Datenmodellen, falls zutreffend.
-
-##### 1.5.1.3.5 Rate Limits und Einschränkungen
-
-Rate Limits: Informationen über die Anzahl der erlaubten Anfragen pro Zeiteinheit.
-Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der API-Nutzung, wie z.B. die maximale Größe von Anfragen.
-
+##### 1.5.1.3.3 Antworten
 
 #### 1.5.1.4 Dynamic Client Registration Endpoint
 
-
 ##### 1.5.1.4.1 Basis-URL
 
+##### 1.5.1.4.2 Anfragen
 
-
-##### 1.5.1.4.2 Beispielanfragen und -antworten
-
-Codebeispiele: Beispielcode in verschiedenen Programmiersprachen (z.B. Python, JavaScript, Curl), um die API-Aufrufe zu demonstrieren.
-Erwartete Antworten: Darstellung der typischen API-Antworten für die gegebenen Anfragen.
-
-##### 1.5.1.4.3 Antworten und Statuscodes
-
-Beispielantworten: JSON-, XML- oder andere Formatbeispiele der API-Antworten.
-Statuscodes: Liste der möglichen HTTP-Statuscodes mit Erklärungen (z.B. 200 OK, 404 Not Found, 500 Internal Server Error).
-Fehlermeldungen: Beschreibung der möglichen Fehler und wie sie zu beheben sind.
-
-##### 1.5.1.4.4 Datenstrukturen und Modelle
-
-Datenformate: Erklärung der verwendeten Datenformate (z.B. JSON, XML).
-Datenmodelle: Beschreibung der verwendeten Datenmodelle, inklusive aller Felder und Datentypen.
-Beziehungen: Erklärung von Beziehungen zwischen verschiedenen Datenmodellen, falls zutreffend.
-
-##### 1.5.1.4.5 Rate Limits und Einschränkungen
-
-Rate Limits: Informationen über die Anzahl der erlaubten Anfragen pro Zeiteinheit.
-Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der API-Nutzung, wie z.B. die maximale Größe von Anfragen.
-
+##### 1.5.1.4.3 Antworten
 
 #### 1.5.1.5 Token Endpoint
 
-
 ##### 1.5.1.5.1 Basis-URL
 
+##### 1.5.1.5.2 Anfragen
 
-
-##### 1.5.1.5.2 Beispielanfragen und -antworten
-
-Codebeispiele: Beispielcode in verschiedenen Programmiersprachen (z.B. Python, JavaScript, Curl), um die API-Aufrufe zu demonstrieren.
-Erwartete Antworten: Darstellung der typischen API-Antworten für die gegebenen Anfragen.
-
-##### 1.5.1.5.3 Antworten und Statuscodes
-
-Beispielantworten: JSON-, XML- oder andere Formatbeispiele der API-Antworten.
-Statuscodes: Liste der möglichen HTTP-Statuscodes mit Erklärungen (z.B. 200 OK, 404 Not Found, 500 Internal Server Error).
-Fehlermeldungen: Beschreibung der möglichen Fehler und wie sie zu beheben sind.
-
-##### 1.5.1.5.4 Datenstrukturen und Modelle
-
-Datenformate: Erklärung der verwendeten Datenformate (z.B. JSON, XML).
-Datenmodelle: Beschreibung der verwendeten Datenmodelle, inklusive aller Felder und Datentypen.
-Beziehungen: Erklärung von Beziehungen zwischen verschiedenen Datenmodellen, falls zutreffend.
-
-##### 1.5.1.5.5 Rate Limits und Einschränkungen
-
-Rate Limits: Informationen über die Anzahl der erlaubten Anfragen pro Zeiteinheit.
-Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der API-Nutzung, wie z.B. die maximale Größe von Anfragen.
-
+##### 1.5.1.5.3 Antworten
 
 #### 1.5.1.6 Resource Endpoint
 
-
 ##### 1.5.1.6.1 Basis-URL
 
+##### 1.5.1.6.2 Anfragen
 
-
-##### 1.5.1.6.2 Beispielanfragen und -antworten
-
-Codebeispiele: Beispielcode in verschiedenen Programmiersprachen (z.B. Python, JavaScript, Curl), um die API-Aufrufe zu demonstrieren.
-Erwartete Antworten: Darstellung der typischen API-Antworten für die gegebenen Anfragen.
-
-##### 1.5.1.6.3 Antworten und Statuscodes
-
-Beispielantworten: JSON-, XML- oder andere Formatbeispiele der API-Antworten.
-Statuscodes: Liste der möglichen HTTP-Statuscodes mit Erklärungen (z.B. 200 OK, 404 Not Found, 500 Internal Server Error).
-Fehlermeldungen: Beschreibung der möglichen Fehler und wie sie zu beheben sind.
-
-##### 1.5.1.6.4 Datenstrukturen und Modelle
-
-Datenformate: Erklärung der verwendeten Datenformate (z.B. JSON, XML).
-Datenmodelle: Beschreibung der verwendeten Datenmodelle, inklusive aller Felder und Datentypen.
-Beziehungen: Erklärung von Beziehungen zwischen verschiedenen Datenmodellen, falls zutreffend.
-
-##### 1.5.1.6.5 Rate Limits und Einschränkungen
-
-Rate Limits: Informationen über die Anzahl der erlaubten Anfragen pro Zeiteinheit.
-Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der API-Nutzung, wie z.B. die maximale Größe von Anfragen.
+##### 1.5.1.6.3 Antworten
 
 ### 1.5.2 Konnektor/TI-Gateway Endpunkte
 
@@ -284,9 +273,7 @@ Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der AP
 
 ### 1.5.3 ZETA Attestation Service Endpunkte
 
-
 #### 1.5.3.1 getAttestation
-
 
 ## 1.6. Versionierung
 
@@ -305,27 +292,45 @@ Lastannahmen: Informationen über das erwartete Lastverhalten auf der API, wie z
 - ZETA Guard PEP
 - ZETA Guard Refresh Token Exchange
 
-## 1.8. Support und Kontaktinformationen
+##### 1.8 Rate Limits und Einschränkungen
+
+Der OAuth Protected Resource Well-Known Endpoint ist so konfiguriert, dass er eine Rate-Limiting-Strategie implementiert. Der ZETA Client muss die Rate Limits beachten, um eine Überlastung des Endpunkts zu vermeiden. Die genauen Limits können je nach Implementierung variieren, aber typischerweise gelten folgende Richtlinien:
+
+- X-RateLimit-Limit
+- X-RateLimit-Remaining
+- X-RateLimit-Reset
+
+oder:
+
+- RateLimit-Policy
+- RateLimit
+
+**Beispiele**
+
+[Draft RFC für Rate Limits](https://www.ietf.org/archive/id/draft-ietf-httpapi-ratelimit-headers-09.html#name-ratelimit-policy-field)
+
+
+## 1.9. Support und Kontaktinformationen
 
 Hilfe: Informationen darüber, wo und wie Benutzer Unterstützung erhalten können (z.B. Forum, E-Mail-Support).
 Fehlerberichterstattung: Wie können Nutzer Bugs melden oder Feature-Anfragen stellen?
 
-## 1.9. FAQs und Troubleshooting
+## 1.10. FAQs und Troubleshooting
 
 Häufige Fragen: Antworten auf häufige Fragen zur Nutzung der API.
 Fehlerbehebung: Leitfaden zur Behebung häufiger Probleme.
 
-## 1.10. Interaktive Dokumentation (optional)
+## 1.11. Interaktive Dokumentation (optional)
 
 Swagger/OpenAPI: Ein interaktives Interface, mit dem Entwickler API-Endpunkte direkt aus der Dokumentation heraus testen können.
 API-Sandbox: Eine Testumgebung, in der Entwickler sicher mit der API experimentieren können.
 Eine gut strukturierte API-Dokumentation erleichtert es Entwicklern, die API effizient zu nutzen, und trägt dazu bei, häufige Fragen und Probleme zu minimieren.
 
-## 1.11. Changelog
+## 1.12. Changelog
 
 Ein detaillierter Verlauf der Änderungen an der API.
 
-## 1.12. git Branch Modell
+## 1.13. git Branch Modell
 
 In diesem Repository werden Branches verwendet um den Status der Weiterentwicklung und das Review von Änderungen abzubilden.
 
@@ -338,7 +343,7 @@ Folgende Branches werden verwendet
 - *concept/[name]* (in feature branches werden neue Konzepte entwickelt; basiert auf develop; dient der Abstimmung mit Dritten; es erfolgt kein merge; wird nach Bedarf gelöscht)
 - *misc/[name]* (nur für internen Gebrauch der gematik; es erfolgt kein merge; wird nach Bedarf gelöscht)
 
-## 1.13. Lizenzbedingungen
+## 1.14. Lizenzbedingungen
 
 Copyright (c) 2024 gematik GmbH
 
