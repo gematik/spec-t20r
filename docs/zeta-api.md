@@ -17,11 +17,49 @@ Voraussetzungen: Informationen über benötigte Tools, Bibliotheken oder SDKs.
   - [1.2. Inhalt](#12-inhalt)
   - [1.3 Voraussetzungen für die ZETA Client Nutzung](#13-voraussetzungen-für-die-zeta-client-nutzung)
   - [1.4. Authentifizierung und Autorisierung](#14-authentifizierung-und-autorisierung)
-  - [1.5. Basis-URL und Endpunkte](#15-basis-url-und-endpunkte)
-    - [1.5.1. Beispielanfragen und -antworten](#151-beispielanfragen-und--antworten)
-    - [1.5.2. Antworten und Statuscodes](#152-antworten-und-statuscodes)
-    - [1.5.3. Datenstrukturen und Modelle](#153-datenstrukturen-und-modelle)
-    - [1.5.4. Rate Limits und Einschränkungen](#154-rate-limits-und-einschränkungen)
+  - [1.5. Endpunkte](#15-endpunkte)
+    - [1.5.1 ZETA Guard API Endpunkte](#151-zeta-guard-api-endpunkte)
+      - [1.5.1.1 OAuth Protected Resource Well-Known Endpoint](#1511-oauth-protected-resource-well-known-endpoint)
+        - [1.5.1.1.1 Basis-URL](#15111-basis-url)
+        - [1.5.1.1.2 Beispielanfragen und -antworten](#15112-beispielanfragen-und--antworten)
+        - [1.5.1.2.3 Antworten und Statuscodes](#15123-antworten-und-statuscodes)
+        - [1.5.1.3.4 Datenstrukturen und Modelle](#15134-datenstrukturen-und-modelle)
+        - [1.5.1.4.5 Rate Limits und Einschränkungen](#15145-rate-limits-und-einschränkungen)
+      - [1.5.1.2 Authorization Server Well-Known Endpoint](#1512-authorization-server-well-known-endpoint)
+        - [1.5.1.2.1 Basis-URL](#15121-basis-url)
+        - [1.5.1.2.2 Beispielanfragen und -antworten](#15122-beispielanfragen-und--antworten)
+        - [1.5.1.2.3 Antworten und Statuscodes](#15123-antworten-und-statuscodes-1)
+        - [1.5.1.3.4 Datenstrukturen und Modelle](#15134-datenstrukturen-und-modelle-1)
+        - [1.5.1.4.5 Rate Limits und Einschränkungen](#15145-rate-limits-und-einschränkungen-1)
+      - [1.5.1.3 Nonce Endpoint](#1513-nonce-endpoint)
+        - [1.5.1.3.1 Basis-URL](#15131-basis-url)
+        - [1.5.1.3.2 Beispielanfragen und -antworten](#15132-beispielanfragen-und--antworten)
+        - [1.5.1.3.3 Antworten und Statuscodes](#15133-antworten-und-statuscodes)
+        - [1.5.1.3.4 Datenstrukturen und Modelle](#15134-datenstrukturen-und-modelle-2)
+        - [1.5.1.3.5 Rate Limits und Einschränkungen](#15135-rate-limits-und-einschränkungen)
+      - [1.5.1.4 Dynamic Client Registration Endpoint](#1514-dynamic-client-registration-endpoint)
+        - [1.5.1.4.1 Basis-URL](#15141-basis-url)
+        - [1.5.1.4.2 Beispielanfragen und -antworten](#15142-beispielanfragen-und--antworten)
+        - [1.5.1.4.3 Antworten und Statuscodes](#15143-antworten-und-statuscodes)
+        - [1.5.1.4.4 Datenstrukturen und Modelle](#15144-datenstrukturen-und-modelle)
+        - [1.5.1.4.5 Rate Limits und Einschränkungen](#15145-rate-limits-und-einschränkungen-2)
+      - [1.5.1.5 Token Endpoint](#1515-token-endpoint)
+        - [1.5.1.5.1 Basis-URL](#15151-basis-url)
+        - [1.5.1.5.2 Beispielanfragen und -antworten](#15152-beispielanfragen-und--antworten)
+        - [1.5.1.5.3 Antworten und Statuscodes](#15153-antworten-und-statuscodes)
+        - [1.5.1.5.4 Datenstrukturen und Modelle](#15154-datenstrukturen-und-modelle)
+        - [1.5.1.5.5 Rate Limits und Einschränkungen](#15155-rate-limits-und-einschränkungen)
+      - [1.5.1.6 Resource Endpoint](#1516-resource-endpoint)
+        - [1.5.1.6.1 Basis-URL](#15161-basis-url)
+        - [1.5.1.6.2 Beispielanfragen und -antworten](#15162-beispielanfragen-und--antworten)
+        - [1.5.1.6.3 Antworten und Statuscodes](#15163-antworten-und-statuscodes)
+        - [1.5.1.6.4 Datenstrukturen und Modelle](#15164-datenstrukturen-und-modelle)
+        - [1.5.1.6.5 Rate Limits und Einschränkungen](#15165-rate-limits-und-einschränkungen)
+    - [1.5.2 Konnektor/TI-Gateway Endpunkte](#152-konnektorti-gateway-endpunkte)
+      - [1.5.2.1 getCertificate](#1521-getcertificate)
+      - [1.5.2.1 externalAuthenticate](#1521-externalauthenticate)
+    - [1.5.3 ZETA Attestation Service Endpunkte](#153-zeta-attestation-service-endpunkte)
+      - [1.5.3.1 getAttestation](#1531-getattestation)
   - [1.6. Versionierung](#16-versionierung)
   - [1.7. Performance- und Lastannahmen](#17-performance--und-lastannahmen)
   - [1.8. Support und Kontaktinformationen](#18-support-und-kontaktinformationen)
@@ -48,7 +86,10 @@ API-Schlüssel oder Token: Wie erhält der Nutzer einen API-Schlüssel oder ein 
 Autorisierungsverfahren: Beschreibung der verwendeten Authentifizierungsmethoden (z.B. OAuth, Basic Auth).
 Beispiele: Beispielanfragen für die Authentifizierung.
 
-## 1.5. Basis-URL und Endpunkte
+## 1.5. Endpunkte
+
+### 1.5.1 ZETA Guard API Endpunkte
+
 
 Basis-URL: Die grundlegende URL, von der alle API-Aufrufe ausgehen.
 Endpunkte: Detaillierte Beschreibung aller verfügbaren Endpunkte, einschließlich:
@@ -58,27 +99,194 @@ Query-Parameter: Parameter, die in der URL als Abfrage angehängt werden.
 Body-Parameter: Parameter, die im Body einer Anfrage gesendet werden.
 Mögliche Antwortformate (JSON, XML)
 
-### 1.5.1. Beispielanfragen und -antworten
+#### 1.5.1.1 OAuth Protected Resource Well-Known Endpoint
+
+
+##### 1.5.1.1.1 Basis-URL
+
+
+
+##### 1.5.1.1.2 Beispielanfragen und -antworten
 
 Codebeispiele: Beispielcode in verschiedenen Programmiersprachen (z.B. Python, JavaScript, Curl), um die API-Aufrufe zu demonstrieren.
 Erwartete Antworten: Darstellung der typischen API-Antworten für die gegebenen Anfragen.
 
-### 1.5.2. Antworten und Statuscodes
+##### 1.5.1.2.3 Antworten und Statuscodes
 
 Beispielantworten: JSON-, XML- oder andere Formatbeispiele der API-Antworten.
 Statuscodes: Liste der möglichen HTTP-Statuscodes mit Erklärungen (z.B. 200 OK, 404 Not Found, 500 Internal Server Error).
 Fehlermeldungen: Beschreibung der möglichen Fehler und wie sie zu beheben sind.
 
-### 1.5.3. Datenstrukturen und Modelle
+##### 1.5.1.3.4 Datenstrukturen und Modelle
 
 Datenformate: Erklärung der verwendeten Datenformate (z.B. JSON, XML).
 Datenmodelle: Beschreibung der verwendeten Datenmodelle, inklusive aller Felder und Datentypen.
 Beziehungen: Erklärung von Beziehungen zwischen verschiedenen Datenmodellen, falls zutreffend.
 
-### 1.5.4. Rate Limits und Einschränkungen
+##### 1.5.1.4.5 Rate Limits und Einschränkungen
 
 Rate Limits: Informationen über die Anzahl der erlaubten Anfragen pro Zeiteinheit.
 Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der API-Nutzung, wie z.B. die maximale Größe von Anfragen.
+
+#### 1.5.1.2 Authorization Server Well-Known Endpoint
+
+
+##### 1.5.1.2.1 Basis-URL
+
+
+
+##### 1.5.1.2.2 Beispielanfragen und -antworten
+
+Codebeispiele: Beispielcode in verschiedenen Programmiersprachen (z.B. Python, JavaScript, Curl), um die API-Aufrufe zu demonstrieren.
+Erwartete Antworten: Darstellung der typischen API-Antworten für die gegebenen Anfragen.
+
+##### 1.5.1.2.3 Antworten und Statuscodes
+
+Beispielantworten: JSON-, XML- oder andere Formatbeispiele der API-Antworten.
+Statuscodes: Liste der möglichen HTTP-Statuscodes mit Erklärungen (z.B. 200 OK, 404 Not Found, 500 Internal Server Error).
+Fehlermeldungen: Beschreibung der möglichen Fehler und wie sie zu beheben sind.
+
+##### 1.5.1.3.4 Datenstrukturen und Modelle
+
+Datenformate: Erklärung der verwendeten Datenformate (z.B. JSON, XML).
+Datenmodelle: Beschreibung der verwendeten Datenmodelle, inklusive aller Felder und Datentypen.
+Beziehungen: Erklärung von Beziehungen zwischen verschiedenen Datenmodellen, falls zutreffend.
+
+##### 1.5.1.4.5 Rate Limits und Einschränkungen
+
+Rate Limits: Informationen über die Anzahl der erlaubten Anfragen pro Zeiteinheit.
+Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der API-Nutzung, wie z.B. die maximale Größe von Anfragen.
+
+#### 1.5.1.3 Nonce Endpoint
+
+
+##### 1.5.1.3.1 Basis-URL
+
+
+
+##### 1.5.1.3.2 Beispielanfragen und -antworten
+
+Codebeispiele: Beispielcode in verschiedenen Programmiersprachen (z.B. Python, JavaScript, Curl), um die API-Aufrufe zu demonstrieren.
+Erwartete Antworten: Darstellung der typischen API-Antworten für die gegebenen Anfragen.
+
+##### 1.5.1.3.3 Antworten und Statuscodes
+
+Beispielantworten: JSON-, XML- oder andere Formatbeispiele der API-Antworten.
+Statuscodes: Liste der möglichen HTTP-Statuscodes mit Erklärungen (z.B. 200 OK, 404 Not Found, 500 Internal Server Error).
+Fehlermeldungen: Beschreibung der möglichen Fehler und wie sie zu beheben sind.
+
+##### 1.5.1.3.4 Datenstrukturen und Modelle
+
+Datenformate: Erklärung der verwendeten Datenformate (z.B. JSON, XML).
+Datenmodelle: Beschreibung der verwendeten Datenmodelle, inklusive aller Felder und Datentypen.
+Beziehungen: Erklärung von Beziehungen zwischen verschiedenen Datenmodellen, falls zutreffend.
+
+##### 1.5.1.3.5 Rate Limits und Einschränkungen
+
+Rate Limits: Informationen über die Anzahl der erlaubten Anfragen pro Zeiteinheit.
+Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der API-Nutzung, wie z.B. die maximale Größe von Anfragen.
+
+
+#### 1.5.1.4 Dynamic Client Registration Endpoint
+
+
+##### 1.5.1.4.1 Basis-URL
+
+
+
+##### 1.5.1.4.2 Beispielanfragen und -antworten
+
+Codebeispiele: Beispielcode in verschiedenen Programmiersprachen (z.B. Python, JavaScript, Curl), um die API-Aufrufe zu demonstrieren.
+Erwartete Antworten: Darstellung der typischen API-Antworten für die gegebenen Anfragen.
+
+##### 1.5.1.4.3 Antworten und Statuscodes
+
+Beispielantworten: JSON-, XML- oder andere Formatbeispiele der API-Antworten.
+Statuscodes: Liste der möglichen HTTP-Statuscodes mit Erklärungen (z.B. 200 OK, 404 Not Found, 500 Internal Server Error).
+Fehlermeldungen: Beschreibung der möglichen Fehler und wie sie zu beheben sind.
+
+##### 1.5.1.4.4 Datenstrukturen und Modelle
+
+Datenformate: Erklärung der verwendeten Datenformate (z.B. JSON, XML).
+Datenmodelle: Beschreibung der verwendeten Datenmodelle, inklusive aller Felder und Datentypen.
+Beziehungen: Erklärung von Beziehungen zwischen verschiedenen Datenmodellen, falls zutreffend.
+
+##### 1.5.1.4.5 Rate Limits und Einschränkungen
+
+Rate Limits: Informationen über die Anzahl der erlaubten Anfragen pro Zeiteinheit.
+Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der API-Nutzung, wie z.B. die maximale Größe von Anfragen.
+
+
+#### 1.5.1.5 Token Endpoint
+
+
+##### 1.5.1.5.1 Basis-URL
+
+
+
+##### 1.5.1.5.2 Beispielanfragen und -antworten
+
+Codebeispiele: Beispielcode in verschiedenen Programmiersprachen (z.B. Python, JavaScript, Curl), um die API-Aufrufe zu demonstrieren.
+Erwartete Antworten: Darstellung der typischen API-Antworten für die gegebenen Anfragen.
+
+##### 1.5.1.5.3 Antworten und Statuscodes
+
+Beispielantworten: JSON-, XML- oder andere Formatbeispiele der API-Antworten.
+Statuscodes: Liste der möglichen HTTP-Statuscodes mit Erklärungen (z.B. 200 OK, 404 Not Found, 500 Internal Server Error).
+Fehlermeldungen: Beschreibung der möglichen Fehler und wie sie zu beheben sind.
+
+##### 1.5.1.5.4 Datenstrukturen und Modelle
+
+Datenformate: Erklärung der verwendeten Datenformate (z.B. JSON, XML).
+Datenmodelle: Beschreibung der verwendeten Datenmodelle, inklusive aller Felder und Datentypen.
+Beziehungen: Erklärung von Beziehungen zwischen verschiedenen Datenmodellen, falls zutreffend.
+
+##### 1.5.1.5.5 Rate Limits und Einschränkungen
+
+Rate Limits: Informationen über die Anzahl der erlaubten Anfragen pro Zeiteinheit.
+Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der API-Nutzung, wie z.B. die maximale Größe von Anfragen.
+
+
+#### 1.5.1.6 Resource Endpoint
+
+
+##### 1.5.1.6.1 Basis-URL
+
+
+
+##### 1.5.1.6.2 Beispielanfragen und -antworten
+
+Codebeispiele: Beispielcode in verschiedenen Programmiersprachen (z.B. Python, JavaScript, Curl), um die API-Aufrufe zu demonstrieren.
+Erwartete Antworten: Darstellung der typischen API-Antworten für die gegebenen Anfragen.
+
+##### 1.5.1.6.3 Antworten und Statuscodes
+
+Beispielantworten: JSON-, XML- oder andere Formatbeispiele der API-Antworten.
+Statuscodes: Liste der möglichen HTTP-Statuscodes mit Erklärungen (z.B. 200 OK, 404 Not Found, 500 Internal Server Error).
+Fehlermeldungen: Beschreibung der möglichen Fehler und wie sie zu beheben sind.
+
+##### 1.5.1.6.4 Datenstrukturen und Modelle
+
+Datenformate: Erklärung der verwendeten Datenformate (z.B. JSON, XML).
+Datenmodelle: Beschreibung der verwendeten Datenmodelle, inklusive aller Felder und Datentypen.
+Beziehungen: Erklärung von Beziehungen zwischen verschiedenen Datenmodellen, falls zutreffend.
+
+##### 1.5.1.6.5 Rate Limits und Einschränkungen
+
+Rate Limits: Informationen über die Anzahl der erlaubten Anfragen pro Zeiteinheit.
+Nutzungseinschränkungen: Informationen über eventuelle Einschränkungen der API-Nutzung, wie z.B. die maximale Größe von Anfragen.
+
+### 1.5.2 Konnektor/TI-Gateway Endpunkte
+
+#### 1.5.2.1 getCertificate
+
+#### 1.5.2.1 externalAuthenticate
+
+### 1.5.3 ZETA Attestation Service Endpunkte
+
+
+#### 1.5.3.1 getAttestation
+
 
 ## 1.6. Versionierung
 
