@@ -1,4 +1,4 @@
-# Zero Trust API
+# ZETA API
 
 ![gematik logo](/images/gematik_logo.svg)
 
@@ -12,7 +12,7 @@ Voraussetzungen: Informationen über benötigte Tools, Bibliotheken oder SDKs.
 
 ## 1.2. Inhalt
 
-- [Zero Trust API](#zero-trust-api)
+- [ZETA API](#zeta-api)
   - [1.1. Einführung](#11-einführung)
   - [1.2. Inhalt](#12-inhalt)
   - [1.3 Voraussetzungen für die ZETA Client Nutzung](#13-voraussetzungen-für-die-zeta-client-nutzung)
