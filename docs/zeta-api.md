@@ -16,9 +16,12 @@ Voraussetzungen: Informationen über benötigte Tools, Bibliotheken oder SDKs.
   - [1.1. Einführung](#11-einführung)
   - [1.2. Inhalt](#12-inhalt)
   - [1.3 Voraussetzungen für die ZETA Client Nutzung](#13-voraussetzungen-für-die-zeta-client-nutzung)
-  - [1.4 Abläufe](#14-abläufe)
+    - [1.3.1 VSDM2](#131-vsdm2)
+  - [1.4 Ablauf](#14-ablauf)
     - [1.4.1 Konfiguration und Discovery](#141-konfiguration-und-discovery)
     - [1.4.2 Client-Registrierung](#142-client-registrierung)
+      - [1.4.2.1 Stationäre Clients](#1421-stationäre-clients)
+      - [1.4.2.2 Mobile Clients](#1422-mobile-clients)
     - [1.4.3 Authentifizierung und Autorisierung](#143-authentifizierung-und-autorisierung)
   - [1.5. Endpunkte](#15-endpunkte)
     - [1.5.1 ZETA Guard API Endpunkte](#151-zeta-guard-api-endpunkte)
@@ -63,21 +66,57 @@ Voraussetzungen: Informationen über benötigte Tools, Bibliotheken oder SDKs.
 
 ## 1.3 Voraussetzungen für die ZETA Client Nutzung
 
-Der FQDN des Resource Servers wird vom ZETA Client benötigt, um die ZETA Guard API zu erreichen.
+Der **FQDN des Resource Servers** wird vom ZETA Client benötigt, um die ZETA Guard API zu erreichen.
 
-Für Anwendungsfälle in denen ein PoPP Token benötigt wird, muss das PoPP Token im Header PoPP an den ZETA Client übergeben werden.
+Die **roots.json Datei** wird vom ZETA Client benötigt, um die Trust Chain zu validieren. Diese Datei muss regelmäßig aktualisiert werden.
 
-Die roots.json Datei wird vom ZETA Client benötigt, um die Trust Chain zu validieren. Diese Datei muss regelmäßig aktualisiert werden.
+Zusätzlich gibt es anwendungsspezifische Voraussetzungen, die für die Nutzung der ZETA Guard API erforderlich sind.
 
-## 1.4 Abläufe
+### 1.3.1 VSDM2
+
+Für VSDM2 Requests wird ein PoPP (Proof of Patient Presence) Token benötigt. Das PoPP Token muss im **Header PoPP** an den ZETA Client übergeben werden.
+
+## 1.4 Ablauf
+
+Die ZETA API ermöglicht es ZETA Clients, auf geschützte Ressourcen zuzugreifen und dabei Sicherheits- und Authentifizierungsmechanismen zu nutzen. Abhängig vom Zustand des ZETA Clients müssen verschiedene Teilabläufe ausgeführt werden, oder können übersprungen werden.
+Die ZETA API besteht aus mehreren Endpunkten, die verschiedene Funktionen bereitstellen. Diese Endpunkte sind in verschiedene Kategorien unterteilt, um die Nutzung zu erleichtern. Die wichtigsten Abläufe sind:
+
+- Konfiguration und Discovery: Der ZETA Client muss die Konfiguration der ZETA Guard API kennen, um die Endpunkte zu erreichen.
+- Client-Registrierung: Der ZETA Client muss sich bei der ZETA Guard API registrieren, um Zugriff auf geschützte Ressourcen zu erhalten.
+- Authentifizierung und Autorisierung: Der Nutzer muss sich authentifizieren, um auf geschützte Ressourcen zuzugreifen.
+
+Die ZETA API ist so konzipiert, dass sie eine sichere und flexible Interaktion zwischen ZETA Clients und geschützten Ressourcen ermöglicht. Die folgenden Abschnitte beschreiben die einzelnen Abläufe im Detail.
+
+---
 
 ### 1.4.1 Konfiguration und Discovery
 
 ### 1.4.2 Client-Registrierung
 
+Der ZETA Client benötigt eine Client Registrierung an jedem ZETA Guard, über den auf geschützte Ressourcen zugegriffen werden soll. Die Registrierung erfolgt über den Dynamic Client Registration Endpoint der ZETA Guard API.
+
+Für die Registrierung wird eine Client Identität benötigt (Client Instance Key Pair), die vom ZETA Client generiert wird. Diese Identität wird verwendet, um den ZETA Client bei der ZETA Guard API zu identifizieren und zu authentifizieren.
+Die Registrierung erfolgt einmalig.
+
+#### 1.4.2.1 Stationäre Clients
+
+Die Registrierung erfolgt über den Dynamic Client Registration Endpoint der ZETA Guard API. Der ZETA Client sendet eine Anfrage an diesen Endpunkt, um sich zu registrieren. Die Anfrage enthält:
+
+- Client Metadaten (Client Name, Client Instance Public Key)
+- Eine nonce, die vom ZETA Guard generiert wird
+- Client Attestation Informationen, die den ZETA Client identifizieren
+- Eine Signatur der Anfrage, die mit dem Client Instance Private Key erstellt wurde
+- Zusätzliche Informationen wie Redirect URIs, etc.
+
+Die ZETA Guard API prüft die Anfrage und registriert den ZETA Client. Nach erfolgreicher Registrierung erhält der ZETA Client eine Client ID, die für die Authentifizierung bei der ZETA Guard API verwendet wird.
+
+#### 1.4.2.2 Mobile Clients
+
+Die Registrierung für mobile Clients erfolgt ähnlich wie bei stationären Clients.
+
 ### 1.4.3 Authentifizierung und Autorisierung
 
-Wie können Entwickler sich authentifizieren und welche Berechtigungen gibt es?
+Wie können Nutzer sich authentifizieren und welche Berechtigungen gibt es?
 Welche Sicherheitsmaßnahmen sind getroffen?
 
 API-Schlüssel oder Token: Wie erhält der Nutzer einen API-Schlüssel oder ein Authentifizierungstoken?
@@ -85,8 +124,6 @@ Autorisierungsverfahren: Beschreibung der verwendeten Authentifizierungsmethoden
 Beispiele: Beispielanfragen für die Authentifizierung.
 
 ## 1.5. Endpunkte
-
-
 
 ### 1.5.1 ZETA Guard API Endpunkte
 
