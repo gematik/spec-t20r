@@ -42,8 +42,10 @@ Die ZETA API ist so konzipiert, dass sie eine sichere und flexible Interaktion z
       - [1.5.1.4 Dynamic Client Registration Endpoint](#1514-dynamic-client-registration-endpoint)
         - [1.5.1.4.1 Anfragen für stationäre Clients](#15141-anfragen-für-stationäre-clients)
         - [1.5.1.4.2 Antworten](#15142-antworten)
+        - [1.5.1.4.3 Anfragen für mobile Clients](#15143-anfragen-für-mobile-clients)
       - [1.5.1.5 Token Endpoint](#1515-token-endpoint)
         - [1.5.1.5.1 Anfragen](#15151-anfragen)
+    - [Beispiel Anfrage](#beispiel-anfrage)
         - [1.5.1.5.2 Antworten](#15152-antworten)
       - [1.5.1.6 Resource Endpoint](#1516-resource-endpoint)
         - [1.5.1.6.1 Anfragen](#15161-anfragen)
@@ -126,6 +128,8 @@ Autorisierungsverfahren: Beschreibung der verwendeten Authentifizierungsmethoden
 Beispiele: Beispielanfragen für die Authentifizierung.
 
 ## 1.5. Endpunkte
+
+TODO: TLS Vorgaben beschreiben
 
 ### 1.5.1 ZETA Guard API Endpunkte
 
@@ -556,13 +560,13 @@ Der Authorization Server antwortet mit verschiedenen HTTP-Statuscodes und entspr
   "type": "https://httpstatuses.com/400",
   "title": "Bad Request",
   "status": 400,
-  "detail": "Invalid request parameters. Please check your input.",
+  "detail": "Invalid request parameters.",
   "instance": "/register"
 }
 ```
 
 - **409 Conflict  :**
-  - **Bedeutung:** Ein Client mit der angegebenen `software_statement` existiert bereits.
+  - **Bedeutung:** Ein Client mit dem angegebenen `Client_Instance_Public_Key` existiert bereits.
   - **Content-Type:** `application/problem+json`
   - **Beispiel Antwort:**
 
@@ -571,7 +575,7 @@ Der Authorization Server antwortet mit verschiedenen HTTP-Statuscodes und entspr
   "type": "https://httpstatuses.com/409",
   "title": "Conflict",
   "status": 409,
-  "detail": "A client with the provided software statement already exists.",
+  "detail": "A client with the provided Client_Instance_Public_Key already exists.",
   "instance": "/register"
 }
 ```
@@ -592,12 +596,166 @@ Der Authorization Server antwortet mit verschiedenen HTTP-Statuscodes und entspr
 
 ---
 
+##### 1.5.1.4.3 Anfragen für mobile Clients
+
+Die Registrierung für mobile Clients erfolgt ähnlich wie bei stationären Clients, jedoch mit anderen Anforderungen an die Client-Attestation, die auf den jeweiligen Plattformen basieren. Mobile Clients verwenden eine spezifische Attestierungsmethode, die auf den Betriebssystemen basiert (z.B. Android SafetyNet, iOS DeviceCheck).
+
+Die Beschreibung wird in Stufe 2 der ZETA API ergänzt.
 
 #### 1.5.1.5 Token Endpoint
 
+Der Token Endpoint des Autorisierungsservers (AS) ermöglicht den Austausch eines Tokens gegen ein vom Authorizationserver ausgestelltes Access Token, gemäß dem OAuth 2.0 Token Exchange (RFC 8693). Der Client muss sich mit einer JWT Client Assertion gegenüber den Authorizationserver authentifizieren.
+
+Der Endpunkt ist ein POST-Endpunkt, der Formular-kodierte Daten (`application/x-www-form-urlencoded`) im Body erwartet und JSON-Objekte im Erfolgsfall oder "Problem Details" im Fehlerfall zurückgibt.
+
+Der Endpunkt unterstützt verschiedene Grant Types, einschließlich `authorization_code`, `refresh_token` und `urn:ietf:params:oauth:grant-type:token-exchange`.
+
 ##### 1.5.1.5.1 Anfragen
 
+Der Token Endpoint empfängt POST-Anfragen mit dem Content-Type `application/x-www-form-urlencoded`. Die Anfrage muss die notwendigen Parameter für den Token Exchange Grant Type enthalten, sowie die Client-Authentifizierung mittels JWT Bearer Client Assertion.
+
+**HTTP Methode:** `POST`
+**Pfad:** `/token`
+**Content-Type:** `application/x-www-form-urlencoded`
+
+**Anfrageparameter:**
+
+| Parameter              | Typ      | Erforderlich | Beschreibung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| :--------------------- | :------- | :----------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grant_type`           | `string` | Ja           | Der Grant Type. Für Token Exchange ist dies immer `urn:ietf:params:oauth:grant-type:token-exchange`.|
+| `client_assertion_type`| `string` | Ja           | Gibt den Typ der Client Assertion an. Für JWT Bearer Client Assertion ist dies immer `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`.|
+| `client_assertion`     | `string` | Ja           | Die JWT, die zur Authentifizierung des Clients dient. Diese JWT muss vom Client signiert sein und folgende Claims enthalten: <br/>- `iss` (Issuer): Die Client ID.<br/>- `sub` (Subject): Die Client ID.<br/>- `aud` (Audience): Die URL des Token Endpoints.<br/>- `exp` (Expiration Time): Die Zeit, nach der die JWT ungültig wird.<br/>- `jti` (JWT ID): Ein eindeutiger Bezeichner für diese JWT, um Replay-Angriffe zu verhindern.<br/>- `iat` (Issued At): Zeitpunkt der Ausstellung der JWT. |
+| `resource`        | `string` | Ja           | Eine URI, die den Zieldienst oder die Zielressource angibt, für die der Client das angeforderte Sicherheitstoken verwenden möchte. Dadurch kann der Autorisierungsserver die für das Ziel geeigneten Richtlinien anwenden, z. B. den Typ und Inhalt des auszugebenden Tokens bestimmen oder festlegen, ob und wie das Token verschlüsselt werden soll. |
+| `subject_token_type`   | `string` | Ja           | Der Typ des Tokens, das ausgetauscht werden soll. Beispiele könnten sein: `urn:ietf:params:oauth:token-type:access_token`, `urn:ietf:params:oauth:token-type:jwt` oder andere spezifische URIs.|
+| `subject_token`        | `string` | Ja           | Das eigentliche Token, das ausgetauscht werden soll. Dies kann ein JWT, ein Referenz-Token oder ein anderes Format sein, abhängig vom `subject_token_type`.                                                  | `scope`                | `string` | Optional     | Eine durch Leerzeichen getrennte Liste von Scopes, für die der Access Token ausgestellt werden soll. Wenn nicht angegeben, werden die mit dem `subject_token` und/oder Client verbundenen Standard-Scopes verwendet.
+
+### Beispiel Anfrage
+
+```bash
+curl -X POST \
+  https://as.example.com/token \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&' \
+  -d 'client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&' \
+  -d 'client_assertion=eyJhbGciOiJFUzI1NiIsImtpZCI6InNvbWVfa2V5X2lkIn0.eyJpc3MiOiJjbGllbnRfaWQwMDEiLCJzdWIiOiJjbGllbnRfaWQwMDEiLCJhdWQiOiJodHRwczovL2F1dGhvcml6YXRpb24uc2VydmVyLmRlL3Rva2VuIiwiZXhwIjoxNjk1NTA0NjAwLCJpYXQiOjE2OTU1MDI4MDAsImp0aSI6ImFiYzEyMzQ1NiJ9.SOME_SIGNATURE_PART_ONE.SOME_SIGNATURE_PART_TWO&' \
+  -d 'resource=https%3A%2F%2Fapi.example.com%2F/resource&' \
+  -d 'subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Ajwt&' \
+  -d 'subject_token=eyJhbGciOiJFUzI1NiIsImtpZCI6InNvbWVfc3ViamVjdF9rZXlfaWQifQ.eyJpc3MiOiJzb21lX3N1YmplY3RfYXV0aG9yaXR5Iiwic3ViIjoiMTIzNDU2Nzg5MCIsImF1ZCI6Imh0dHBzOi8vYXV0aG9yaXphdGlvbi5zZXJ2ZXIuZGUvdG9rZW4iLCJleHAiOjE2OTU1MDI4NjAsImlhdCI6MTY5NTUwMjgwMH0.ANOTHER_SIGNATURE_PART_ONE.ANOTHER_SIGNATURE_PART_TWO&' \
+  -d 'scope=resource.read%20resource.write'
+```
+
 ##### 1.5.1.5.2 Antworten
+
+Antworten werden als JSON-Objekte mit dem `Content-Type: application/json` im Erfolgsfall und `application/problem+json` im Fehlerfall zurückgegeben. Fehlerantworten folgen dem "Problem Details for HTTP APIs"-Standard (RFC 9457).
+
+**Statuscodes:**
+
+- **200 OK:**
+  - **Bedeutung:** Die Anfrage war erfolgreich, und der Server gibt das Access Token und andere Metadaten zurück.
+  - **Content-Type:** `application/json`
+  - **Beispiel Antwort:**
+
+```json
+{
+  "access_token": "eyJhbGciOiJFUzI1NiIsImtpZCI6InRva2VuX2tleV9pZCJ9.eyJpc3MiOiJhdXRoLnNlcnZlci5kZSIsImV4cCI6MTY5NTUwMjgwMCwiYXVkIjpbInJlc291cmNlLnNlcnZlci5kZSJdLCJzdWIiOiIxMjM0NTY3ODkwIiwiY2xpZW50X2lkIjoiZXhhbXBsZV9jbGllbnRfaWQiLCJpYXQiOjE2OTU1MDI4MDAsImp0aSI6ImV4YW1wbGVfamRpX3ZhbHVlIiwic2NvcGUiOiJyZXNvdXJjZS5yZWFkIHJlc291cmNlLndyaXRlIiwiY25mIjp7ImprdCI6ImV4YW1wbGVfamt0X2hhc2gifX0.NEW_SIGNATURE_PLACEHOLDER",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "resource.read resource.write",
+  "refresh_token": "some_refresh_token_string",
+  "issued_token_type": "urn:ietf:params:oauth:token-type:access_token"
+}
+```
+
+**Inhalt des Access Tokens:**
+
+```json
+{
+  "iss": "auth.server.de",
+  "exp": 1695502800,
+  "aud": ["resource.server.de"],
+  "sub": "1234567890",
+  "client_id": "my_oauth_client_id",
+  "iat": 1695502800,
+  "jti": "a_unique_jwt_identifier_12345",
+  "scope": "resource.read resource.write",
+  "cnf": {
+    "jkt": "S7uGv0kQ0g2J_2z8Y_yXm-X_yL0_yXk_Xk_yY1W_Xk"
+  }
+}
+```
+
+- **400 Bad Request:**
+  - **Bedeutung:** Die Anfrage war fehlerhaft, z.B. fehlende oder ungültige Parameter.
+  - **Content-Type:** `application/problem+json`
+  - **Beispiel Antwort:**
+
+```json
+{
+  "type": "https://httpstatuses.com/400",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Invalid request parameters.",
+  "instance": "/token"
+}
+```
+- **401 Unauthorized:**
+  - **Bedeutung:** Die Client-Authentifizierung ist fehlgeschlagen, z.B. ungültige Client Assertion.
+  - **Content-Type:** `application/problem+json`
+  - **Beispiel Antwort:**
+
+```json
+{
+  "type": "https://httpstatuses.com/401",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Client authentication failed.",
+  "instance": "/token"
+}
+```
+
+- **403 Forbidden:**
+  - **Bedeutung:** Der Client ist nicht berechtigt, den Token Exchange durchzuführen, z.B. wenn der `subject_token` nicht gültig ist oder der Client nicht die erforderlichen Berechtigungen hat.
+  - **Content-Type:** `application/problem+json`
+  - **Beispiel Antwort:**
+
+```json
+{
+  "type": "https://httpstatuses.com/403",
+  "title": "Forbidden",
+  "status": 403,
+  "detail": "The client is not authorized to perform this token exchange.",
+  "instance": "/token"
+}
+```
+
+- **429 Too Many Requests:**
+  - **Bedeutung:** Der Client hat die Rate-Limits überschritten.
+  - **Content-Type:** `application/problem+json`
+  - **Beispiel Antwort:**
+
+```json
+{
+  "type": "https://httpstatuses.com/429",
+  "title": "Too Many Requests",
+  "status": 429,
+  "detail": "Rate limit exceeded. Please try again later.",
+  "instance": "/token"
+}
+```
+- **500 Internal Server Error:**
+  - **Bedeutung:** Ein unerwarteter Fehler ist auf dem Server aufgetreten, der die Anfrage nicht verarbeiten konnte.
+  - **Content-Type:** `application/problem+json`
+  - **Beispiel Antwort:**
+
+```json
+{
+  "type": "https://httpstatuses.com/500",
+  "title": "Internal Server Error",
+  "status": 500,
+  "detail": "An unexpected error occurred while processing your request.",
+  "instance": "/token"
+}
+```
 
 #### 1.5.1.6 Resource Endpoint
 
