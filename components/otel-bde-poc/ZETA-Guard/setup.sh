@@ -22,7 +22,7 @@ usage() {
     echo "  - docker   (https://docs.docker.com/get-docker/)"
     echo "  - kind     (https://kind.sigs.k8s.io/docs/user/quick-start/#installation)"
     echo "  - kubectl  (https://kubernetes.io/docs/tasks/tools/)"
-    echo "  - istioctl (https://istio.io/latest/docs/setup/getting-started/)"
+    #echo "  - istioctl (https://istio.io/latest/docs/setup/getting-started/)"
     echo ""
     echo "Hinweis: Die Installation mit snap (Ubuntu) führt zu Fehlern."
     echo "         Verwende apt install."
