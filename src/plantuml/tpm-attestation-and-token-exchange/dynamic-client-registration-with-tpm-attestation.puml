@@ -75,7 +75,6 @@ alt Client has no client_id
         "token_endpoint_auth_method": "private_key_jwt",
         "grant_types": ["urn:ietf:params:oauth:grant-type:token-exchange","refresh_token"],
         "jwks": { "keys": [ <Client_Instance_Public_Key_JWK> ] },
-        "nonce": "<nonce>", // From GET /nonce, for replay protection & binding check
         // Custom parameter for attestation:
         "urn:gematik:params:oauth:client-attestation-type:tpm2": {
            "client_statement": "<Base64(Client Statement JWT)>",
