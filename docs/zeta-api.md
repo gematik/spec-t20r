@@ -1,14 +1,19 @@
-# ZETA API
-
 ![gematik logo](/images/gematik_logo.svg)
 
-Eine gute API-Dokumentation sollte umfassend und klar strukturiert sein, um Entwicklern die Nutzung der API so einfach wie möglich zu machen. Hier sind die wichtigsten Elemente, die eine gute API-Dokumentation enthalten sollte:
+# ZETA API
 
 ## 1.1. Einführung
 
-Zweck der API: Eine kurze Erklärung, was die API tut und welche Probleme sie löst.
-Zielgruppe: Wer sollte diese API nutzen? Welche technischen Vorkenntnisse werden erwartet?
-Voraussetzungen: Informationen über benötigte Tools, Bibliotheken oder SDKs.
+Die ZETA API ermöglicht es ZETA Clients, auf geschützte Ressourcen zuzugreifen und dabei Sicherheits- und Authentifizierungsmechanismen zu nutzen.
+Diese API nutzt Endpunkte des ZETA Guard für die Client-Registrierung, Authentifizierung und Autorisierung.
+
+Stationäre Clients verwenden bei der Registrierung und bei der Authentifizierung Endpunkte des Konnektors/TI-Gateways und des ZETA Attestation Service.
+
+Mobile Clients verwenden bei der Registrierung Endpunkte der betriebssystem-spezifischen Attestierung. Die Authentifizierung erfolgt mit OpenID Connect (OIDC) und der ZETA Guard API.
+
+Die ZETA API ist so konzipiert, dass sie eine sichere und flexible Interaktion zwischen ZETA Clients und geschützten Ressourcen ermöglicht. Sie basiert auf den Standards des OAuth 2.0 Frameworks und erweitert diese um spezifische Anforderungen der gematik.
+
+---
 
 ## 1.2. Inhalt
 
@@ -35,7 +40,7 @@ Voraussetzungen: Informationen über benötigte Tools, Bibliotheken oder SDKs.
         - [1.5.1.3.1 Anfragen](#15131-anfragen)
         - [1.5.1.3.2 Antworten](#15132-antworten)
       - [1.5.1.4 Dynamic Client Registration Endpoint](#1514-dynamic-client-registration-endpoint)
-        - [1.5.1.4.1 Anfragen](#15141-anfragen)
+        - [1.5.1.4.1 Anfragen für stationäre Clients](#15141-anfragen-für-stationäre-clients)
         - [1.5.1.4.2 Antworten](#15142-antworten)
       - [1.5.1.5 Token Endpoint](#1515-token-endpoint)
         - [1.5.1.5.1 Anfragen](#15151-anfragen)
@@ -207,8 +212,6 @@ Content-Type: application/json
 }
 ```
 
-
-
 - **404 Not Found:**
   - **Bedeutung:** Der angeforderte Well-Known Endpoint konnte auf dem Server nicht gefunden werden. Dies kann daran liegen, dass die Protected Resource diesen Endpunkt nicht hostet oder falsch konfiguriert ist.
   - **Beispielantwort:**
@@ -240,12 +243,13 @@ Content-Type: application/problem+json
 }
 ```
 
-
 ---
 
 #### 1.5.1.2 Authorization Server Well-Known Endpoint
 
 Dieser Endpunkt ermöglicht Clients und anderen Parteien die einfache Entdeckung der Konfigurationsmetadaten eines OAuth 2.0 Autorisierungsservers (AS) und seiner Fähigkeiten. Er ist gemäß RFC 8414 definiert und bietet eine standardisierte Methode, um Informationen wie Endpunkt-URIs, unterstützte Grant Types und Scopes abzurufen, ohne diese manuell konfigurieren zu müssen.
+
+---
 
 ##### 1.5.1.2.1 Anfragen
 
@@ -349,6 +353,8 @@ Dies tritt auf, wenn ein unerwarteter Fehler auf dem Server auftritt, der die An
 
 Dieser Endpunkt ermöglicht Clients das Abrufen eines einmaligen kryptographischen Werts, einer sogenannten "Nonce". Die Nonce dient in der Regel dem Schutz vor Replay-Angriffen und wird typischerweise von OpenID Connect Clients verwendet, um die Integrität und Einmaligkeit von ID-Tokens zu gewährleisten. Der Client sendet die erhaltene Nonce als Parameter an den Autorisierungs-Endpunkt, und der Authorization Server gibt sie unverändert im ID-Token zurück. Der Client kann dann überprüfen, ob die Nonce im ID-Token mit der ursprünglich gesendeten übereinstimmt.
 
+---
+
 ##### 1.5.1.3.1 Anfragen
 
 **Beispiel Anfrage:**
@@ -359,6 +365,7 @@ Host: api.example.com
 Accept: application/json
 ```
 
+---
 
 ##### 1.5.1.3.2 Antworten
 
@@ -409,7 +416,6 @@ Dieser Fehler tritt auf, wenn der Client die vom Server festgelegten Ratenbegren
 
 ```json
 {
-  
   "type": "tag:authorization.example.com,2023:oauth:nonce:rate_limit_exceeded",
   "title": "Rate Limit Exceeded",
   "status": 429,
@@ -438,11 +444,154 @@ Dies tritt auf, wenn ein unerwarteter Fehler auf dem Server auftritt, der die An
 }
 ```
 
+---
+
 #### 1.5.1.4 Dynamic Client Registration Endpoint
 
-##### 1.5.1.4.1 Anfragen
+Dieser Endpunkt ermöglicht die dynamische Registrierung neuer OAuth 2.0 Clients beim Authorization Server. Im Unterschied zur standardisierten dynamischen Client-Registrierung gemäß RFC 7591 erfordert dieser Endpunkt eine zusätzliche Validierung in Form eines `software_statement`, das TPM-Attestierungsnachweise und Software-Metadaten enthält. Die Registrierung muss über eine TLS-geschützte Verbindung erfolgen.
+
+---
+
+##### 1.5.1.4.1 Anfragen für stationäre Clients
+
+Der Client sendet eine `POST`-Anfrage an den `/register`-Endpunkt. Der Anfrage-Body ist ein JSON-Objekt, das die Metadaten des zu registrierenden Clients enthält.
+
+Neben den Standard-Client-Metadaten gemäß RFC 7591 ist ein `software_statement` erforderlich, das den spezifischen Anforderungen des [Dynamic Client Registration-Ablaufs](https://raw.githubusercontent.com/gematik/spec-t20r/refs/heads/develop/images/tpm-attestation-and-token-exchange/dynamic-client-registration-with-tpm-attestation.svg) entspricht. Das `software_statement` ist ein signiertes JWT (JSON Web Token), das die Identität der Software und zusätzliche Attestierungsnachweise enthält. Es muss mit dem Private Key der Client-Instanz signiert sein.
+
+**Erforderliche Parameter im Anfrage-Body:**
+
+| Parameter                   | Typ      | Beschreibung                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| :-------------------------- | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `redirect_uris`             | `array`  | Eine Liste von Redirection-URI-Strings, die der Client für die Weiterleitung von Autorisierungsantworten verwendet. Muss mindestens eine URI enthalten.                                                                                                                                                                                                                                                                                                              |
+| `grant_types`               | `array`  | Eine Liste der unterstützten Grant Types. Empfohlene Werte sind `authorization_code`, `client_credentials`, `refresh_token`.                                                                                                                                                                                                                                                                                                                                        |
+| `software_statement`        | `string` | Ein JWS Compact Serialization string (JWT), der vom Software-Anbieter signiert ist. Dieses JWT muss folgende Claims enthalten: <br> - `software_id` (String): Eine eindeutige ID der Software (z.B. UUID). <br> - `software_version` (String): Die Version der Software. <br> - `organisation_id` (String): Die ID der Organisation, die die Software bereitstellt. <br> - `software_jwk_set` (JSON Object) oder `software_jwk_set_uri` (String): Der Public Key (Set) der Software, typischerweise für die Validierung von Signaturen der Software selbst. <br> - `attestation_cert_chain` (Array of Strings): Eine Kette von PEM-enkodierten X.509-Zertifikaten, die den Nachweis der TPM-Attestierung ermöglichen. <br> - `attestation_jwt` (String): Ein weiteres JWT, das den eigentlichen TPM-Attestierungsnachweis enthält (oft ein Verifiable Credential oder ähnliches). |
+| `jwks` | `string` | Client's JSON Web Key Set [RFC7517] Dokument, dass den Client Public Key enthält.
+
+**Optionale Parameter im Anfrage-Body (gemäß RFC 7591):**
+
+| Parameter                     | Typ      | Beschreibung                                                                                |
+| :---------------------------- | :------- | :------------------------------------------------------------------------------------------ |
+| `client_name`                 | `string` | Name des Clients, der den Endbenutzern angezeigt werden kann.                               |
+| `token_endpoint_auth_method`  | `string` | Authentisierungsmethode am Token-Endpunkt. Standard ist `private_key_jwt`.             |
+
+**Beispiel Anfrage:**
+
+**POST /register:**
+
+**Content-Type:** `application/json`**
+
+```json
+{
+  "redirect_uris": [
+    "https://client.example.org/cb",
+    "https://client.example.org/callback"
+  ],
+  "client_name": "Mein Client",
+  "token_endpoint_auth_method": "private_key_jwt",
+  "grant_types": [
+    "urn:ietf:params:oauth:grant-type:token-exchange",
+    "refresh_token"
+  ],
+  "jwks": {
+    "keys": [ <Client_Instance_Public_Key_JWK> ]
+  },
+  "urn:gematik:params:oauth:client-attestation-type:tpm2": {
+    "client_statement": "<Base64(Client Statement JWT)>",
+    "client_statement_format": "client-statement-jwt"
+  }
+}
+
+```
 
 ##### 1.5.1.4.2 Antworten
+
+Der Authorization Server antwortet mit verschiedenen HTTP-Statuscodes und entsprechenden JSON-Objekten, die entweder die erfolgreiche Registrierung oder Fehlermeldungen gemäß RFC 9457 ("Problem Details for HTTP APIs") beschreiben.
+
+**Statuscodes:**
+
+- **201 Created:**
+  - **Bedeutung:** Die Registrierung war erfolgreich, und der Server gibt die Client-ID und andere Metadaten des registrierten Clients zurück.
+  - **Content-Type:** `application/json`
+  - **Beispiel Antwort:**
+
+```json
+{
+  "client_id": "1234567890abcdef",
+  "client_id_issued_at": 1678886400,
+  "grant_types": [
+    "token-exchange",
+    "refresh_token"
+  ],
+  "token_endpoint_auth_method": "private_key_jwt",
+  "redirect_uris": [
+    "https://client.example.org/cb",
+    "https://client.example.org/callback"
+  ],
+  "client_name": "Mein Client",
+  "jwks": {
+    "keys": [
+      {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x-coordinate",
+        "y": "y-coordinate",
+        "use": "sig"
+      }
+    ]
+  },
+  "urn:gematik:params:oauth:client-attestation-type:tpm2": {
+    "client_statement": "<Base64(Client Statement JWT)>",
+    "client_statement_format": "client-statement-jwt"
+  }
+}
+```
+
+- **400 Bad Request:**
+  - **Bedeutung:** Die Anfrage war fehlerhaft, z.B. fehlende oder ungültige Parameter.
+  - **Content-Type:** `application/problem+json`
+  - **Beispiel Antwort:**
+
+```json
+{
+  "type": "https://httpstatuses.com/400",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Invalid request parameters. Please check your input.",
+  "instance": "/register"
+}
+```
+
+- **409 Conflict  :**
+  - **Bedeutung:** Ein Client mit der angegebenen `software_statement` existiert bereits.
+  - **Content-Type:** `application/problem+json`
+  - **Beispiel Antwort:**
+
+```json
+{
+  "type": "https://httpstatuses.com/409",
+  "title": "Conflict",
+  "status": 409,
+  "detail": "A client with the provided software statement already exists.",
+  "instance": "/register"
+}
+```
+
+- **500 Internal Server Error:**
+  - **Bedeutung:** Ein unerwarteter Fehler ist auf dem Server aufgetreten, der die Anfrage nicht verarbeiten konnte.
+  - **Content-Type:** `application/problem+json`
+  - **Beispiel Antwort:**
+```json
+{
+  "type": "https://httpstatuses.com/500",
+  "title": "Internal Server Error",
+  "status": 500,
+  "detail": "An unexpected error occurred while processing your request.",
+  "instance": "/register"
+}
+```
+
+---
+
 
 #### 1.5.1.5 Token Endpoint
 
