@@ -14,10 +14,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizationServerMetadata'
-        '400':
-          description: Ungültige Anforderung
+        '404':
+          description: Not Found
         '500':
-          description: Interner Serverfehler
+          description: Internal Server Error
 components:
   schemas:
     AuthorizationServerMetadata:

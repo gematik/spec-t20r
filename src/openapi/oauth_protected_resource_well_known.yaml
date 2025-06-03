@@ -17,10 +17,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProtectedResourceMetadata"
-        "400":
-          description: Invalid request.
+        "404":
+          description: Not Found.
         "500":
-          description: Internal server error.
+          description: Internal Server Error.
 
 components:
   schemas:
