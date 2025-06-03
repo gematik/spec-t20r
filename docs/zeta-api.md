@@ -458,31 +458,18 @@ Dieser Endpunkt ermöglicht die dynamische Registrierung neuer OAuth 2.0 Clients
 
 ##### 1.5.1.4.1 Anfragen für stationäre Clients
 
-Der Client sendet eine `POST`-Anfrage an den `/register`-Endpunkt. Der Anfrage-Body ist ein JSON-Objekt, das die Metadaten des zu registrierenden Clients enthält.
+Der Client sendet eine Anfrage an den `/register`-Endpunkt. Der Anfrage-Body ist ein JSON-Objekt, das die Metadaten des zu registrierenden Clients enthält.
 
 Neben den Standard-Client-Metadaten gemäß RFC 7591 ist ein `software_statement` erforderlich, das den spezifischen Anforderungen des [Dynamic Client Registration-Ablaufs](https://raw.githubusercontent.com/gematik/spec-t20r/refs/heads/develop/images/tpm-attestation-and-token-exchange/dynamic-client-registration-with-tpm-attestation.svg) entspricht. Das `software_statement` ist ein signiertes JWT (JSON Web Token), das die Identität der Software und zusätzliche Attestierungsnachweise enthält. Es muss mit dem Private Key der Client-Instanz signiert sein.
 
-**Erforderliche Parameter im Anfrage-Body:**
-
-| Parameter                   | Typ      | Beschreibung                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| :-------------------------- | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `redirect_uris`             | `array`  | Eine Liste von Redirection-URI-Strings, die der Client für die Weiterleitung von Autorisierungsantworten verwendet. Muss mindestens eine URI enthalten.                                                                                                                                                                                                                                                                                                              |
-| `grant_types`               | `array`  | Eine Liste der unterstützten Grant Types. Empfohlene Werte sind `authorization_code`, `client_credentials`, `refresh_token`.                                                                                                                                                                                                                                                                                                                                        |
-| `software_statement`        | `string` | Ein JWS Compact Serialization string (JWT), der vom Software-Anbieter signiert ist. Dieses JWT muss folgende Claims enthalten: <br> - `software_id` (String): Eine eindeutige ID der Software (z.B. UUID). <br> - `software_version` (String): Die Version der Software. <br> - `organisation_id` (String): Die ID der Organisation, die die Software bereitstellt. <br> - `software_jwk_set` (JSON Object) oder `software_jwk_set_uri` (String): Der Public Key (Set) der Software, typischerweise für die Validierung von Signaturen der Software selbst. <br> - `attestation_cert_chain` (Array of Strings): Eine Kette von PEM-enkodierten X.509-Zertifikaten, die den Nachweis der TPM-Attestierung ermöglichen. <br> - `attestation_jwt` (String): Ein weiteres JWT, das den eigentlichen TPM-Attestierungsnachweis enthält (oft ein Verifiable Credential oder ähnliches). |
-| `jwks` | `string` | Client's JSON Web Key Set [RFC7517] Dokument, dass den Client Public Key enthält.
-
-**Optionale Parameter im Anfrage-Body (gemäß RFC 7591):**
-
-| Parameter                     | Typ      | Beschreibung                                                                                |
-| :---------------------------- | :------- | :------------------------------------------------------------------------------------------ |
-| `client_name`                 | `string` | Name des Clients, der den Endbenutzern angezeigt werden kann.                               |
-| `token_endpoint_auth_method`  | `string` | Authentisierungsmethode am Token-Endpunkt. Standard ist `private_key_jwt`.             |
-
 **Beispiel Anfrage:**
 
-**POST /register:**
-
-**Content-Type:** `application/json`**
+```http
+POST /register HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-type: application/json
+```
 
 ```json
 {
@@ -506,6 +493,22 @@ Neben den Standard-Client-Metadaten gemäß RFC 7591 ist ein `software_statement
 }
 
 ```
+
+**Erforderliche Parameter im Anfrage-Body:**
+
+| Parameter                   | Typ      | Beschreibung                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| :-------------------------- | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `redirect_uris`             | `array`  | Eine Liste von Redirection-URI-Strings, die der Client für die Weiterleitung von Autorisierungsantworten verwendet. Muss mindestens eine URI enthalten.                                                                                                                                                                                                                                                                                                              |
+| `grant_types`               | `array`  | Eine Liste der unterstützten Grant Types (`authorization_code`, `urn:ietf:params:oauth:grant-type:token-exchange`, `refresh_token`).                                                                                                                                                                                                                                                                                                                                        |
+| `software_statement`        | `string` | Ein JWS Compact Serialization string (JWT), der vom Software-Anbieter signiert ist. Dieses JWT muss folgende Claims enthalten: <br> - `software_id` (String): Eine eindeutige ID der Software (z.B. UUID). <br> - `software_version` (String): Die Version der Software. <br> - `organisation_id` (String): Die ID der Organisation, die die Software bereitstellt. <br> - `software_jwk_set` (JSON Object) oder `software_jwk_set_uri` (String): Der Public Key (Set) der Software, typischerweise für die Validierung von Signaturen der Software selbst. <br> - `attestation_cert_chain` (Array of Strings): Eine Kette von PEM-enkodierten X.509-Zertifikaten, die den Nachweis der TPM-Attestierung ermöglichen. <br> - `attestation_jwt` (String): Ein weiteres JWT, das den eigentlichen TPM-Attestierungsnachweis enthält (oft ein Verifiable Credential oder ähnliches). |
+| `jwks` | `string` | Client's JSON Web Key Set [RFC7517] Dokument, dass den Client Public Key enthält.
+
+**Optionale Parameter im Anfrage-Body (gemäß RFC 7591):**
+
+| Parameter                     | Typ      | Beschreibung                                                                                |
+| :---------------------------- | :------- | :------------------------------------------------------------------------------------------ |
+| `client_name`                 | `string` | Name des Clients, der den Endbenutzern angezeigt werden kann.                               |
+| `token_endpoint_auth_method`  | `string` | Authentisierungsmethode am Token-Endpunkt. Standard ist `private_key_jwt`.             |
 
 ##### 1.5.1.4.2 Antworten
 
@@ -615,7 +618,9 @@ Der Endpunkt unterstützt verschiedene Grant Types, einschließlich `authorizati
 Der Token Endpoint empfängt POST-Anfragen mit dem Content-Type `application/x-www-form-urlencoded`. Die Anfrage muss die notwendigen Parameter für den Token Exchange Grant Type enthalten, sowie die Client-Authentifizierung mittels JWT Bearer Client Assertion.
 
 **HTTP Methode:** `POST`
+
 **Pfad:** `/token`
+
 **Content-Type:** `application/x-www-form-urlencoded`
 
 **Anfrageparameter:**
