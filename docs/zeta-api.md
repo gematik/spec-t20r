@@ -26,29 +26,26 @@ Voraussetzungen: Informationen über benötigte Tools, Bibliotheken oder SDKs.
   - [1.5. Endpunkte](#15-endpunkte)
     - [1.5.1 ZETA Guard API Endpunkte](#151-zeta-guard-api-endpunkte)
       - [1.5.1.1 OAuth Protected Resource Well-Known Endpoint](#1511-oauth-protected-resource-well-known-endpoint)
-        - [1.5.1.1.1 Basis-URL](#15111-basis-url)
-        - [1.5.1.1.2 Anfragen](#15112-anfragen)
-        - [1.5.1.2.3 Antworten](#15123-antworten)
+        - [1.5.1.1.1 Anfragen](#15111-anfragen)
+        - [1.5.1.2.2 Antworten](#15122-antworten)
       - [1.5.1.2 Authorization Server Well-Known Endpoint](#1512-authorization-server-well-known-endpoint)
-        - [1.5.1.2.1 Basis-URL](#15121-basis-url)
-        - [1.5.1.2.2 Anfragen](#15122-anfragen)
-        - [1.5.1.2.3 Antworten](#15123-antworten-1)
+        - [1.5.1.2.1 Anfragen](#15121-anfragen)
+        - [1.5.1.2.2 Antworten](#15122-antworten-1)
       - [1.5.1.3 Nonce Endpoint](#1513-nonce-endpoint)
-        - [1.5.1.3.1 Basis-URL](#15131-basis-url)
-        - [1.5.1.3.2 Anfragen](#15132-anfragen)
-        - [1.5.1.3.3 Antworten](#15133-antworten)
+        - [1.5.1.3.1 Anfragen](#15131-anfragen)
+        - [1.5.1.3.2 Antworten](#15132-antworten)
       - [1.5.1.4 Dynamic Client Registration Endpoint](#1514-dynamic-client-registration-endpoint)
-        - [1.5.1.4.1 Basis-URL](#15141-basis-url)
-        - [1.5.1.4.2 Anfragen](#15142-anfragen)
-        - [1.5.1.4.3 Antworten](#15143-antworten)
+        - [1.5.1.4.1 Anfragen](#15141-anfragen)
+        - [1.5.1.4.2 Antworten](#15142-antworten)
       - [1.5.1.5 Token Endpoint](#1515-token-endpoint)
-        - [1.5.1.5.1 Basis-URL](#15151-basis-url)
-        - [1.5.1.5.2 Anfragen](#15152-anfragen)
-        - [1.5.1.5.3 Antworten](#15153-antworten)
+        - [1.5.1.5.1 Anfragen](#15151-anfragen)
+        - [1.5.1.5.2 Antworten](#15152-antworten)
       - [1.5.1.6 Resource Endpoint](#1516-resource-endpoint)
-        - [1.5.1.6.1 Basis-URL](#15161-basis-url)
-        - [1.5.1.6.2 Anfragen](#15162-anfragen)
-        - [1.5.1.6.3 Antworten](#15163-antworten)
+        - [1.5.1.6.1 Anfragen](#15161-anfragen)
+        - [1.5.1.6.2 Antworten](#15162-antworten)
+      - [1.5.1.7 JWKS Endpoint](#1517-jwks-endpoint)
+        - [1.5.1.7.1 Anfragen](#15171-anfragen)
+        - [1.5.1.7.2 Antworten](#15172-antworten)
     - [1.5.2 Konnektor/TI-Gateway Endpunkte](#152-konnektorti-gateway-endpunkte)
       - [1.5.2.1 getCertificate](#1521-getcertificate)
       - [1.5.2.1 externalAuthenticate](#1521-externalauthenticate)
@@ -145,35 +142,19 @@ Dieser Endpunkt bietet eine standardisierte Methode für OAuth Protected Resourc
 
 ---
 
-##### 1.5.1.1.1 Basis-URL
+##### 1.5.1.1.1 Anfragen
 
-Die Basis-URL für den OAuth Protected Resource Well-Known Endpoint ist die Origin (Schema, Host und optionaler Port) der Protected Resource selbst. Der feste Pfad `/.well-known/oauth-protected-resource` wird an diese Basis-URL angehängt.
+Der Endpunkt wird über eine einfache HTTP GET-Anfrage ohne Body aufgerufen.
 
-**Format der URL:**
-`<Basis-URL der Protected Resource>/.well-known/oauth-protected-resource`
-
-**Beispiel:**
-Wenn die Protected Resource unter `https://api.example.com` gehostet wird, wäre die vollständige URL des Endpunkts:
-`https://api.example.com/.well-known/oauth-protected-resource`
-
----
-
-##### 1.5.1.1.2 Anfragen
-
-Der Endpunkt wird über eine einfache HTTP GET-Anfrage ohne Body oder spezielle Header (außer ggf. `Accept: application/json`) aufgerufen.
-
-**Codebeispiele:**
-
-**Curl:**
-
-```bash
-curl -X GET "https://api.example.com/.well-known/oauth-protected-resource" \
-     -H "Accept: application/json"
+```http
+GET /.well-known/oauth-protected-resource HTTP/1.1
+Host: api.example.com
+Accept: application/json
 ```
 
 ---
 
-##### 1.5.1.2.3 Antworten
+##### 1.5.1.2.2 Antworten
 
 Wie im obigen Abschnitt dargestellt, ist die typische erfolgreiche API-Antwort ein JSON-Objekt, das der im `opr-well-known.yaml`-Schema definierten Struktur entspricht. Der `Content-Type`-Header der Antwort ist `application/json`.
 
@@ -236,10 +217,10 @@ Content-Type: application/problem+json
 
 ```json
 {
-  "type": "https://example.com/probs/not-found",
+  "type": "https://httpstatuses.com/404",
   "title": "OAuth Protected Resource Configuration Not Found",
   "status": 404,
-  "detail": "The requested OAuth Protected Resource Well-Known configuration could not be found at this path. Please verify the  base URL.",
+  "detail": "The requested OAuth Protected Resource Well-Known configuration could not be found at this path.",
   "instance": "/.well-known/oauth-protected-resource"
 }
 ```
@@ -251,56 +232,234 @@ Content-Type: application/problem+json
 
 ```json
 {
-  "type": "about:blank",
+  "type": "https://httpstatuses.com/500",
   "title": "Internal Server Error",
   "status": 500,
-  "detail": "An unexpected internal error occurred while processing your request. Please try again later or contact support.",
-  "instance": "/.well-known/oauth-protected-resource",
-  "error_id": "c1f7a9d3e8b2f1c5a7d6e4b0c9f8a1b2" // Optionale anwendungsspezifische Erweiterung
+  "detail": "An unexpected error occurred while processing your request.",
+  "instance": "/.well-known/oauth-protected-resource"
 }
 ```
+
 
 ---
 
 #### 1.5.1.2 Authorization Server Well-Known Endpoint
 
-##### 1.5.1.2.1 Basis-URL
+Dieser Endpunkt ermöglicht Clients und anderen Parteien die einfache Entdeckung der Konfigurationsmetadaten eines OAuth 2.0 Autorisierungsservers (AS) und seiner Fähigkeiten. Er ist gemäß RFC 8414 definiert und bietet eine standardisierte Methode, um Informationen wie Endpunkt-URIs, unterstützte Grant Types und Scopes abzurufen, ohne diese manuell konfigurieren zu müssen.
 
-##### 1.5.1.2.2 Anfragen
+##### 1.5.1.2.1 Anfragen
 
-##### 1.5.1.2.3 Antworten
+Dieser Endpunkt wird über eine HTTP GET-Anfrage ohne Parameter aufgerufen.
+
+**Methode:**
+`GET`
+
+**Header:**
+Ein `Accept`-Header mit `application/json` wird empfohlen, um die bevorzugte Antwortformat anzugeben.
+
+**Beispiel Anfrage:**
+
+```http
+GET /.well-known/oauth-authorization-server HTTP/1.1
+Host: api.example.com
+Accept: application/json
+```
+
+---
+
+##### 1.5.1.2.2 Antworten
+
+**Statuscodes:**
+
+- **200 OK:**
+  - **Bedeutung:** Die Anfrage war erfolgreich, und der Server gibt die Konfigurationsmetadaten des Autorisierungsservers als JSON-Objekt zurück.
+  - **Content-Type:** `application/json`
+  - **Beispiel Antwort:**
+
+```json
+{
+  "issuer": "https://api.example.com",
+  "authorization_endpoint": "https://api.example.com/auth",
+  "token_endpoint": "https://api.example.com/token",
+  "jwks_uri": "https://api.example.com/certs",
+  "response_types_supported": [
+    "code",
+    "token"
+  ],
+  "response_modes_supported": [
+    "query",
+    "fragment",
+    "form_post"
+  ],
+  "grant_types_supported": [
+    "authorization_code",
+    "token-exchange",
+    "refresh_token"
+  ],
+  "token_endpoint_auth_methods_supported": [
+    "private_key_jwt"
+  ],
+  "token_endpoint_auth_signing_alg_values_supported": [
+    "ES256"
+  ],
+  "service_documentation": "https://api.example.com/docs",
+  "code_challenge_methods_supported": [
+    "S256"
+  ]
+}
+```
+
+**404 Not Found:**
+
+**Content-Type:**
+`application/problem+json`
+
+Dies tritt auf, wenn der Endpunkt unter der angefragten URL nicht gefunden werden kann.
+
+```json
+{
+  "type": "https://httpstatuses.com/404",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "The requested resource was not found on this server.",
+  "instance": "/.well-known/oauth-authorization-server"
+}
+```
+
+**500 Internal Server Error:**
+
+**Content-Type:**
+`application/problem+json`
+
+Dies tritt auf, wenn ein unerwarteter Fehler auf dem Server auftritt, der die Anfrage nicht verarbeiten konnte.
+
+```json
+{
+  "type": "https://httpstatuses.com/500",
+  "title": "Internal Server Error",
+  "status": 500,
+  "detail": "An unexpected error occurred while processing your request.",
+  "instance": "/.well-known/oauth-authorization-server"
+}
+```
+
+---
 
 #### 1.5.1.3 Nonce Endpoint
 
-##### 1.5.1.3.1 Basis-URL
+Dieser Endpunkt ermöglicht Clients das Abrufen eines einmaligen kryptographischen Werts, einer sogenannten "Nonce". Die Nonce dient in der Regel dem Schutz vor Replay-Angriffen und wird typischerweise von OpenID Connect Clients verwendet, um die Integrität und Einmaligkeit von ID-Tokens zu gewährleisten. Der Client sendet die erhaltene Nonce als Parameter an den Autorisierungs-Endpunkt, und der Authorization Server gibt sie unverändert im ID-Token zurück. Der Client kann dann überprüfen, ob die Nonce im ID-Token mit der ursprünglich gesendeten übereinstimmt.
 
-##### 1.5.1.3.2 Anfragen
+##### 1.5.1.3.1 Anfragen
 
-##### 1.5.1.3.3 Antworten
+**Beispiel Anfrage:**
+
+```http
+GET /nonce HTTP/1.1
+Host: api.example.com
+Accept: application/json
+```
+
+
+##### 1.5.1.3.2 Antworten
+
+**Statuscodes:**
+
+- **200 OK:**
+  - **Bedeutung:** Die Anfrage war erfolgreich, und der Server gibt die Nonce als JSON-Objekt zurück.
+  - **Content-Type:** `application/json`
+  - **Beispiel Antwort:**
+
+```json
+{
+  "nonce": "s.fRzE3M0J_QxL-x.6gA~x",
+  "expires_in": 300
+}
+```
+
+**Felder der erfolgreichen Antwort:**
+
+*   `nonce` (String): Der generierte, einmalige kryptographische Wert.
+*   `expires_in` (Integer): Die Gültigkeitsdauer der Nonce in Sekunden, ab dem Zeitpunkt der Ausstellung. Nach Ablauf dieser Zeit sollte die Nonce vom Server nicht mehr akzeptiert werden.
+
+**404 Not Found:**
+
+**Content-Type:**
+`application/problem+json`
+
+Dies tritt auf, wenn der Endpunkt unter der angefragten URL nicht gefunden werden kann.
+
+```json
+{
+  "type": "https://httpstatuses.com/404",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "The requested resource was not found on this server.",
+  "instance": "/nonce"
+}
+```
+
+**429 Too Many Requests:**
+
+Dieser Fehler tritt auf, wenn der Client die vom Server festgelegten Ratenbegrenzungen überschreitet.
+
+**Content-Type:**
+`application/problem+json`
+
+**Retry-After: 60**
+
+```json
+{
+  "type": "tag:authorization.example.com,2023:oauth:nonce:rate_limit_exceeded",
+  "title": "Rate Limit Exceeded",
+  "status": 429,
+  "detail": "You have exceeded the allowed number of nonce requests. Please try again after 60 seconds.",
+  "instance": "/nonce"
+}
+```
+
+*   `Retry-After` Header (optional): Gibt an, wie viele Sekunden der Client warten sollte, bevor er eine weitere Anfrage stellt.
+
+
+**500 Internal Server Error:**
+
+**Content-Type:**
+`application/problem+json`
+
+Dies tritt auf, wenn ein unerwarteter Fehler auf dem Server auftritt, der die Anfrage nicht verarbeiten konnte.
+
+```json
+{
+  "type": "https://httpstatuses.com/500",
+  "title": "Internal Server Error",
+  "status": 500,
+  "detail": "An unexpected error occurred while processing your request.",
+  "instance": "/nonce"
+}
+```
 
 #### 1.5.1.4 Dynamic Client Registration Endpoint
 
-##### 1.5.1.4.1 Basis-URL
+##### 1.5.1.4.1 Anfragen
 
-##### 1.5.1.4.2 Anfragen
-
-##### 1.5.1.4.3 Antworten
+##### 1.5.1.4.2 Antworten
 
 #### 1.5.1.5 Token Endpoint
 
-##### 1.5.1.5.1 Basis-URL
+##### 1.5.1.5.1 Anfragen
 
-##### 1.5.1.5.2 Anfragen
-
-##### 1.5.1.5.3 Antworten
+##### 1.5.1.5.2 Antworten
 
 #### 1.5.1.6 Resource Endpoint
 
-##### 1.5.1.6.1 Basis-URL
+##### 1.5.1.6.1 Anfragen
 
-##### 1.5.1.6.2 Anfragen
+##### 1.5.1.6.2 Antworten
 
-##### 1.5.1.6.3 Antworten
+#### 1.5.1.7 JWKS Endpoint
+
+##### 1.5.1.7.1 Anfragen
+
+##### 1.5.1.7.2 Antworten
 
 ### 1.5.2 Konnektor/TI-Gateway Endpunkte
 
