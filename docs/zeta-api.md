@@ -409,6 +409,7 @@ Dieser Fehler tritt auf, wenn der Client die vom Server festgelegten Ratenbegren
 
 ```json
 {
+  
   "type": "tag:authorization.example.com,2023:oauth:nonce:rate_limit_exceeded",
   "title": "Rate Limit Exceeded",
   "status": 429,
