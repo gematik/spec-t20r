@@ -133,18 +133,6 @@ TODO: TLS Vorgaben beschreiben
 
 ### 1.5.1 ZETA Guard API Endpunkte
 
-Basis-URL: Die grundlegende URL, von der alle API-Aufrufe ausgehen.
-Endpunkte: Detaillierte Beschreibung aller verfügbaren Endpunkte, einschließlich:
-HTTP-Methode: GET, POST, PUT, DELETE, etc.
-Pfadparameter: Parameter, die in der URL enthalten sind.
-Query-Parameter: Parameter, die in der URL als Abfrage angehängt werden.
-Body-Parameter: Parameter, die im Body einer Anfrage gesendet werden.
-Mögliche Antwortformate (JSON, XML)
-
-Hier ist die API-Beschreibung für den OAuth Protected Resource Well-Known Endpoint, basierend auf den bereitgestellten RFCs und der YAML-Definition, strukturiert nach Ihren Vorgaben.
-
----
-
 #### 1.5.1.1 OAuth Protected Resource Well-Known Endpoint
 
 Dieser Endpunkt bietet eine standardisierte Methode für OAuth Protected Resources (OPR), um ihre Fähigkeiten und Konfigurationsdetails zu veröffentlichen. Er ermöglicht es Clients und anderen Entitäten, die notwendigen Informationen über die OPR abzurufen, wie z.B. unterstützte Schemata, Verifizierungsmethoden, Token-Introspektion-Endpunkte und unterstützte Scopes. Der Endpunkt ist unter dem Pfad `/.well-known/oauth-protected-resource` relativ zur Basis-URL der Protected Resource erreichbar.
