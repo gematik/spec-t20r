@@ -53,10 +53,10 @@ alt Client has no client_id
 
     ZAS -> ZAS: Select AK Handle
     ZAS -> TPM: Get TPM Quote for PCRs (4, 5, 7, 10, 11, 22 or 23)\nand `combined_data` (as qualifyingData), signed with AK
-    note left: **Binding:** `combined_data` enthält Hash des\nClient Instance Public Keys und die Nonce.\nTPM signiert PCRs + `combined_data`.
+    note left: **Binding:** `combined_data` enthält Hash des\nClient Instance Public Keys und die Nonce.\nDas TPM signiert PCRs + `combined_data`.
     note right: PCR 4: Boot Loader Code, Digest\nPCR 5: Boot Loader Configuration, Digest\nPCR 7: Secure Boot State / Policy, Digest\nPCR   10:OS Kernel / IMA, Digest\nPCR 11: OS Components / VSM, Digest,\nPCR 22 or 23 (if available) App Data (ID, Version,\nSignature Hash),   Digest
-    ZAS -> ZAS: Get TCG Event Log (from OS/Firmware)
     TPM --> ZAS --: Return TPM Quote
+    ZAS -> ZAS: Get TCG Event Log (from OS/Firmware)
     note right: Quote contains:\n- `combined_data` (as qualifyingData)\n- Attested Data (PCR Select, PCR Digest),\n- Signature
     ZAS --> Client --: Return Attestation (Quote, EventLog, CertChain)
     Client -> Client: Create Client Statement JWT\nwith posture-tpm,\nincludes Attestation\nSigned with Client Instance Key
