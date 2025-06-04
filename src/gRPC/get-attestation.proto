@@ -1,24 +1,63 @@
-syntax = "proto3";  // Gibt an, dass wir die Proto3-Syntax verwenden
+syntax = "proto3";
 
-package zeta-attestation-service;       // Definiert das Package – nützlich für Namensräume beim Generieren von Code
+package zeta.attestation.service.v1;
 
-// Definiert den ZETA Attestation Service mit einer Methode zur Attestierung
+// Import für gRPC Status (für umfassende Fehlercodes)
+import "google/rpc/status.proto";
+
 service ZetaAttestationService {
-    // Diese RPC-Methode wird verwendet, um eine TPM-Attestation anzufordern
-    rpc GetAttestation (GetAttestationRequest) returns (GetAttestationResponse);
+  // GetAttestationRequest ermöglicht es Clients, signierte Attestierungsinformationen
+  // für das Primärsystem abzurufen.
+  rpc GetAttestation(GetAttestationRequest) returns (GetAttestationResponse);
 }
 
-// Die Nachricht, die vom Client gesendet wird, um eine Attestation anzufordern
 message GetAttestationRequest {
-    // Nonce zum Schutz gegen Replay-Angriffe – vom Client bereitgestellt
-    bytes nonce = 1;
+  // Der berechnete SHA-256 Hash aus dem Public Client Instance Key Fingerabdruck
+  // und der Nonce vom ZETA Guard Authorization Server.
+  // Wird vom Client berechnet, um Replay-Angriffe zu verhindern und
+  // die Korrelation der Attestierung mit der ZETA Guard Anfrage zu ermöglichen.
+  bytes attestation_challenge = 1; // Dies ersetzt "nonce" als direkten Parameter.
 
-    // Liste der PCR-Indizes (z. B. 0, 1, 7), die in die Quote aufgenommen werden sollen
-    repeated uint32 pcr_list = 2;
+  // Eine Liste der PCR-Indizes, deren Werte im Attestierungs-Quote enthalten sein sollen.
+  // Typischerweise 22 und/oder 23 für den ZETA Attestation Service.
+  repeated uint32 pcr_indices = 2;
 }
 
-// Die Nachricht, die der Service als Antwort zurückgibt
 message GetAttestationResponse {
-    // Die TPM-Attestierung (z. B. Quote + zugehörige Zertifikate) im Binärformat
-    bytes attestation = 1;
+  // Der vom TPM generierte und signierte Attestierungs-Quote.
+  // Dies ist eine rohe TPM2_ATTEST Struktur, die von der Client-Seite geparst werden muss.
+  // Beinhaltet unter anderem die gewünschten PCR-Werte und den 'attestation_challenge'.
+  bytes attestation_quote = 1;
+
+  // Der aktuelle Wert des Attestierungs-PCRs (z.B. PCR 22 oder 23),
+  // der im Quote enthalten ist. Zur Vereinfachung hier separat aufgeführt.
+  // map<pcr_index, pcr_value_bytes>
+  map<uint32, bytes> current_pcr_values = 2; // Für die angefragten PCRs
+
+  // Der vom ZETA Attestation Service vergebene Status der Attestierung.
+  // Dies gibt an, ob die Attestierung vom Service als gültig betrachtet wird
+  // (z.B. gegen die Baseline geprüft).
+  AttestationStatus status = 3;
+
+  // Optional: Ein menschenlesbarer Status, falls 'status' nicht ausreichend ist.
+  string status_message = 4;
+
+  // Optional: Zeitstempel der Erstellung des Quotes durch den Attestation Service.
+  google.protobuf.Timestamp timestamp = 5; // Erfordert 'import "google/protobuf/timestamp.proto";'
+
+  // Optional: Event Log, das die Erweiterungen der PCRs detailliert beschreibt.
+  // Dies ist essentiell für eine tiefgehende Verifikation der PCR-Werte.
+  // Das Format muss hier spezifiziert werden (z.B. TCG PC Client Platform Firmware Profile).
+  bytes event_log = 6;
+}
+
+// Enum für den Attestierungsstatus des ZETA Attestation Service
+enum AttestationStatus {
+  ATTESTATION_STATUS_UNSPECIFIED = 0;
+  ATTESTATION_STATUS_SUCCESS = 1; // Attestierung erfolgreich und valide
+  ATTESTATION_STATUS_BASELINE_MISMATCH = 2; // Aktuelle Messung weicht von Baseline ab
+  ATTESTATION_STATUS_TPM_ERROR = 3; // Fehler beim Zugriff auf das TPM
+  ATTESTATION_STATUS_INVALID_REQUEST = 4; // Anforderungsparameter ungültig
+  ATTESTATION_STATUS_INTERNAL_ERROR = 5; // Interner Serverfehler
+  // ... weitere spezifische Statusse
 }

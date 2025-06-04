@@ -775,7 +775,7 @@ _Hinweis: Perspektivisch ist vorgesehen, dass der Zugriff auf das TI-Gateway üb
 
 #### 1.5.2.1 ReadCardCertificate
 
-Die Operation [ReadCardCertificate](https://gemspec.gematik.de/docs/gemSpec/gemSpec_Kon/latest/#TIP1-A_4698-03) ist in der [Konnektor Spezifikation ](https://gemspec.gematik.de/docs/gemSpec/gemSpec_Kon/latest/index.html) definiert.
+Die Operation [ReadCardCertificate](https://gemspec.gematik.de/docs/gemSpec/gemSpec_Kon/latest/#TIP1-A_4698-03) ist in der [Konnektor Spezifikation](https://gemspec.gematik.de/docs/gemSpec/gemSpec_Kon/latest/index.html) definiert.
 
 #### 1.5.2.1 ExternalAuthenticate
 
@@ -793,25 +793,42 @@ _Hinweis: Während der Installation oder bei Updates des stationären Clients mu
 
 #### 1.5.3.1 GetAttestationRequest
 
-Der Endpunkt `GetAttestationRequest` ermöglicht es Clients, Attestierungsinformationen für eine bestimmte Software-Komponente abzurufen. Diese Informationen können verwendet werden, um die Integrität und Authentizität der Software zu überprüfen.
+Der Endpunkt `GetAttestationRequest` ermöglicht es Clients, Attestierungsinformationen für das _gesamte Primärsystem_ abzurufen, basierend auf den Integritätsmessungen in ausgewählten TPM-PCRs. Diese Informationen können verwendet werden, um die Integrität und Authentizität der Software des Primärsystems zu überprüfen.
 
-Die Operation [GetAttestationRequest](/src/gRPC/get-attestation.proto) wird als gRPC Service des ZETA Attestation Service bereitgestellt.
+Die Operation `GetAttestationRequest` wird als gRPC Service [`ZetaAttestationService`](/src/gRPC/get-attestation.proto) bereitgestellt. Die Anfragen werden über die `GetAttestationRequest` Nachricht und die Antworten über die `GetAttestationResponse` Nachricht abgewickelt.
 
-**Parameter**
+- **Parameter:**
+  - **`attestation_challenge`:**
+    - **Beschreibung:** Der SHA-256 Hashwert, der aus der Verkettung (`||`) des SHA-256 Fingerabdrucks des Public Client Instance Keys und der Nonce vom ZETA Guard Authorization Server berechnet wird. Dieser Wert dient der Verhinderung von Replay-Angriffen und der Korrelation der Attestierung mit einer spezifischen Anfrage vom ZETA Guard Authorization Server. Der Client ist für die Berechnung dieses Wertes verantwortlich.
+    - **Typ:** `bytes`
+  - **`pcr_indices`:**
+    - **Beschreibung:** Eine Liste von TPM PCR-Indizes (`uint32`), deren aktuelle Werte in den Attestierungs-Quote aufgenommen und zurückgegeben werden sollen. Für diesen Dienst sind typischerweise die PCRs 22 und 23 relevant.
+    - **Typ:** `repeated uint32`
 
-- nonce
-- pcr_list
+- **Rückgabe (`GetAttestationResponse`):**
+  - Der Endpunkt `GetAttestationRequest` liefert eine `GetAttestationResponse`-Nachricht, die folgende Informationen enthält:
+    - **`attestation_quote` (bytes):** "Der rohe, signierte Attestierungs-Quote des TPMs (TPM2_ATTEST Struktur). Dieser Quote enthält die angefragten PCR-Werte sowie den `attestation_challenge` Wert."
+    - **`current_pcr_values` (map<uint32, bytes>):** Eine Abbildung der angefragten PCR-Indizes auf ihre aktuellen, gemessenen Werte (20 Byte SHA-256 Hashes).
+    - **`status` (AttestationStatus enum):** Der vom ZETA Attestation Service intern ermittelte Status der Attestierung. Dies beinhaltet, ob die Messungen erfolgreich durchgeführt wurden und ob sie der definierten Baseline entsprechen.
+    - **`status_message` (string, optional):** Eine menschenlesbare Beschreibung des Attestierungsstatus oder zusätzliche Informationen im Fehlerfall.
+    - **`event_log` (bytes, optional):** Das TPM-Event-Log, das die Sequenz der Erweiterungen der PCRs detailliert beschreibt. Dieses Log ist entscheidend für eine vollständige Validierung der Attestierung durch den Verifizierer.
 
-Anstatt der nonce wird der kombinierte Wert `combined_data` aus dem sha256 Fingerabdruck des Public Client Instance Keys und der nonce vom ZETA Guard Authorization Server verwendet.
+- **Fehlercodes:**
+    Der ZETA Attestation Service wird gRPC-Standard-Statuscodes verwenden, um das Ergebnis der Operation zu kommunizieren. Häufige Fehlerfälle können sein:
+  - `OK`: Die Anfrage war erfolgreich.
+  - `INVALID_ARGUMENT`: Ein oder mehrere Parameter der Anfrage waren ungültig (z.B. `attestation_challenge` hat falsches Format, ungültige PCR-Indizes).
+  - `UNAUTHENTICATED` / `PERMISSION_DENIED`: Der anfragende Client ist nicht autorisiert oder authentifiziert, diese Anfrage zu stellen. (Wichtig, falls mTLS oder andere Authentifizierungsmechanismen verwendet werden).
+  - `UNAVAILABLE`: Der ZETA Attestation Service kann die Attestierung derzeit nicht durchführen (z.B. TPM nicht erreichbar, Baseline nicht gesetzt).
+  - `INTERNAL`: Ein unerwarteter Fehler ist auf der Serverseite aufgetreten.
 
-- Berechnung von `combined_data`:
+- **Berechnung der `attestation_challenge`**:
 
 ```ini
 data_to_hash = thumbprint_bytes || nonce_bytes
-combined_data = SHA-256(data_to_hash)
+attestation_challenge = SHA-256(data_to_hash)
 ```
 
-**Beispiel für die Berechnung von combined Data:**
+**Beispiel für die Berechnung der attestation_challenge:**
 
 ```python
 import hashlib
@@ -823,9 +840,11 @@ thumbprint_bytes = bytes.fromhex(thumbprint_hex)
 nonce_bytes = bytes.fromhex(nonce_hex)
 
 data_to_hash = thumbprint_bytes + nonce_bytes
-combined_data = hashlib.sha256(data_to_hash).hexdigest()
-print(f"Combined Data: {combined_data}")
+attestation_challenge = hashlib.sha256(data_to_hash).hexdigest()
+print(f"attestation_challenge: {attestation_challenge}")
 ```
+
+---
 
 ## 1.6. Versionierung
 
@@ -887,12 +906,12 @@ In diesem Repository werden Branches verwendet um den Status der Weiterentwicklu
 
 Folgende Branches werden verwendet
 
-- *main* (enthält den letzten freigegebenen Stand der Entwicklung; besteht permanent)
-- *develop* (enthält den Stand der fertig entwickelten Features und wird zum Review durch Industriepartner und Gesellschafter verwendet; basiert auf main; nach Freigabe erfolgt ein merge in main und ein Release wird erzeugt; besteht permanent)
-- *feature/[name]* (in feature branches werden neue Features entwickelt; basiert auf develop; nach Fertigstellung erfolgt ein merge in develop; wird nach dem merge gelöscht)
-- *hotfix/[name]* (in hotfix branches werden Hotfixes entwickelt; basiert auf main; nach Fertigstellung erfolgt ein merge in develop und in main; wird nach dem merge gelöscht)
-- *concept/[name]* (in feature branches werden neue Konzepte entwickelt; basiert auf develop; dient der Abstimmung mit Dritten; es erfolgt kein merge; wird nach Bedarf gelöscht)
-- *misc/[name]* (nur für internen Gebrauch der gematik; es erfolgt kein merge; wird nach Bedarf gelöscht)
+- _main_ (enthält den letzten freigegebenen Stand der Entwicklung; besteht permanent)
+- _develop_ (enthält den Stand der fertig entwickelten Features und wird zum Review durch Industriepartner und Gesellschafter verwendet; basiert auf main; nach Freigabe erfolgt ein merge in main und ein Release wird erzeugt; besteht permanent)
+- _feature/[name]_ (in feature branches werden neue Features entwickelt; basiert auf develop; nach Fertigstellung erfolgt ein merge in develop; wird nach dem merge gelöscht)
+- _hotfix/[name]_ (in hotfix branches werden Hotfixes entwickelt; basiert auf main; nach Fertigstellung erfolgt ein merge in develop und in main; wird nach dem merge gelöscht)
+- _concept/[name]_ (in feature branches werden neue Konzepte entwickelt; basiert auf develop; dient der Abstimmung mit Dritten; es erfolgt kein merge; wird nach Bedarf gelöscht)
+- _misc/[name]_ (nur für internen Gebrauch der gematik; es erfolgt kein merge; wird nach Bedarf gelöscht)
 
 ## 1.14. Lizenzbedingungen
 
