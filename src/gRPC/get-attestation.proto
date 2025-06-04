@@ -1,0 +1,24 @@
+syntax = "proto3";  // Gibt an, dass wir die Proto3-Syntax verwenden
+
+package zeta-attestation-service;       // Definiert das Package – nützlich für Namensräume beim Generieren von Code
+
+// Definiert den ZETA Attestation Service mit einer Methode zur Attestierung
+service ZetaAttestationService {
+    // Diese RPC-Methode wird verwendet, um eine TPM-Attestation anzufordern
+    rpc GetAttestation (GetAttestationRequest) returns (GetAttestationResponse);
+}
+
+// Die Nachricht, die vom Client gesendet wird, um eine Attestation anzufordern
+message GetAttestationRequest {
+    // Nonce zum Schutz gegen Replay-Angriffe – vom Client bereitgestellt
+    bytes nonce = 1;
+
+    // Liste der PCR-Indizes (z. B. 0, 1, 7), die in die Quote aufgenommen werden sollen
+    repeated uint32 pcr_list = 2;
+}
+
+// Die Nachricht, die der Service als Antwort zurückgibt
+message GetAttestationResponse {
+    // Die TPM-Attestierung (z. B. Quote + zugehörige Zertifikate) im Binärformat
+    bytes attestation = 1;
+}

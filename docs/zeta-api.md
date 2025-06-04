@@ -45,19 +45,15 @@ Die ZETA API ist so konzipiert, dass sie eine sichere und flexible Interaktion z
         - [1.5.1.4.3 Anfragen für mobile Clients](#15143-anfragen-für-mobile-clients)
       - [1.5.1.5 Token Endpoint](#1515-token-endpoint)
         - [1.5.1.5.1 Anfragen](#15151-anfragen)
-    - [Beispiel Anfrage](#beispiel-anfrage)
         - [1.5.1.5.2 Antworten](#15152-antworten)
       - [1.5.1.6 Resource Endpoint](#1516-resource-endpoint)
         - [1.5.1.6.1 Anfragen](#15161-anfragen)
         - [1.5.1.6.2 Antworten](#15162-antworten)
-      - [1.5.1.7 JWKS Endpoint](#1517-jwks-endpoint)
-        - [1.5.1.7.1 Anfragen](#15171-anfragen)
-        - [1.5.1.7.2 Antworten](#15172-antworten)
     - [1.5.2 Konnektor/TI-Gateway Endpunkte](#152-konnektorti-gateway-endpunkte)
-      - [1.5.2.1 getCertificate](#1521-getcertificate)
-      - [1.5.2.1 externalAuthenticate](#1521-externalauthenticate)
+      - [1.5.2.1 ReadCardCertificate](#1521-readcardcertificate)
+      - [1.5.2.1 ExternalAuthenticate](#1521-externalauthenticate)
     - [1.5.3 ZETA Attestation Service Endpunkte](#153-zeta-attestation-service-endpunkte)
-      - [1.5.3.1 getAttestation](#1531-getattestation)
+      - [1.5.3.1 GetAttestationRequest](#1531-getattestationrequest)
   - [1.6. Versionierung](#16-versionierung)
   - [1.7. Performance- und Lastannahmen](#17-performance--und-lastannahmen)
         - [1.8 Rate Limits und Einschränkungen](#18-rate-limits-und-einschränkungen)
@@ -222,7 +218,7 @@ Content-Type: application/problem+json
 
 - **500 Internal Server Error:**
   - **Bedeutung:** Ein unerwarteter Fehler ist auf dem Server der Protected Resource aufgetreten, der die Verarbeitung der Anfrage verhindert hat.
-  - **Beispielantwort:** Ein leerer Body, ein generischer 
+  - **Beispielantwort:** Ein leerer Body, ein generischer
 Content-Type: application/problem+json
 
 ```json
@@ -377,8 +373,8 @@ Accept: application/json
 
 **Felder der erfolgreichen Antwort:**
 
-*   `nonce` (String): Der generierte, einmalige kryptographische Wert.
-*   `expires_in` (Integer): Die Gültigkeitsdauer der Nonce in Sekunden, ab dem Zeitpunkt der Ausstellung. Nach Ablauf dieser Zeit sollte die Nonce vom Server nicht mehr akzeptiert werden.
+- `nonce` (String): Der generierte, einmalige kryptographische Wert.
+- `expires_in` (Integer): Die Gültigkeitsdauer der Nonce in Sekunden, ab dem Zeitpunkt der Ausstellung. Nach Ablauf dieser Zeit sollte die Nonce vom Server nicht mehr akzeptiert werden.
 
 **404 Not Found:**
 
@@ -416,8 +412,7 @@ Dieser Fehler tritt auf, wenn der Client die vom Server festgelegten Ratenbegren
 }
 ```
 
-*   `Retry-After` Header (optional): Gibt an, wie viele Sekunden der Client warten sollte, bevor er eine weitere Anfrage stellt.
-
+- `Retry-After` Header (optional): Gibt an, wie viele Sekunden der Client warten sollte, bevor er eine weitere Anfrage stellt.
 
 **500 Internal Server Error:**
 
@@ -575,6 +570,7 @@ Der Authorization Server antwortet mit verschiedenen HTTP-Statuscodes und entspr
   - **Bedeutung:** Ein unerwarteter Fehler ist auf dem Server aufgetreten, der die Anfrage nicht verarbeiten konnte.
   - **Content-Type:** `application/problem+json`
   - **Beispiel Antwort:**
+
 ```json
 {
   "type": "https://httpstatuses.com/500",
@@ -622,18 +618,19 @@ Der Token Endpoint empfängt POST-Anfragen mit dem Content-Type `application/x-w
 | `subject_token_type`   | `string` | Ja           | Der Typ des Tokens, das ausgetauscht werden soll. Beispiele könnten sein: `urn:ietf:params:oauth:token-type:access_token`, `urn:ietf:params:oauth:token-type:jwt` oder andere spezifische URIs.|
 | `subject_token`        | `string` | Ja           | Das eigentliche Token, das ausgetauscht werden soll. Dies kann ein JWT, ein Referenz-Token oder ein anderes Format sein, abhängig vom `subject_token_type`.                                                  | `scope`                | `string` | Optional     | Eine durch Leerzeichen getrennte Liste von Scopes, für die der Access Token ausgestellt werden soll. Wenn nicht angegeben, werden die mit dem `subject_token` und/oder Client verbundenen Standard-Scopes verwendet.
 
-### Beispiel Anfrage
+**Beispiel Anfrage**
 
 ```bash
 curl -X POST \
   https://as.example.com/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
+  -H 'DPoP: <signed_dpop_jwt>' \
   -d 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&' \
   -d 'client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&' \
   -d 'client_assertion=eyJhbGciOiJFUzI1NiIsImtpZCI6InNvbWVfa2V5X2lkIn0.eyJpc3MiOiJjbGllbnRfaWQwMDEiLCJzdWIiOiJjbGllbnRfaWQwMDEiLCJhdWQiOiJodHRwczovL2F1dGhvcml6YXRpb24uc2VydmVyLmRlL3Rva2VuIiwiZXhwIjoxNjk1NTA0NjAwLCJpYXQiOjE2OTU1MDI4MDAsImp0aSI6ImFiYzEyMzQ1NiJ9.SOME_SIGNATURE_PART_ONE.SOME_SIGNATURE_PART_TWO&' \
   -d 'resource=https%3A%2F%2Fapi.example.com%2F/resource&' \
   -d 'subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Ajwt&' \
-  -d 'subject_token=eyJhbGciOiJFUzI1NiIsImtpZCI6InNvbWVfc3ViamVjdF9rZXlfaWQifQ.eyJpc3MiOiJzb21lX3N1YmplY3RfYXV0aG9yaXR5Iiwic3ViIjoiMTIzNDU2Nzg5MCIsImF1ZCI6Imh0dHBzOi8vYXV0aG9yaXphdGlvbi5zZXJ2ZXIuZGUvdG9rZW4iLCJleHAiOjE2OTU1MDI4NjAsImlhdCI6MTY5NTUwMjgwMH0.ANOTHER_SIGNATURE_PART_ONE.ANOTHER_SIGNATURE_PART_TWO&' \
+  -d 'subject_token=eyJhbGciOiJFUzI1NiIsImtpZCI6InNvbWVfc3ViamVjdF9rZXlfaWQifQ.eyJpc3MiOiJzb21lX3N1YmplY3RfYXV0aG9yaXR5Iiwic3ViIjoiMTIzNDU2Nzg5MCIsImF1ZCI6Imh0dHBzOi8vYXV0aG9yaXphdGlvbi5zZXJ2ZXIuZGUvdG9rZW4iLCJleHAiOjE2OTU1MDI4NjAsImlhdCI6MTY5NTUwMjgwMH0.SM(C)-B_SIGNATURE&' \
   -d 'scope=resource.read%20resource.write'
 ```
 
@@ -691,6 +688,7 @@ Antworten werden als JSON-Objekte mit dem `Content-Type: application/json` im Er
   "instance": "/token"
 }
 ```
+
 - **401 Unauthorized:**
   - **Bedeutung:** Die Client-Authentifizierung ist fehlgeschlagen, z.B. ungültige Client Assertion.
   - **Content-Type:** `application/problem+json`
@@ -735,6 +733,7 @@ Antworten werden als JSON-Objekte mit dem `Content-Type: application/json` im Er
   "instance": "/token"
 }
 ```
+
 - **500 Internal Server Error:**
   - **Bedeutung:** Ein unerwarteter Fehler ist auf dem Server aufgetreten, der die Anfrage nicht verarbeiten konnte.
   - **Content-Type:** `application/problem+json`
@@ -752,25 +751,81 @@ Antworten werden als JSON-Objekte mit dem `Content-Type: application/json` im Er
 
 #### 1.5.1.6 Resource Endpoint
 
+Der Resource Endpoint ist der Endpunkt, der von der geschützten Ressource (Protected Resource) bereitgestellt wird, um auf geschützte Daten zuzugreifen. Er ist durch den ZETA Guard PEP vor unberechtigtem Zugriff geschützt. Für den Zugriff auf die geschützte Ressource wird ein gültiges Access Token benötigt.
+
 ##### 1.5.1.6.1 Anfragen
+
+Der ZETA Guard PEP empfängt die Anfragen und prüft das Access Token im Authentication Header sowie das DPoP Proof im DPoP Header.
+
+**HTTP Methode:** wird durch die geschützte Ressource bestimmt (z.B. `GET`, `POST`, `PUT`, `DELETE`).
+
+**Pfad:** wird durch die geschützte Ressource bestimmt (z.B. `/api/resource`).
+
+**Content-Type:** wird durch die geschützte Ressource bestimmt (z.B. `application/json`).
 
 ##### 1.5.1.6.2 Antworten
 
-#### 1.5.1.7 JWKS Endpoint
-
-##### 1.5.1.7.1 Anfragen
-
-##### 1.5.1.7.2 Antworten
+Die Antwort des Resource Endpoints hängt von der geschützten Ressource ab und kann verschiedene Statuscodes und Datenformate zurückgeben.
 
 ### 1.5.2 Konnektor/TI-Gateway Endpunkte
 
-#### 1.5.2.1 getCertificate
+Die Endpunkte im Konnektor oder im Highspeed Konnektoren des TI-Gateways werden für die Erstellung von Signaturen mit Der SM(C)-B sowie für die Abfrage des SM(C)-B Zertifikats während der Authentifizierung am ZETA Guard verwendet.
 
-#### 1.5.2.1 externalAuthenticate
+_Hinweis: Perspektivisch ist vorgesehen, dass der Zugriff auf das TI-Gateway über den ZETA Guard erfolgt, um die Sicherheit und Integrität der Kommunikation zu gewährleisten. Während der Authentifizierung wird anstatt der SM(C)-B Identität eine TI-Gateway Identität verwendet._
+
+#### 1.5.2.1 ReadCardCertificate
+
+Die Operation [ReadCardCertificate](https://gemspec.gematik.de/docs/gemSpec/gemSpec_Kon/latest/#TIP1-A_4698-03) ist in der [Konnektor Spezifikation ](https://gemspec.gematik.de/docs/gemSpec/gemSpec_Kon/latest/index.html) definiert.
+
+#### 1.5.2.1 ExternalAuthenticate
+
+Die Operation [ExternalAuthenticate](https://gemspec.gematik.de/docs/gemSpec/gemSpec_Kon/latest/#TIP1-A_4698-03) ist in der [Konnektor Spezifikation](https://gemspec.gematik.de/docs/gemSpec/gemSpec_Kon/latest/index.html) definiert.
 
 ### 1.5.3 ZETA Attestation Service Endpunkte
 
-#### 1.5.3.1 getAttestation
+Die Endpunkte des ZETA Attestation Service ermöglichen die Abfrage von Attestierungsinformationen. Diese Endpunkte sind für die Interaktion mit dem ZETA Attestation Service vorgesehen, der für die Überprüfung der Integrität und Authentizität von Software-Komponenten von stationären Clients (Primärsystem) verantwortlich ist.
+
+Der ZETA Attestation Service wird vom Hersteller des stationären Clients bereitgestellt und es muss eine Vertrauensbeziehung zwischen stationären Client und ZETA Attestation Service bestehen, um zu gewährleisten, dass die Attestation über die vorgesehenen Software-Komponenten erfolgt.
+
+The Primärsystem and the ZETA Attestation Service are in the same trust domain.\nAt the time of client installation, the ZETA Attestation Service computes a\ncryptographic hash of the Primärsystem software and extends this hash into a specific\nPCR (22 or 23) using TPM2_PCR_Extend. The ZETA Attestation Service reads\nand stores the resulting PCR value as a reference measurement or baseline.\nAt every boot of the Primärsystem, the ZETA Attestation Service measures the Primärsystem\nsoftware and extends the resulting hash into the same PCR (22 or 23) using\nTPM2_PCR_Extend.
+
+_Hinweis: Während der Installation oder bei Updates des stationären Clients muss auch ein Update des ZETA Attestation Service erfolgen um eine neue Baseline für die Integrität des stationären Clients zu setzen. Die Baseline besteht aus einem Hash über alle Sicherheitsrelevanten unveränderlichen Komponenten des stationären Clients, inkl. ZETA Attestation Service._
+
+#### 1.5.3.1 GetAttestationRequest
+
+Der Endpunkt `GetAttestationRequest` ermöglicht es Clients, Attestierungsinformationen für eine bestimmte Software-Komponente abzurufen. Diese Informationen können verwendet werden, um die Integrität und Authentizität der Software zu überprüfen.
+
+Die Operation [GetAttestationRequest](/src/gRPC/get-attestation.proto) wird als gRPC Service des ZETA Attestation Service bereitgestellt.
+
+**Parameter**
+
+- nonce
+- pcr_list
+
+Anstatt der nonce wird der kombinierte Wert `combined_data` aus dem sha256 Fingerabdruck des Public Client Instance Keys und der nonce vom ZETA Guard Authorization Server verwendet.
+
+- Berechnung von `combined_data`:
+
+```ini
+data_to_hash = thumbprint_bytes || nonce_bytes
+combined_data = SHA-256(data_to_hash)
+```
+
+**Beispiel für die Berechnung von combined Data:**
+
+```python
+import hashlib
+
+thumbprint_hex = "9f3d4f2a6c5e4e21d84c8a713d3c37cfb1a2f3a4b14ad9d8d8d9c0e7c8e7e6f5"
+nonce_hex = "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+
+thumbprint_bytes = bytes.fromhex(thumbprint_hex)
+nonce_bytes = bytes.fromhex(nonce_hex)
+
+data_to_hash = thumbprint_bytes + nonce_bytes
+combined_data = hashlib.sha256(data_to_hash).hexdigest()
+print(f"Combined Data: {combined_data}")
+```
 
 ## 1.6. Versionierung
 
@@ -805,7 +860,6 @@ oder:
 **Beispiele**
 
 [Draft RFC für Rate Limits](https://www.ietf.org/archive/id/draft-ietf-httpapi-ratelimit-headers-09.html#name-ratelimit-policy-field)
-
 
 ## 1.9. Support und Kontaktinformationen
 
