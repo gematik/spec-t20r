@@ -16,7 +16,7 @@ message GetAttestationRequest {
   // und der Nonce vom ZETA Guard Authorization Server.
   // Wird vom Client berechnet, um Replay-Angriffe zu verhindern und
   // die Korrelation der Attestierung mit der ZETA Guard Anfrage zu ermöglichen.
-  bytes attestation_challenge = 1; // Dies ersetzt "nonce" als direkten Parameter.
+  bytes attestation_challenge = 1; // Dies ersetzt "nonce".
 
   // Eine Liste der PCR-Indizes, deren Werte im Attestierungs-Quote enthalten sein sollen.
   // Typischerweise 22 und/oder 23 für den ZETA Attestation Service.
@@ -59,5 +59,5 @@ enum AttestationStatus {
   ATTESTATION_STATUS_TPM_ERROR = 3; // Fehler beim Zugriff auf das TPM
   ATTESTATION_STATUS_INVALID_REQUEST = 4; // Anforderungsparameter ungültig
   ATTESTATION_STATUS_INTERNAL_ERROR = 5; // Interner Serverfehler
-  // ... weitere spezifische Statusse
+  // ... weitere spezifische Status
 }
