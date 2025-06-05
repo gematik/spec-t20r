@@ -4,6 +4,7 @@ package zeta.attestation.service.v1;
 
 // Import für gRPC Status (für umfassende Fehlercodes)
 import "google/rpc/status.proto";
+import "google/protobuf/timestamp.proto";
 
 service ZetaAttestationService {
   // GetAttestationRequest ermöglicht es Clients, signierte Attestierungsinformationen
