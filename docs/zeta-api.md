@@ -817,7 +817,9 @@ Die `GetAttestationRequest`-Nachricht enthält die Parameter, die für die Anfor
 | Feld                    | Typ             | Erforderlich | Beschreibung                                                                                                                                                                                                                            |
 | :---------------------- | :-------------- | :----------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `attestation_challenge` | `bytes`         | Ja           | Ein SHA-256 Hashwert, berechnet aus der Verkettung des SHA-256 Fingerabdrucks des Public Client Instance Keys und einer Nonce vom ZETA Guard Authorization Server. Dient zur Verhinderung von Replay-Angriffen und zur Korrelation. |
-| `pcr_indices`           | `repeated uint32` | Ja           | Eine Liste von TPM PCR-Indizes, deren aktuelle Werte in die Attestierungs-Quote aufgenommen und zurückgegeben werden sollen. Typischerweise PCR 22 und/oder 23 für den ZETA Attestation Service.                                        |
+| `pcr_indices`           | `repeated uint32` | Ja           | Eine Liste von TPM PCR-Indizes, deren aktuelle Werte in die Attestierungs-Quote aufgenommen und zurückgegeben werden sollen.
+
+---
 
 **Berechnung der `attestation_challenge`**:
 Der Client ist für die korrekte Berechnung dieses Wertes verantwortlich.
@@ -846,6 +848,15 @@ attestation_challenge_hex = hashlib.sha256(data_to_hash).hexdigest() # als Hex-S
 print(f"attestation_challenge (hex): {attestation_challenge_hex}")
 # In der gRPC Anfrage wird `attestation_challenge_bytes` verwendet.
 ```
+
+**Empfohlene PCR-Indizes:**
+
+- PCR 4: Boot Loader Code, Digest
+- PCR 5: Boot Loader Configuration, Digest
+- PCR 7: Secure Boot State / Policy, Digest
+- PCR 10:OS Kernel / IMA, Digest
+- PCR 11: OS Components / VSM, Digest,
+- PCR 22 or 23 (if available) Client Data
 
 ###### Response-Nachricht: `GetAttestationResponse`
 
