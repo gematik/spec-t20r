@@ -56,6 +56,10 @@ Die ZETA API ist so konzipiert, dass sie eine sichere und flexible Interaktion z
       - [1.5.3.1 Dienstdefinition](#1531-dienstdefinition)
       - [1.5.3.2 RPC Methoden](#1532-rpc-methoden)
         - [1.5.3.2.1 GetAttestation](#15321-getattestation)
+          - [Request-Nachricht: `GetAttestationRequest`](#request-nachricht-getattestationrequest)
+          - [Response-Nachricht: `GetAttestationResponse`](#response-nachricht-getattestationresponse)
+          - [Fehlerbehandlung](#fehlerbehandlung)
+          - [Sicherheitsaspekte](#sicherheitsaspekte)
   - [1.6. Versionierung](#16-versionierung)
   - [1.7. Performance- und Lastannahmen](#17-performance--und-lastannahmen)
         - [1.8 Rate Limits und Einschränkungen](#18-rate-limits-und-einschränkungen)
@@ -802,7 +806,7 @@ _Hinweis: Während der Installation oder bei Updates des stationären Clients mu
 
 Diese RPC-Methode ermöglicht es Clients, eine signierte Attestierungs-Quote vom TPM des Systems anzufordern, die spezifische PCR-Werte und eine vom Client bereitgestellte Challenge enthält.
 
-- **Request-Nachricht:** `GetAttestationRequest`
+###### Request-Nachricht: `GetAttestationRequest`
 
 Die `GetAttestationRequest`-Nachricht enthält die Parameter, die für die Anforderung einer Attestierung benötigt werden.
 
@@ -839,9 +843,9 @@ print(f"attestation_challenge (hex): {attestation_challenge_hex}")
 # In der gRPC Anfrage wird `attestation_challenge_bytes` verwendet.
 ```
 
-- **Response-Nachricht:** `GetAttestationResponse`
+###### Response-Nachricht: `GetAttestationResponse`
 
-Die `GetAttestationResponse`-Nachricht enthält die vom Dienst generierten Attestierungsdaten.
+  Die `GetAttestationResponse`-Nachricht enthält die vom Dienst generierten Attestierungsdaten.
 
 | Feld                   | Typ                                     | Beschreibung                                                                                                                                                                                                  |
 | :--------------------- | :-------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -867,11 +871,11 @@ Definiert die möglichen Statuswerte für die Attestierung, die vom ZETA Attesta
 
 ---
 
-- **Fehlerbehandlung:**
+###### Fehlerbehandlung
 
-Der `ZetaAttestationService` verwendet standardmäßige gRPC-Statuscodes, um das Ergebnis der Operation auf Transportebene zu kommunizieren. Diese werden ergänzt durch den `status`-Feld in der `GetAttestationResponse` für anwendungsspezifische Logik. Die `google.rpc.Status` kann für detailliertere Fehlerinformationen verwendet werden (siehe `import "google/rpc/status.proto";`).
+  Der `ZetaAttestationService` verwendet standardmäßige gRPC-Statuscodes, um das Ergebnis der Operation auf Transportebene zu kommunizieren. Diese werden ergänzt durch den `status`-Feld in der `GetAttestationResponse` für anwendungsspezifische Logik. Die `google.rpc.Status` kann für detailliertere Fehlerinformationen verwendet werden (siehe `import "google/rpc/status.proto";`).
 
-Häufige gRPC-Statuscodes:
+  Häufige gRPC-Statuscodes:
 
 - **`OK` (0):** Die Anfrage war erfolgreich und die `GetAttestationResponse` enthält die Ergebnisse. Der `status`-Feld in der Response gibt den anwendungsspezifischen Erfolg oder Misserfolg an.
 - **`INVALID_ARGUMENT` (3):**
@@ -879,17 +883,17 @@ Häufige gRPC-Statuscodes:
   - Beispiele: `attestation_challenge` fehlt, hat eine falsche Länge oder ein ungültiges Format; `pcr_indices` ist leer, enthält ungültige oder nicht unterstützte Indizes.
   - Der `status` in der Response könnte `ATTESTATION_STATUS_INVALID_REQUEST` sein.
 - **`UNAUTHENTICATED` (16) / `PERMISSION_DENIED` (7):**
-  - Der anfragende Client ist nicht authentifiziert oder nicht autorisiert, diese Anfrage zu stellen.
-  - Relevant, wenn Mechanismen wie mTLS oder Token-basierte Authentifizierung verwendet werden.
+  - Der anfragende Client ist nicht authentifiziert oder nicht   autorisiert, diese Anfrage zu stellen.
+  - Relevant, wenn Mechanismen wie mTLS oder Token-basierte   Authentifizierung verwendet werden.
 - **`UNAVAILABLE` (14):**
-  - Der ZETA Attestation Service kann die Attestierung derzeit nicht durchführen.
-  - Beispiele: TPM ist nicht erreichbar oder nicht funktionsfähig; eine erforderliche Baseline-Konfiguration ist nicht vorhanden.
-  - Der `status` in der Response könnte `ATTESTATION_STATUS_TPM_ERROR` oder `ATTESTATION_STATUS_INTERNAL_ERROR` sein.
+  - Der ZETA Attestation Service kann die Attestierung derzeit nicht   durchführen.
+  - Beispiele: TPM ist nicht erreichbar oder nicht funktionsfähig;   eine erforderliche Baseline-Konfiguration ist nicht vorhanden.
+  - Der `status` in der Response könnte   `ATTESTATION_STATUS_TPM_ERROR` oder   `ATTESTATION_STATUS_INTERNAL_ERROR` sein.
 - **`INTERNAL` (13):**
-  - Ein unerwarteter serverseitiger Fehler ist aufgetreten, der nicht spezifischer kategorisiert werden kann.
-  - Der `status` in der Response ist typischerweise `ATTESTATION_STATUS_INTERNAL_ERROR`.
+  - Ein unerwarteter serverseitiger Fehler ist aufgetreten, der   nicht spezifischer kategorisiert werden kann.
+  - Der `status` in der Response ist typischerweise   `ATTESTATION_STATUS_INTERNAL_ERROR`.
 
-- **Sicherheitsaspekte:**
+###### Sicherheitsaspekte
 
 - **Transport-Sicherheit:** Es wird dringend empfohlen, die Kommunikation zwischen Client und `ZetaAttestationService` mittels TLS, vorzugsweise mTLS (mutual TLS), abzusichern, um Authentizität, Integrität und Vertraulichkeit der übertragenen Daten zu gewährleisten.
 - **Challenge-Response:** Die `attestation_challenge` ist ein kritischer Bestandteil zur Verhinderung von Replay-Angriffen. Sie muss für jede Attestierungsanfrage eindeutig sein und sicher vom ZETA Guard Authorization Server generiert und an den Client übermittelt werden.
