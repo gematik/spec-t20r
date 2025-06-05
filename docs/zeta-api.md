@@ -53,7 +53,9 @@ Die ZETA API ist so konzipiert, dass sie eine sichere und flexible Interaktion z
       - [1.5.2.1 ReadCardCertificate](#1521-readcardcertificate)
       - [1.5.2.1 ExternalAuthenticate](#1521-externalauthenticate)
     - [1.5.3 ZETA Attestation Service Endpunkte](#153-zeta-attestation-service-endpunkte)
-      - [1.5.3.1 GetAttestationRequest](#1531-getattestationrequest)
+      - [1.5.3.1 Dienstdefinition](#1531-dienstdefinition)
+      - [1.5.3.2 RPC Methoden](#1532-rpc-methoden)
+        - [1.5.3.2.1 GetAttestation](#15321-getattestation)
   - [1.6. Versionierung](#16-versionierung)
   - [1.7. Performance- und Lastannahmen](#17-performance--und-lastannahmen)
         - [1.8 Rate Limits und Einschränkungen](#18-rate-limits-und-einschränkungen)
@@ -783,20 +785,118 @@ Die Operation [ExternalAuthenticate](https://gemspec.gematik.de/docs/gemSpec/gem
 
 ### 1.5.3 ZETA Attestation Service Endpunkte
 
-Die Endpunkte des ZETA Attestation Service ermöglichen die Abfrage von Attestierungsinformationen. Diese Endpunkte sind für die Interaktion mit dem ZETA Attestation Service vorgesehen, der für die Überprüfung der Integrität und Authentizität von Software-Komponenten von stationären Clients (Primärsystem) verantwortlich ist.
+Der `ZetaAttestationService` stellt einen gRPC-Dienst zur Verfügung, der es stationären Clients (Primärsystem) ermöglicht, signierte Attestierungsinformationen für den Client abzurufen. Diese Informationen basieren auf Integritätsmessungen, die in ausgewählten Platform Configuration Registers (PCRs) des Trusted Platform Module (TPM) gespeichert sind. Der ZETA Guard Authorization Server verwendet diese Attestierungsdaten, um die Integrität und Authentizität der Softwareumgebung des Clients zu verifizieren, bevor Zugriff auf geschützte Ressourcen gewährt wird.
 
 Der ZETA Attestation Service wird vom Hersteller des stationären Clients bereitgestellt und es muss eine Vertrauensbeziehung zwischen stationären Client und ZETA Attestation Service bestehen, um zu gewährleisten, dass die Attestation über die vorgesehenen Software-Komponenten erfolgt.
 
-The Primärsystem and the ZETA Attestation Service are in the same trust domain.\nAt the time of client installation, the ZETA Attestation Service computes a\ncryptographic hash of the Primärsystem software and extends this hash into a specific\nPCR (22 or 23) using TPM2_PCR_Extend. The ZETA Attestation Service reads\nand stores the resulting PCR value as a reference measurement or baseline.\nAt every boot of the Primärsystem, the ZETA Attestation Service measures the Primärsystem\nsoftware and extends the resulting hash into the same PCR (22 or 23) using\nTPM2_PCR_Extend.
+_Hinweis: Während der Installation oder bei Updates des stationären Clients muss auch ein Update des ZETA Attestation Service erfolgen um eine neue Baseline für die Integrität des stationären Clients zu setzen. Die Baseline besteht aus einem Hash über alle unveränderlichen Komponenten des stationären Clients, inkl. ZETA Attestation Service._
 
-_Hinweis: Während der Installation oder bei Updates des stationären Clients muss auch ein Update des ZETA Attestation Service erfolgen um eine neue Baseline für die Integrität des stationären Clients zu setzen. Die Baseline besteht aus einem Hash über alle Sicherheitsrelevanten unveränderlichen Komponenten des stationären Clients, inkl. ZETA Attestation Service._
+#### 1.5.3.1 Dienstdefinition
 
-#### 1.5.3.1 GetAttestationRequest
+-   **Service Name:** `zeta.attestation.service.v1.ZetaAttestationService`
+-   **Proto Buffer Spezifikation:** [zeta-attestation-service.proto](/src/gRPC/zeta-attestation-service.proto)
 
-Der Endpunkt `GetAttestationRequest` ermöglicht es Clients, Attestierungsinformationen für das _gesamte Primärsystem_ abzurufen, basierend auf den Integritätsmessungen in ausgewählten TPM-PCRs. Diese Informationen können verwendet werden, um die Integrität und Authentizität der Software des Primärsystems zu überprüfen.
+#### 1.5.3.2 RPC Methoden
 
-Die Operation `GetAttestationRequest` wird als gRPC Service [`ZetaAttestationService`](/src/gRPC/get-attestation.proto) bereitgestellt. Die Anfragen werden über die `GetAttestationRequest` Nachricht und die Antworten über die `GetAttestationResponse` Nachricht abgewickelt.
+##### 1.5.3.2.1 GetAttestation
 
+Diese RPC-Methode ermöglicht es Clients, eine signierte Attestierungs-Quote vom TPM des Systems anzufordern, die spezifische PCR-Werte und eine vom Client bereitgestellte Challenge enthält.
+
+-   **Request-Nachricht:** `GetAttestationRequest`
+   
+Die `GetAttestationRequest`-Nachricht enthält die Parameter, die für die Anforderung einer Attestierung benötigt werden.
+
+| Feld                    | Typ             | Erforderlich | Beschreibung                                                                                                                                                                                                                            |
+| :---------------------- | :-------------- | :----------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `attestation_challenge` | `bytes`         | Ja           | Ein SHA-256 Hashwert, berechnet aus der Verkettung (`||`) des SHA-256 Fingerabdrucks des Public Client Instance Keys und einer Nonce vom ZETA Guard Authorization Server. Dient zur Verhinderung von Replay-Angriffen und zur Korrelation. |
+| `pcr_indices`           | `repeated uint32` | Ja           | Eine Liste von TPM PCR-Indizes, deren aktuelle Werte in die Attestierungs-Quote aufgenommen und zurückgegeben werden sollen. Typischerweise PCR 22 und/oder 23 für den ZETA Attestation Service.                                        |
+
+**Berechnung der `attestation_challenge`**:
+Der Client ist für die korrekte Berechnung dieses Wertes verantwortlich.
+```
+data_to_hash = sha256_thumbprint_of_public_client_instance_key_bytes || nonce_from_zeta_guard_bytes
+attestation_challenge = SHA-256(data_to_hash)
+```
+
+**Beispiel (Python) für die Berechnung der `attestation_challenge`:**
+
+```python
+import hashlib
+
+# Beispielwerte
+thumbprint_hex = "9f3d4f2a6c5e4e21d84c8a713d3c37cfb1a2f3a4b14ad9d8d8d9c0e7c8e7e6f5" # SHA-256 Fingerabdruck
+nonce_hex = "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+
+thumbprint_bytes = bytes.fromhex(thumbprint_hex)
+nonce_bytes = bytes.fromhex(nonce_hex)
+
+data_to_hash = thumbprint_bytes + nonce_bytes
+attestation_challenge_bytes = hashlib.sha256(data_to_hash).digest() # als Bytes
+attestation_challenge_hex = hashlib.sha256(data_to_hash).hexdigest() # als Hex-String
+
+print(f"attestation_challenge (hex): {attestation_challenge_hex}")
+# In der gRPC Anfrage wird `attestation_challenge_bytes` verwendet.
+```
+
+-   **Response-Nachricht:** `GetAttestationResponse`
+
+Die `GetAttestationResponse`-Nachricht enthält die vom Dienst generierten Attestierungsdaten.
+
+| Feld                   | Typ                                     | Beschreibung                                                                                                                                                                                                  |
+| :--------------------- | :-------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `attestation_quote`    | `bytes`                                 | Die rohe, signierte Attestierungs-Quote des TPMs (eine TPM2_ATTEST Struktur). Diese Quote enthält die angefragten PCR-Werte sowie den `attestation_challenge` Wert. Muss clientseitig geparst werden.          |
+| `current_pcr_values`   | `map<uint32, bytes>`                    | Eine Abbildung der angefragten PCR-Indizes auf ihre aktuellen, gemessenen Werte. Die Länge der `bytes` hängt vom aktiven Hashing-Algorithmus der jeweiligen PCR-Bank ab (z.B. 20 Bytes für SHA-1, 32 Bytes für SHA-256). |
+| `status`               | `AttestationStatus` (enum)              | Der vom ZETA Attestation Service intern ermittelte Status der Attestierung. Gibt an, ob die Messungen erfolgreich waren und ob sie ggf. einer definierten Baseline entsprechen.                               |
+| `status_message`       | `string` (optional)                     | Eine menschenlesbare Beschreibung des Attestierungsstatus oder zusätzliche Informationen, insbesondere im Fehlerfall oder bei einem `BASELINE_MISMATCH`.                                                       |
+| `timestamp`            | `google.protobuf.Timestamp` (optional)  | Der Zeitstempel der Erstellung der Attestierungs-Quote durch den ZETA Attestation Service. Erfordert `import "google/protobuf/timestamp.proto";`.                                                              |
+| `event_log`            | `bytes` (optional)                      | Das TPM-Event-Log im plattformspezifischen Format (z.B. TCG PC Client Platform Firmware Profile Specification). Dieses Log detailliert die Sequenz der Erweiterungen der PCRs und ist essentiell für eine vollständige Validierung. |
+
+**AttestationStatus Enum:**
+
+Definiert die möglichen Statuswerte für die Attestierung, die vom ZETA Attestation Service zurückgegeben werden.
+
+| Wert                               | Numerischer Wert | Beschreibung                                                                                                                                    |
+| :--------------------------------- | :--------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ATTESTATION_STATUS_UNSPECIFIED`   | 0                | Der Status ist nicht spezifiziert oder konnte nicht ermittelt werden. Dies sollte als Fehler interpretiert werden.                               |
+| `ATTESTATION_STATUS_SUCCESS`       | 1                | Die Attestierung war erfolgreich, die Quote wurde generiert und (falls eine Baseline-Prüfung serverseitig erfolgt) die Messungen entsprechen der Baseline. |
+| `ATTESTATION_STATUS_BASELINE_MISMATCH` | 2                | Die Attestierung war technisch erfolgreich, aber die aktuellen PCR-Messwerte weichen von der erwarteten Baseline ab.                             |
+| `ATTESTATION_STATUS_TPM_ERROR`     | 3                | Ein Fehler ist bei der Kommunikation mit dem TPM oder bei einer TPM-Operation aufgetreten (z.B. TPM nicht bereit, PCR nicht lesbar).               |
+| `ATTESTATION_STATUS_INVALID_REQUEST` | 4                | Die Anfrageparameter waren ungültig (z.B. `attestation_challenge` fehlt oder hat falsches Format, ungültige oder nicht unterstützte `pcr_indices`). |
+| `ATTESTATION_STATUS_INTERNAL_ERROR`| 5                | Ein interner, nicht näher spezifizierter Fehler ist auf Serverseite aufgetreten.                                                                  |
+| *... weitere spezifische Status*  | *...*            | *Spezifische Statuscodes für zukünftige Erweiterungen.*                                                                                            |
+
+**Fehlerbehandlung:**
+
+Der `ZetaAttestationService` verwendet standardmäßige gRPC-Statuscodes, um das Ergebnis der Operation auf Transportebene zu kommunizieren. Diese werden ergänzt durch den `status`-Feld in der `GetAttestationResponse` für anwendungsspezifische Logik. Die `google.rpc.Status` kann für detailliertere Fehlerinformationen verwendet werden (siehe `import "google/rpc/status.proto";`).
+
+Häufige gRPC-Statuscodes:
+
+-   **`OK` (0):** Die Anfrage war erfolgreich und die `GetAttestationResponse` enthält die Ergebnisse. Der `status`-Feld in der Response gibt den anwendungsspezifischen Erfolg oder Misserfolg an.
+-   **`INVALID_ARGUMENT` (3):**
+    -   Einer oder mehrere Parameter der Anfrage waren ungültig.
+    -   Beispiele: `attestation_challenge` fehlt, hat eine falsche Länge oder ein ungültiges Format; `pcr_indices` ist leer, enthält ungültige oder nicht unterstützte Indizes.
+    -   Der `status` in der Response könnte `ATTESTATION_STATUS_INVALID_REQUEST` sein.
+-   **`UNAUTHENTICATED` (16) / `PERMISSION_DENIED` (7):**
+    -   Der anfragende Client ist nicht authentifiziert oder nicht autorisiert, diese Anfrage zu stellen.
+    -   Relevant, wenn Mechanismen wie mTLS oder Token-basierte Authentifizierung verwendet werden.
+-   **`UNAVAILABLE` (14):**
+    -   Der ZETA Attestation Service kann die Attestierung derzeit nicht durchführen.
+    -   Beispiele: TPM ist nicht erreichbar oder nicht funktionsfähig; eine erforderliche Baseline-Konfiguration ist nicht vorhanden.
+    -   Der `status` in der Response könnte `ATTESTATION_STATUS_TPM_ERROR` oder `ATTESTATION_STATUS_INTERNAL_ERROR` sein.
+-   **`INTERNAL` (13):**
+    -   Ein unerwarteter serverseitiger Fehler ist aufgetreten, der nicht spezifischer kategorisiert werden kann.
+    -   Der `status` in der Response ist typischerweise `ATTESTATION_STATUS_INTERNAL_ERROR`.
+
+
+**Sicherheitsaspekte:**
+
+-   **Transport-Sicherheit:** Es wird dringend empfohlen, die Kommunikation zwischen Client und `ZetaAttestationService` mittels TLS, vorzugsweise mTLS (mutual TLS), abzusichern, um Authentizität, Integrität und Vertraulichkeit der übertragenen Daten zu gewährleisten.
+-   **Challenge-Response:** Die `attestation_challenge` ist ein kritischer Bestandteil zur Verhinderung von Replay-Angriffen. Sie muss für jede Attestierungsanfrage eindeutig sein und sicher vom ZETA Guard Authorization Server generiert und an den Client übermittelt werden.
+-   **Event Log Validierung:** Die alleinige Überprüfung der PCR-Werte ist oft nicht ausreichend. Eine gründliche Validierung der Attestierung erfordert das Parsen und Überprüfen des `event_log`, um die Kausalkette der Messungen nachzuvollziehen.
+
+
+---
+- **Operation:** `GetAttestationRequest`
 - **Parameter:**
   - **`attestation_challenge`:**
     - **Beschreibung:** Der SHA-256 Hashwert, der aus der Verkettung (`||`) des SHA-256 Fingerabdrucks des Public Client Instance Keys und der Nonce vom ZETA Guard Authorization Server berechnet wird. Dieser Wert dient der Verhinderung von Replay-Angriffen und der Korrelation der Attestierung mit einer spezifischen Anfrage vom ZETA Guard Authorization Server. Der Client ist für die Berechnung dieses Wertes verantwortlich.
