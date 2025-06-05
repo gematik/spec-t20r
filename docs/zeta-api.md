@@ -867,7 +867,7 @@ Definiert die möglichen Statuswerte für die Attestierung, die vom ZETA Attesta
 
 ---
 
-**Fehlerbehandlung:**
+- **Fehlerbehandlung:**
 
 Der `ZetaAttestationService` verwendet standardmäßige gRPC-Statuscodes, um das Ergebnis der Operation auf Transportebene zu kommunizieren. Diese werden ergänzt durch den `status`-Feld in der `GetAttestationResponse` für anwendungsspezifische Logik. Die `google.rpc.Status` kann für detailliertere Fehlerinformationen verwendet werden (siehe `import "google/rpc/status.proto";`).
 
@@ -889,7 +889,7 @@ Häufige gRPC-Statuscodes:
   - Ein unerwarteter serverseitiger Fehler ist aufgetreten, der nicht spezifischer kategorisiert werden kann.
   - Der `status` in der Response ist typischerweise `ATTESTATION_STATUS_INTERNAL_ERROR`.
 
-**Sicherheitsaspekte:**
+- **Sicherheitsaspekte:**
 
 - **Transport-Sicherheit:** Es wird dringend empfohlen, die Kommunikation zwischen Client und `ZetaAttestationService` mittels TLS, vorzugsweise mTLS (mutual TLS), abzusichern, um Authentizität, Integrität und Vertraulichkeit der übertragenen Daten zu gewährleisten.
 - **Challenge-Response:** Die `attestation_challenge` ist ein kritischer Bestandteil zur Verhinderung von Replay-Angriffen. Sie muss für jede Attestierungsanfrage eindeutig sein und sicher vom ZETA Guard Authorization Server generiert und an den Client übermittelt werden.
