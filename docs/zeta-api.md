@@ -795,6 +795,10 @@ Der ZETA Attestation Service wird vom Hersteller des stationären Clients bereit
 
 _Hinweis: Während der Installation oder bei Updates des stationären Clients muss auch ein Update des ZETA Attestation Service erfolgen um eine neue Baseline für die Integrität des stationären Clients zu setzen. Die Baseline besteht aus einem Hash über alle unveränderlichen Komponenten des stationären Clients, inkl. ZETA Attestation Service._
 
+_Hinweis: Der ZETA Attestation Service muss bei jedem Start des Clients die Messung über die Integrität des Clients durchführen und in das PCR schreiben._
+
+_Hinweis: Der ZETA Attestation Service ist nicht für mobile Clients vorgesehen. Mobile Clients verwenden eine andere Attestierungsmethode, die auf den jeweiligen Plattformen basiert (z.B. Android SafetyNet, iOS DeviceCheck)._
+
 #### 1.5.3.1 Dienstdefinition
 
 - **Service Name:** `zeta.attestation.service.v1.ZetaAttestationService`
