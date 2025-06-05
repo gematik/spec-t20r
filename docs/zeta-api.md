@@ -200,7 +200,7 @@ Content-Type: application/json
     "ES256",
     "RS512"
   ],
-  "dpop_bound_access_tokens_required": false,
+  "dpop_bound_access_tokens_required": true,
   "signed_metadata": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZXNvdXJjZSI6Imh0dHBzOi8vYXBpLmV4YW1wbGUuY29tIn0.XYZ123abc456def789",
   "zeta_asl_use": "required"
 }
@@ -373,7 +373,7 @@ Accept: application/json
 ```json
 {
   "nonce": "s.fRzE3M0J_QxL-x.6gA~x",
-  "expires_in": 300
+  "expires_in": 30
 }
 ```
 
@@ -798,6 +798,8 @@ _Hinweis: Während der Installation oder bei Updates des stationären Clients mu
 _Hinweis: Der ZETA Attestation Service muss bei jedem Start des Clients die Messung über die Integrität des Clients durchführen und in das PCR schreiben._
 
 _Hinweis: Der ZETA Attestation Service ist nicht für mobile Clients vorgesehen. Mobile Clients verwenden eine andere Attestierungsmethode, die auf den jeweiligen Plattformen basiert (z.B. Android SafetyNet, iOS DeviceCheck)._
+
+_Hinweis: TODO Umgang mit Messung des Clients weicht von Baseline ab; empfohlenes Verhalten für Client und ZetaAttestationService (z. B. automatisch Support informieren)_
 
 #### 1.5.3.1 Dienstdefinition
 
