@@ -40,8 +40,8 @@ alt Client has no client_id
 
   alt ZETA Attestation Service available
     Client -> Client: Calculate Public Key Hash\n(e.g., SHA256(PublicKeyJWK))
-    Client -> Client: Calculate Combined Data for TPM\n`combined_data = HASH(nonce + pubKeyHash)`
-    Client -> ZAS ++ : Get Attestation\nwith `combined_data`
+    Client -> Client: Calculate attestation_challenge for TPM\n`attestation_challenge = HASH(pubKeyHash + nonce)`
+    Client -> ZAS ++ : Get Attestation\nwith `attestation_challenge`
     alt ZETA TPM Service has no TPM Attestation Key
       note right: The Primärsystem and the ZETA Attestation Service are in the same trust domain.\nAt the time of client installation, the ZETA Attestation Service computes a\ncryptographic hash of the Primärsystem software and extends this hash into a specific\nPCR (22 or 23) using TPM2_PCR_Extend. The ZETA Attestation Service reads\nand stores the resulting PCR value as a reference measurement or baseline.\nAt every boot of the Primärsystem, the ZETA Attestation Service measures the Primärsystem\nsoftware and extends the resulting hash into the same PCR (22 or 23) using\nTPM2_PCR_Extend.
       ZAS -> TPM ++ : Generate Attestation Key Pair
@@ -52,12 +52,12 @@ alt Client has no client_id
     end
 
     ZAS -> ZAS: Select AK Handle
-    ZAS -> TPM: Get TPM Quote for PCRs (4, 5, 7, 10, 11, 22 or 23)\nand `combined_data` (as qualifyingData), signed with AK
-    note left: **Binding:** `combined_data` enthält Hash des\nClient Instance Public Keys und die Nonce.\nTPM signiert PCRs + `combined_data`.
+    ZAS -> TPM: Get TPM Quote for PCRs (4, 5, 7, 10, 11, 22 or 23)\nand `attestation_challenge` (as qualifyingData), signed with AK
+    note left: **Binding:** `attestation_challenge` enthält Hash des\nClient Instance Public Keys und die Nonce.\nDas TPM signiert PCRs + `attestation_challenge`.
     note right: PCR 4: Boot Loader Code, Digest\nPCR 5: Boot Loader Configuration, Digest\nPCR 7: Secure Boot State / Policy, Digest\nPCR   10:OS Kernel / IMA, Digest\nPCR 11: OS Components / VSM, Digest,\nPCR 22 or 23 (if available) App Data (ID, Version,\nSignature Hash),   Digest
-    ZAS -> ZAS: Get TCG Event Log (from OS/Firmware)
     TPM --> ZAS --: Return TPM Quote
-    note right: Quote contains:\n- `combined_data` (as qualifyingData)\n- Attested Data (PCR Select, PCR Digest),\n- Signature
+    ZAS -> ZAS: Get TCG Event Log (from OS/Firmware)
+    note right: Quote contains:\n- `attestation_challenge` (as qualifyingData)\n- Attested Data (PCR Select, PCR Digest),\n- Signature
     ZAS --> Client --: Return Attestation (Quote, EventLog, CertChain)
     Client -> Client: Create Client Statement JWT\nwith posture-tpm,\nincludes Attestation\nSigned with Client Instance Key
   else ZETA Attestation 'Service is not available
@@ -75,7 +75,6 @@ alt Client has no client_id
         "token_endpoint_auth_method": "private_key_jwt",
         "grant_types": ["urn:ietf:params:oauth:grant-type:token-exchange","refresh_token"],
         "jwks": { "keys": [ <Client_Instance_Public_Key_JWK> ] },
-        "nonce": "<nonce>", // From GET /nonce, for replay protection & binding check
         // Custom parameter for attestation:
         "urn:gematik:params:oauth:client-attestation-type:tpm2": {
            "client_statement": "<Base64(Client Statement JWT)>",
@@ -84,7 +83,7 @@ alt Client has no client_id
       }
   end note
   AuthS -> AuthS : Validate Request
-  note right: Validate nonce (Replay Check)\nValidate Client Assertion JWT (Signature with Public Key from jwks)\nCalculate expected_combined_data = HASH(nonce + HASH(PublicKeyFromJWKS))\nVerify qualifyingData in Quote == expected_combined_data\nValidate Client Statement JWT (Signature with Public Key from jwks)\nExtract TPM Quote & Cert Chain\nfrom Client Statement
+  note right: Validate nonce (Replay Check)\nValidate Client Assertion JWT (Signature with Public Key from jwks)\nCalculate expected_attestation_challenge = HASH(nonce + HASH(PublicKeyFromJWKS))\nVerify qualifyingData in Quote == expected_attestation_challenge\nValidate Client Statement JWT (Signature with Public Key from jwks)\nExtract TPM Quote & Cert Chain\nfrom Client Statement
 
   AuthS -> AuthS : Validate TPM Quote Signature\n(using AK Cert Chain / Trusted Roots)
   note right: Checks ensure:\n1. Client owns Private Key.\n2. TPM Quote is valid & from trusted TPM.\n3. **Quote was generated for *this specific* Client Key & Nonce.**\n4. Device state (PCRs) is compliant.\n5. Request is not a replay.

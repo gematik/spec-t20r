@@ -100,13 +100,11 @@ alt Client uses SM(C)-B Access Token
   note right of Client #lightblue
     **Token Exchange Request Body:**
     grant_type=urn:ietf:params:oauth:grant-type:token-exchange
-    &requested_token_type=urn:ietf:params:oauth:token-type:access_token
     &subject_token=<SM(C)-B_Access_Token>
     &subject_token_type=urn:ietf:params:oauth:token-type:jwt // Or custom
     &client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer
     &client_assertion=<Client_Assertion_JWT_for_Auth>
     &resource=<Target Resource URI>
-    &audience=<Target Audience>
     &scope=<Requested Scopes>
   end note
   AuthS -> AuthS : Validate subject_token (sig by SM(C)-B_PK, claims)
