@@ -1,6 +1,6 @@
-![gematik logo](/images/gematik_logo.svg)
-
 # ZETA API
+
+![gematik logo](/images/gematik_logo.svg)
 
 ## 1.1. Einführung
 
@@ -62,7 +62,7 @@ Die ZETA API ist so konzipiert, dass sie eine sichere und flexible Interaktion z
           - [Sicherheitsaspekte](#sicherheitsaspekte)
   - [1.6. Versionierung](#16-versionierung)
   - [1.7. Performance- und Lastannahmen](#17-performance--und-lastannahmen)
-        - [1.8 Rate Limits und Einschränkungen](#18-rate-limits-und-einschränkungen)
+  - [1.8 Rate Limits und Einschränkungen](#18-rate-limits-und-einschränkungen)
   - [1.9. Support und Kontaktinformationen](#19-support-und-kontaktinformationen)
   - [1.10. FAQs und Troubleshooting](#110-faqs-und-troubleshooting)
   - [1.11. Interaktive Dokumentation (optional)](#111-interaktive-dokumentation-optional)
@@ -622,9 +622,10 @@ Der Token Endpoint empfängt POST-Anfragen mit dem Content-Type `application/x-w
 | `client_assertion`     | `string` | Ja           | Die JWT, die zur Authentifizierung des Clients dient. Diese JWT muss vom Client signiert sein und folgende Claims enthalten: <br/>- `iss` (Issuer): Die Client ID.<br/>- `sub` (Subject): Die Client ID.<br/>- `aud` (Audience): Die URL des Token Endpoints.<br/>- `exp` (Expiration Time): Die Zeit, nach der die JWT ungültig wird.<br/>- `jti` (JWT ID): Ein eindeutiger Bezeichner für diese JWT, um Replay-Angriffe zu verhindern.<br/>- `iat` (Issued At): Zeitpunkt der Ausstellung der JWT. |
 | `resource`        | `string` | Ja           | Eine URI, die den Zieldienst oder die Zielressource angibt, für die der Client das angeforderte Sicherheitstoken verwenden möchte. Dadurch kann der Autorisierungsserver die für das Ziel geeigneten Richtlinien anwenden, z. B. den Typ und Inhalt des auszugebenden Tokens bestimmen oder festlegen, ob und wie das Token verschlüsselt werden soll. |
 | `subject_token_type`   | `string` | Ja           | Der Typ des Tokens, das ausgetauscht werden soll. Beispiele könnten sein: `urn:ietf:params:oauth:token-type:access_token`, `urn:ietf:params:oauth:token-type:jwt` oder andere spezifische URIs.|
-| `subject_token`        | `string` | Ja           | Das eigentliche Token, das ausgetauscht werden soll. Dies kann ein JWT, ein Referenz-Token oder ein anderes Format sein, abhängig vom `subject_token_type`.                                                  | `scope`                | `string` | Optional     | Eine durch Leerzeichen getrennte Liste von Scopes, für die der Access Token ausgestellt werden soll. Wenn nicht angegeben, werden die mit dem `subject_token` und/oder Client verbundenen Standard-Scopes verwendet.
+| `subject_token`        | `string` | Ja           | Das eigentliche Token, das ausgetauscht werden soll. Dies kann ein JWT, ein Referenz-Token oder ein anderes Format sein, abhängig vom `subject_token_type`.|
+| `scope`                | `string` | Optional     | Eine durch Leerzeichen getrennte Liste von Scopes, für die der Access Token ausgestellt werden soll. Wenn nicht angegeben, werden die mit dem `subject_token` und/oder Client verbundenen Standard-Scopes verwendet.|
 
-**Beispiel Anfrage**
+**Beispiel Anfrage:**
 
 ```bash
 curl -X POST \
@@ -819,7 +820,7 @@ Die `GetAttestationRequest`-Nachricht enthält die Parameter, die für die Anfor
 | Feld                    | Typ             | Erforderlich | Beschreibung                                                                                                                                                                                                                            |
 | :---------------------- | :-------------- | :----------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `attestation_challenge` | `bytes`         | Ja           | Ein SHA-256 Hashwert, berechnet aus der Verkettung des SHA-256 Fingerabdrucks des Public Client Instance Keys und einer Nonce vom ZETA Guard Authorization Server. Dient zur Verhinderung von Replay-Angriffen und zur Korrelation. |
-| `pcr_indices`           | `repeated uint32` | Ja           | Eine Liste von TPM PCR-Indizes, deren aktuelle Werte in die Attestierungs-Quote aufgenommen und zurückgegeben werden sollen.
+| `pcr_indices`           | `repeated uint32` | Ja           | Eine Liste von TPM PCR-Indizes, deren aktuelle Werte in die Attestierungs-Quote aufgenommen und zurückgegeben werden sollen.|
 
 ---
 
@@ -936,7 +937,7 @@ Lastannahmen: Informationen über das erwartete Lastverhalten auf der API, wie z
 - ZETA Guard PEP
 - ZETA Guard Refresh Token Exchange
 
-##### 1.8 Rate Limits und Einschränkungen
+## 1.8 Rate Limits und Einschränkungen
 
 Der OAuth Protected Resource Well-Known Endpoint ist so konfiguriert, dass er eine Rate-Limiting-Strategie implementiert. Der ZETA Client muss die Rate Limits beachten, um eine Überlastung des Endpunkts zu vermeiden. Die genauen Limits können je nach Implementierung variieren, aber typischerweise gelten folgende Richtlinien:
 
