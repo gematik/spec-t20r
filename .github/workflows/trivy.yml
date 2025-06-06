@@ -36,12 +36,12 @@ jobs:
 
       - name: Build an image from Dockerfile
         run: |
-          docker build -t my-image-name -f components/otel-bde-poc/ZETA-Guard/resource-server/src/Dockerfile components/otel-bde-poc/ZETA-Guard/resource-server/src
+          docker build -t rs-vsdm2-app -f components/otel-bde-poc/ZETA-Guard/resource-server/src/Dockerfile components/otel-bde-poc/ZETA-Guard/resource-server/src
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe
         with:
-          image-ref: 'docker.io/my-organization/my-app:${{ github.sha }}'
+          image-ref: 'rs-vsdm2-app'
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results.sarif'
