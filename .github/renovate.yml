@@ -1,0 +1,23 @@
+name: Renovate Dependencies
+
+on:
+  # Führe den Job am 1. Tag jedes Monats um 4:00 Uhr UTC aus
+  schedule:
+    - cron: '0 4 1 * *'
+  
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Self-hosted Renovate
+        uses: renovatebot/renovate-action@v40 # Use a specific version for stability
+        with:
+          # The GITHUB_TOKEN is automatically created and provided by GitHub Actions.
+          # It has sufficient permissions to create branches and pull requests.
+          token: ${{ secrets.GITHUB_TOKEN }}
