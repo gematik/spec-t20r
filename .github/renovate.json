@@ -3,7 +3,8 @@
   "extends": [
     "config:base"
   ],
-  "kubernetes": {
-    "fileMatch": ["\\.yaml$", "\\.yml$"]
-  }
+  "includePaths": [
+    "components/otel-bde-poc/ZETA-Guard/**"
+  ],
+  "prConcurrentLimit": 5
 }
