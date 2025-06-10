@@ -1,4 +1,4 @@
-@startuml "token-exchange-conditional-attestation"
+@startuml "token-exchange-with-client-assertion-jwt-auth"
 autonumber "(00)"
 skinparam defaultFontSize 10
 skinparam defaultFontName Helvetica
