@@ -16,7 +16,7 @@ Hier sind die Festlegungen zur Telematikinfrastruktur dokumentiert. Es werden in
 
 Der Zugang zu Diensten der Telematikinfrastruktur 2.0 erfolgt über das Internet. Zero Trust Access (ZETA) ist eine Lösung, die die Sicherheit und den Zugriff auf diese Dienste gewährleistet. Es basiert auf dem Prinzip, dass keinem Client oder Benutzer automatisch vertraut wird, sondern jeder Zugriff überprüft und autorisiert werden muss.
 
-[ZETA API](/docs/zeta-api.md)
+[ZETA API](https://github.com/gematik/zeta/docs/zeta-api.md)
 
 ## Branch Modell
 
