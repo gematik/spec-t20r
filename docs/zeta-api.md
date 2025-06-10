@@ -28,6 +28,10 @@ Die ZETA API ist so konzipiert, dass sie eine sichere und flexible Interaktion z
       - [1.4.2.1 Stationäre Clients](#1421-stationäre-clients)
       - [1.4.2.2 Mobile Clients](#1422-mobile-clients)
     - [1.4.3 Authentifizierung und Autorisierung](#143-authentifizierung-und-autorisierung)
+      - [1.4.3.1 Stationäre Clients](#1431-stationäre-clients)
+        - [1.4.3.1.1 Pfad A: Initialer Token-Austausch mit TPM-Attestierung](#14311-pfad-a-initialer-token-austausch-mit-tpm-attestierung)
+        - [Pfad B: Token-Erneuerung via Refresh Token](#pfad-b-token-erneuerung-via-refresh-token)
+      - [1.4.3.2 Mobile Clients](#1432-mobile-clients)
   - [1.5. Endpunkte](#15-endpunkte)
     - [1.5.1 ZETA Guard API Endpunkte](#151-zeta-guard-api-endpunkte)
       - [1.5.1.1 OAuth Protected Resource Well-Known Endpoint](#1511-oauth-protected-resource-well-known-endpoint)
@@ -143,22 +147,97 @@ Die Registrierung für mobile Clients erfolgt ähnlich wie bei stationären Clie
 
 ### 1.4.3 Authentifizierung und Autorisierung
 
-Wie können Nutzer sich authentifizieren und welche Berechtigungen gibt es?
-Welche Sicherheitsmaßnahmen sind getroffen?
+Nach erfolgreicher Registrierung besitzt der ZETA Client eine `client_id` und ein Instanz-Schlüsselpaar. Um auf einen Fachdienst zugreifen zu können, benötigt der Client ein Access Token vom Authorization Server (AS).
 
-API-Schlüssel oder Token: Wie erhält der Nutzer einen API-Schlüssel oder ein Authentifizierungstoken?
-Autorisierungsverfahren: Beschreibung der verwendeten Authentifizierungsmethoden (z.B. OAuth, Basic Auth).
-Beispiele: Beispielanfragen für die Authentifizierung.
+#### 1.4.3.1 Stationäre Clients
 
----
+Die Authentifizierung und Autorisierung für stationäre Clients unterscheidet zwei Hauptfälle:
 
-Nachdem der Client registriert ist oder bereits über eine `client_id` verfügt, kann er einen **AS Access Token** vom Authorization Server erhalten.
+1. **Initialer Token-Austausch:** Hierbei wird die Identität der Institution (mittels `subject_token` von der SM(C)-B) nachgewiesen und die Integrität des Clients durch eine TPM-Attestierung überprüft. Der Initiale Token-Austausch muss jeweils zu Beginn einer neuen Session durchgeführt werden. Dies ist notwendig, um sicherzustellen, dass der ZETA Client und das Primärsystem weiterhin vertrauenswürdig sind.
+2. **Token-Erneuerung (Refresh Token):** Hierbei wird ein vorhandenes Refresh Token genutzt, um ein neues Access Token und ein neues Refresh Token zu erhalten. Dieser Prozess ist performanter und verzichtet auf eine erneute TPM-Attestierung.
+
+Diese Trennung schafft eine Balance zwischen höchster Sicherheit beim initialen Zugriff und Effizienz bei der Erneuerung bestehender Token. Die Lebensdauer der Session wird damit zu einem wichtigen Sicherheitsparameter.
+
+Die folgende Abbildung zeigt den Ablauf des Token-Austauschs mit Client Assertion JWT Authentifizierung und DPoP Proof.
 
 ![tpm-attestation-and-token-exchange-overview](/images/tpm-attestation-and-token-exchange/token-exchange-with-client-assertion-jwt-auth.svg)
+
+##### 1.4.3.1.1 Pfad A: Initialer Token-Austausch mit TPM-Attestierung
+
+Dieser Pfad wird beschritten, wenn der Client keine bestehende Session (d.h. kein gültiges Refresh Token) hat.
+
+1.  **Vorbereitung:**
+    *   Der Client fordert eine frische, einmalig gültige `nonce` vom Authorization Server an (`GET /nonce`).
+    *   Der Client erzeugt ein temporäres, nur für diese Session gültiges DPoP-Schlüsselpaar.
+   
+2.  **Integritätsprüfung und kryptografische Bindung:**
+    *   Um zu beweisen, dass die Attestierung für genau diese Transaktion erstellt wurde, erzeugt der Client eine `attestation_challenge`. Diese bindet den Zustand des TPMs an den aktuellen DPoP-Session-Schlüssel und die `nonce` des AS: `attestation_challenge = HASH( HASH(DPoP_Public_Key_JWK) + nonce )`.
+    *   Der Client fordert beim ZETA Attestation Service eine TPM Quote an, die diese `attestation_challenge` als `qualifyingData` enthält.
+
+3.  **Erstellen des Client Statement JWT:** In Anlehnung an den DCR-Prozess werden die Attestierungsartefakte (TPM Quote, Event Log, Zertifikatskette) in ein separates **Client Statement JWT** gekapselt. Dieses JWT wird mit dem langlebigen Instanz-Schlüssel des Clients signiert und beweist, dass der registrierte Client diese Attestierung präsentiert.
+
+4.  **Erstellen der Client Assertion (mit Attestierung):** Für die Authentifizierung am Token-Endpoint erstellt der Client eine **Client Assertion**. Dieses JWT, ebenfalls mit dem Instanz-Schlüssel signiert, dient als "Umschlag":
+    *   Es enthält einen Verweis auf den DPoP-Schlüssel der Session (`cnf.jkt`).
+    *   Es enthält das zuvor erstellte `Client Statement JWT` als Beweis für die Geräteintegrität.
+
+    ```json
+    // Client Assertion für initialen Token-Austausch
+    {
+      "iss": "<client_id>", "sub": "<client_id>",
+      "aud": "<AS_Token_Endpoint_URL>",
+      "exp": ..., "jti": "...",
+      "cnf": { "jkt": "<DPoP_Key_Thumbprint>" },
+      // Kapselung des Attestierungsnachweises
+      "urn:gematik:params:oauth:client-attestation:tpm2": {
+         "client_statement": "<Base64(Client Statement JWT)>",
+         "client_statement_format": "client-statement-jwt"
+       }
+    }
+    ```
+
+5.  **Authentisierung der Institution (SM(C)-B Token):** Parallel dazu erstellt der Client das `subject_token`. Dies ist ein JWT, das vom Konnektor mittels der SM(C)-B signiert wird und die Identität der Institution (z.B. Praxis) belegt. Die Audience (`aud`) dieses Tokens ist der Ziel-Fachdienst (Resource Server).
+
+6.  **Token Request:** Der Client sendet eine `POST`-Anfrage an den `/token`-Endpoint, die alle Teile kombiniert: `grant_type=token-exchange`, das `subject_token`, die `client_assertion` (mit der eingebetteten Attestierung) und den DPoP-Proof.
+
+7.  **Validierung durch den AS:** Der AS führt eine umfassende Prüfung durch, insbesondere die **Validierung der eingebetteten TPM-Attestierung** (Prüfung des Client Statements, der Quote, der `attestation_challenge` und der PCR-Werte gegen die Sicherheits-Policy).
+
+##### Pfad B: Token-Erneuerung via Refresh Token
+
+Dieser effiziente Pfad wird genutzt, wenn ein gültiges Refresh Token vorhanden ist.
+
+1.  **Vorbereitung:** Der Client erzeugt ein neues DPoP-Schlüsselpaar und fordert eine frische `nonce` vom AS an. Eine TPM-Attestierung findet **nicht** statt.
+
+2.  **Erstellen der Client Assertion (ohne Attestierung):** Der Client erstellt eine einfache `client_assertion`. Sie beweist durch ihre Signatur den Besitz des Instanz-Schlüssels und bindet die Anfrage an den neuen DPoP-Schlüssel (`cnf.jkt`), enthält aber keine Attestierungsdaten.
+
+    ```json
+    // Client Assertion für Refresh-Token-Nutzung
+    {
+      "iss": "<client_id>",
+      "sub": "<client_id>",
+      "aud": "<AS_Token_Endpoint_URL>",
+      "exp": ..., "jti": "...",
+      "cnf": { "jkt": "<DPoP_Key_Thumbprint>" }
+    }
+    ```
+
+3.  **Token Request:** Der Client sendet eine `POST`-Anfrage an den `/token`-Endpoint mit `grant_type=refresh_token`, dem Refresh Token und der einfachen `client_assertion`.
+
+4.  **Validierung durch den AS:** Der AS validiert das Refresh Token, die Signatur der Client Assertion und den DPoP-Proof. Die Prüfung einer TPM-Attestierung entfällt.
+
+**Gemeinsame nachfolgende Schritte**
+
+Nach erfolgreicher Validierung in einem der beiden Pfade fragt der AS bei der Policy Engine an, ob der Zugriff gewährt werden soll. Ist dies der Fall, stellt er ein neues Access Token (gebunden an den DPoP-Schlüssel) und ggf. ein rotiertes Refresh Token aus.
+
+---
+Nachdem der Client registriert ist oder bereits über eine `client_id` verfügt, kann er einen **AS Access Token** vom Authorization Server erhalten.
 
 Dies geschieht über einen **Token Exchange**. Der Client erstellt entweder einen SM(C)-B Access Token (wenn kein gültiger Refresh Token vorhanden ist) oder verwendet einen vorhandenen Refresh Token. Zusätzlich fordert der Client eine Nonce vom Authorization Server für den DPoP Proof an. Der Client generiert ein **DPoP Key Pair** (Session-basiert) und erstellt einen **DPoP Proof JWT**, signiert mit dem DPoP Private Key. Dieses JWT enthält den Public Key des DPoP Key Pairs (`jwk`-Claim) sowie Details zur Anfrage (`htm`, `htu`) und die Nonce. Parallel dazu erstellt der Client einen **Client Assertion JWT für die Authentifizierung** am Authorization Server. Dieser Assertion JWT wird mit dem **Client Instance Private Key** signiert. Wichtig ist, dass dieser Assertion JWT einen `cnf` Claim enthält, der den Hash (`jkt`) des Public Keys des DPoP Key Pairs referenziert. Der Client sendet einen POST /token Request an den Authorization Server. Dieser Request verwendet `grant_type=urn:ietf:params:oauth:grant-type:token-exchange` (oder `refresh_token`) und enthält entweder den SM(C)-B Access Token im `subject_token` (oder den Refresh Token) sowie den Client Assertion JWT im `client_assertion`. Zusätzlich wird der DPoP Proof JWT im `DPoP` Header übertragen. Der Authorization Server validiert das `subject_token` (falls SM(C)-B Token verwendet wird) und prüft dessen Bindung zur Client-Identität. Er validiert den Client Assertion JWT anhand des gespeicherten Client Instance Public Keys. Er validiert den DPoP Proof JWT anhand des Public Keys, der im DPoP Proof selbst enthalten ist, und prüft dessen Bindung an die Anfrage und die Nonce. Darüber hinaus prüft der AuthS, ob der Hash des DPoP Public Keys im Client Assertion JWT (`cnf.jkt`) mit dem Hash des Public Keys im DPoP Proof (`jwk`) übereinstimmt. Nach erfolgreicher technischer Validierung wird die **Policy Engine** aufgerufen, um basierend auf kontextbezogenen Daten (einschließlich Client-Identität und SM(C)-B Identität) die Zugriffsberechtigung für die angeforderte Ressource zu prüfen. Bei positivem Policy-Entscheid generiert der Authorization Server einen **AS Access Token** und optional einen Refresh Token. Der AS Access Token ist über den `cnf.jkt`-Claim an den DPoP Key gebunden, der im DPoP Proof verwendet wurde. Die Antwort an den Client enthält den Access Token und gibt über `token_type: DPoP` an, dass DPoP für die Nutzung des Tokens erforderlich ist.
 
 Mit dem erhaltenen AS Access Token und dem zugehörigen DPoP Private Key kann der Client anschließend die angeforderte Ressource auf dem Resource Server über den PEP http Proxy abrufen. Der PEP http Proxy validiert sowohl den Access Token als auch den DPoP Proof vor der Weiterleitung der Anfrage an den Resource Server.
+
+#### 1.4.3.2 Mobile Clients
+
+Die Authentifizierung für mobile Clients erfolgt mit OpenID Connect und OAuth2 Authorization Code Flow.
 
 ## 1.5. Endpunkte
 
