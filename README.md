@@ -1,8 +1,22 @@
 # Telematikinfrastruktur
 
-<img title="gematik Telematikinfrastruktur" alt="gematik Telematikinfrastruktur" src="/images/gematik_logo.svg">
+![gematik](/images/gematik-logo.svg)
 
 Hier sind die Festlegungen zur Telematikinfrastruktur dokumentiert. Es werden insbesondere die Komponenten der anwendungsübergreifenden Telematikinfrastruktur sowie deren Schnittstellen beschrieben.
+
+## Inhalt
+
+- [Telematikinfrastruktur](#telematikinfrastruktur)
+  - [Inhalt](#inhalt)
+  - [ZETA](#zeta)
+  - [Branch Modell](#branch-modell)
+  - [Lizenzbedingungen](#lizenzbedingungen)
+
+## ZETA
+
+Der Zugang zu Diensten der Telematikinfrastruktur 2.0 erfolgt über das Internet. Zero Trust Access (ZETA) ist eine Lösung, die die Sicherheit und den Zugriff auf diese Dienste gewährleistet. Es basiert auf dem Prinzip, dass keinem Client oder Benutzer automatisch vertraut wird, sondern jeder Zugriff überprüft und autorisiert werden muss.
+
+[ZETA API](/docs/zeta-api.md)
 
 ## Branch Modell
 
