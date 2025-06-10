@@ -167,19 +167,19 @@ Die folgende Abbildung zeigt den Ablauf des Token-Austauschs mit Client Assertio
 
 Dieser Pfad wird beschritten, wenn der Client keine bestehende Session (d.h. kein gültiges Refresh Token) hat.
 
-1.  **Vorbereitung:**
-    *   Der Client fordert eine frische, einmalig gültige `nonce` vom Authorization Server an (`GET /nonce`).
-    *   Der Client erzeugt ein temporäres, nur für diese Session gültiges DPoP-Schlüsselpaar.
-   
-2.  **Integritätsprüfung und kryptografische Bindung:**
-    *   Um zu beweisen, dass die Attestierung für genau diese Transaktion erstellt wurde, erzeugt der Client eine `attestation_challenge`. Diese bindet den Zustand des TPMs an den aktuellen DPoP-Session-Schlüssel und die `nonce` des AS: `attestation_challenge = HASH( HASH(DPoP_Public_Key_JWK) + nonce )`.
-    *   Der Client fordert beim ZETA Attestation Service eine TPM Quote an, die diese `attestation_challenge` als `qualifyingData` enthält.
+1. **Vorbereitung:**
+    - Der Client fordert eine frische, einmalig gültige `nonce` vom Authorization Server an (`GET /nonce`).
+    - Der Client erzeugt ein temporäres, nur für diese Session gültiges DPoP-Schlüsselpaar.
 
-3.  **Erstellen des Client Statement JWT:** In Anlehnung an den DCR-Prozess werden die Attestierungsartefakte (TPM Quote, Event Log, Zertifikatskette) in ein separates **Client Statement JWT** gekapselt. Dieses JWT wird mit dem langlebigen Instanz-Schlüssel des Clients signiert und beweist, dass der registrierte Client diese Attestierung präsentiert.
+2. **Integritätsprüfung und kryptografische Bindung:**
+    - Um zu beweisen, dass die Attestierung für genau diese Transaktion erstellt wurde, erzeugt der Client eine `attestation_challenge`. Diese bindet den Zustand des TPMs an den aktuellen DPoP-Session-Schlüssel und die `nonce` des AS: `attestation_challenge = HASH( HASH(DPoP_Public_Key_JWK) + nonce )`.
+    - Der Client fordert beim ZETA Attestation Service eine TPM Quote an, die diese `attestation_challenge` als `qualifyingData` enthält.
 
-4.  **Erstellen der Client Assertion (mit Attestierung):** Für die Authentifizierung am Token-Endpoint erstellt der Client eine **Client Assertion**. Dieses JWT, ebenfalls mit dem Instanz-Schlüssel signiert, dient als "Umschlag":
-    *   Es enthält einen Verweis auf den DPoP-Schlüssel der Session (`cnf.jkt`).
-    *   Es enthält das zuvor erstellte `Client Statement JWT` als Beweis für die Geräteintegrität.
+3. **Erstellen des Client Statement JWT:** In Anlehnung an den DCR-Prozess werden die Attestierungsartefakte (TPM Quote, Event Log, Zertifikatskette) in ein separates **Client Statement JWT** gekapselt. Dieses JWT wird mit dem langlebigen Instanz-Schlüssel des Clients signiert und beweist, dass der registrierte Client diese Attestierung präsentiert.
+
+4. **Erstellen der Client Assertion (mit Attestierung):** Für die Authentifizierung am Token-Endpoint erstellt der Client eine **Client Assertion**. Dieses JWT, ebenfalls mit dem Instanz-Schlüssel signiert, dient als "Umschlag":
+    - Es enthält einen Verweis auf den DPoP-Schlüssel der Session (`cnf.jkt`).
+    - Es enthält das zuvor erstellte `Client Statement JWT` als Beweis für die Geräteintegrität.
 
     ```json
     // Client Assertion für initialen Token-Austausch
@@ -196,11 +196,11 @@ Dieser Pfad wird beschritten, wenn der Client keine bestehende Session (d.h. kei
     }
     ```
 
-5.  **Authentisierung der Institution (SM(C)-B Token):** Parallel dazu erstellt der Client das `subject_token`. Dies ist ein JWT, das vom Konnektor mittels der SM(C)-B signiert wird und die Identität der Institution (z.B. Praxis) belegt. Die Audience (`aud`) dieses Tokens ist der Ziel-Fachdienst (Resource Server).
+5. **Authentisierung der Institution (SM(C)-B Token):** Parallel dazu erstellt der Client das `subject_token`. Dies ist ein JWT, das vom Konnektor mittels der SM(C)-B signiert wird und die Identität der Institution (z.B. Praxis) belegt. Die Audience (`aud`) dieses Tokens ist der Ziel-Fachdienst (Resource Server).
 
-6.  **Token Request:** Der Client sendet eine `POST`-Anfrage an den `/token`-Endpoint, die alle Teile kombiniert: `grant_type=token-exchange`, das `subject_token`, die `client_assertion` (mit der eingebetteten Attestierung) und den DPoP-Proof.
+6. **Token Request:** Der Client sendet eine `POST`-Anfrage an den `/token`-Endpoint, die alle Teile kombiniert: `grant_type=token-exchange`, das `subject_token`, die `client_assertion` (mit der eingebetteten Attestierung) und den DPoP-Proof.
 
-7.  **Validierung durch den AS:** Der AS führt eine umfassende Prüfung durch, insbesondere die **Validierung der eingebetteten TPM-Attestierung** (Prüfung des Client Statements, der Quote, der `attestation_challenge` und der PCR-Werte gegen die Sicherheits-Policy).
+7. **Validierung durch den AS:** Der AS führt eine umfassende Prüfung durch, insbesondere die **Validierung der eingebetteten TPM-Attestierung** (Prüfung des Client Statements, der Quote, der `attestation_challenge` und der PCR-Werte gegen die Sicherheits-Policy).
 
 ##### 1.4.3.1.2 Pfad B: Token-Erneuerung via Refresh Token
 
@@ -511,7 +511,7 @@ Dieser Fehler tritt auf, wenn der Client die vom Server festgelegten Ratenbegren
 **Content-Type:**
 `application/problem+json`
 
-**Retry-After: 60**
+**Retry-After:** 60
 
 ```json
 {
@@ -595,7 +595,7 @@ Content-type: application/json
 | `redirect_uris`             | `array`  | Eine Liste von Redirection-URI-Strings, die der Client für die Weiterleitung von Autorisierungsantworten verwendet. Muss mindestens eine URI enthalten.|
 | `grant_types`               | `array`  | Eine Liste der unterstützten Grant Types (`authorization_code`, `urn:ietf:params:oauth:grant-type:token-exchange`, `refresh_token`).|
 | `software_statement`        | `string` | Ein JWS Compact Serialization string (JWT), der vom Software-Anbieter signiert ist. Dieses JWT muss folgende Claims enthalten: <br> - `software_id` (String): Eine eindeutige ID der Software (z.B. UUID). <br> - `software_version` (String): Die Version der Software. <br> - `organisation_id` (String): Die ID der Organisation, die die Software bereitstellt. <br> - `software_jwk_set` (JSON Object) oder `software_jwk_set_uri` (String): Der Public Key (Set) der Software, typischerweise für die Validierung von Signaturen der Software selbst. <br> - `attestation_cert_chain` (Array of Strings): Eine Kette von PEM-enkodierten X.509-Zertifikaten, die den Nachweis der TPM-Attestierung ermöglichen. <br> - `attestation_jwt` (String): Ein weiteres JWT, das den eigentlichen TPM-Attestierungsnachweis enthält (oft ein Verifiable Credential oder ähnliches). |
-| `jwks` | `string` | Client's JSON Web Key Set [RFC7517] Dokument, dass den Client Public Key enthält.
+| `jwks` | `string` | Client's JSON Web Key Set [RFC7517] Dokument, dass den Client Public Key enthält.|
 
 **Optionale Parameter im Anfrage-Body (gemäß RFC 7591):**
 
@@ -899,13 +899,13 @@ Der `ZetaAttestationService` stellt einen gRPC-Dienst zur Verfügung, der es sta
 
 Der ZETA Attestation Service wird vom Hersteller des stationären Clients bereitgestellt und es muss eine Vertrauensbeziehung zwischen stationären Client und ZETA Attestation Service bestehen, um zu gewährleisten, dass die Attestation über die vorgesehenen Software-Komponenten erfolgt.
 
-_Hinweis: Während der Installation oder bei Updates des stationären Clients muss auch ein Update des ZETA Attestation Service erfolgen um eine neue Baseline für die Integrität des stationären Clients zu setzen. Die Baseline besteht aus einem Hash über alle unveränderlichen Komponenten des stationären Clients, inkl. ZETA Attestation Service._
+_Hinweis:_ Während der Installation oder bei Updates des stationären Clients muss auch ein Update des ZETA Attestation Service erfolgen um eine neue Baseline für die Integrität des stationären Clients zu setzen. Die Baseline besteht aus einem Hash über alle unveränderlichen Komponenten des stationären Clients, inkl. ZETA Attestation Service.
 
-_Hinweis: Der ZETA Attestation Service muss bei jedem Start des Clients die Messung über die Integrität des Clients durchführen und in das PCR schreiben._
+_Hinweis:_ Der ZETA Attestation Service muss bei jedem Start des Clients die Messung über die Integrität des Clients durchführen und in das PCR schreiben.
 
-_Hinweis: Der ZETA Attestation Service ist nicht für mobile Clients vorgesehen. Mobile Clients verwenden eine andere Attestierungsmethode, die auf den jeweiligen Plattformen basiert (z.B. Android SafetyNet, iOS DeviceCheck)._
+_Hinweis:_ Der ZETA Attestation Service ist nicht für mobile Clients vorgesehen. Mobile Clients verwenden eine andere Attestierungsmethode, die auf den jeweiligen Plattformen basiert (z.B. Android SafetyNet, iOS DeviceCheck).
 
-_Hinweis: TODO Umgang mit Messung des Clients weicht von Baseline ab; empfohlenes Verhalten für Client und ZetaAttestationService (z. B. automatisch Support informieren)_
+_Hinweis:_ TODO Umgang mit Messung des Clients weicht von Baseline ab; empfohlenes Verhalten für Client und ZetaAttestationService (z. B. automatisch Support informieren)
 
 #### 1.5.3.1 Dienstdefinition
 
@@ -1055,9 +1055,7 @@ oder:
 - RateLimit-Policy
 - RateLimit
 
-**Beispiele**
-
-[Draft RFC für Rate Limits](https://www.ietf.org/archive/id/draft-ietf-httpapi-ratelimit-headers-09.html#name-ratelimit-policy-field)
+**Beispiele:** [Draft RFC für Rate Limits](https://www.ietf.org/archive/id/draft-ietf-httpapi-ratelimit-headers-09.html#name-ratelimit-policy-field)
 
 ## 1.9. Support und Kontaktinformationen
 

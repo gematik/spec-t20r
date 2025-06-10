@@ -74,7 +74,7 @@ alt ZETA Client uses SM(C)-B Access Token (Initial Token Exchange with Attestati
       {
         "iss": "<client_id>", // Issuer is the client
         "sub": "<Telematik-ID from SM(C)-B>", // Subject is the institution
-        "aud": "<Resource_Server_Endpoint_URL>", // Audience is the Resource Server
+        "aud": "[<Resource_Server_Endpoint_URL>]", // Audience is the Resource Server
         "exp": ..., // Short-lived
         "iat": ...,
         "jti": "...",
