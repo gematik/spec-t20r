@@ -4,9 +4,9 @@
 
 Hier sind die Festlegungen zur Telematikinfrastruktur dokumentiert. Es werden insbesondere die Komponenten der anwendungsübergreifenden Telematikinfrastruktur sowie deren Schnittstellen beschrieben.
 
-## Branch Modell
+## Branch-Modell
 
-In diesem Repository werden Branches verwendet um den Status der Weiterentwicklung und das Review von Änderungen abzubilden.
+In diesem Repository werden Branches verwendet, um den Status der Weiterentwicklung und das Review von Änderungen abzubilden.
 
 Folgende Branches werden verwendet
 
