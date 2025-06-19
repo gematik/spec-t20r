@@ -20,7 +20,7 @@ Der Zugang zu Diensten der Telematikinfrastruktur 2.0 erfolgt über das Internet
 
 ## Branch Modell
 
-In diesem Repository werden Branches verwendet um den Status der Weiterentwicklung und das Review von Änderungen abzubilden.
+In diesem Repository werden Branches verwendet, um den Status der Weiterentwicklung und das Review von Änderungen abzubilden.
 
 Folgende Branches werden verwendet
 
