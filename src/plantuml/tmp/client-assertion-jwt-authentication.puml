@@ -16,7 +16,7 @@ deactivate AS
 
 Client -> RS: Zugriff auf Ressource mit Access Token und DPoP Header
 activate RS
-note right: Zugriffsschutz\n mit DPoP
+note right: Zugriffsschutz mit DPoP
 RS --> Client: Ressource
 deactivate RS
 
