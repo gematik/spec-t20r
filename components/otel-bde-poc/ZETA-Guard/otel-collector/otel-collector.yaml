@@ -97,7 +97,7 @@ data:
         headers:  # <----- Access Token als Header
           "Authorization": "Bearer ${env:GEMATIK_SIEM_ACCESS_TOKEN}" # <----- Access Token als Bearer Token im Header
       debug:
-        verbosity: normal
+        verbosity: detailed
   
     processors:
       filter/bde-traces:
@@ -171,3 +171,7 @@ data:
           receivers: [otlp]
           processors: [filter/siem-event-metrics, batch] # <----- Filter HIER eingefügt
           exporters: [otlp/gematik-siem] # <----- Nur otlp/gematik-siem Exporter in dieser Pipeline
+        logs:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [debug]
