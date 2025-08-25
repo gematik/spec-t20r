@@ -234,3 +234,99 @@ spec:
 * **Ressourcenschonend:** Die kryptographische Last liegt ausschließlich in der CI-Pipeline, nicht auf dem K8s API-Server oder den Admission-Controllern.
 * **Klare Trennung:** Die CI-Pipelines sind für die Erstellung der "Beweise" zuständig. Kyverno ist nur für die schnelle "Prüfung der Beweise" zuständig.
 * **GitOps-freundlich:** Die `ClusterImagePolicy`-Objekte können wie jeder andere Kubernetes-Manifest in einem Git-Repository verwaltet werden, was volle Nachvollziehbarkeit bietet.
+
+---
+
+## cosign Technische Umsetzung
+
+`cosign` nutzt die Tatsache, dass eine OCI-kompatible Registry (wie Google Artifact Registry, Docker Hub, etc.) nicht nur Images, sondern beliebige Artefakte speichern kann. Eine Signatur ist ein solches Artefakt. Der Standard- und empfohlene Weg, wie `cosign` dies tut, ist die Verwendung eines speziellen Tag-Schemas.
+
+**Der Kern der Methode:** Für ein Image, das durch seinen unveränderlichen Digest identifiziert wird (z.B. `zeta-guard@sha256:abc123...`), erstellt `cosign` ein separates Artefakt unter einem vorhersagbaren Tag: `sha256-abc123....sig`.
+
+Hinter diesem `.sig`-Tag verbirgt sich ein spezielles **"Signature Manifest"**. Dieses Manifest ist im Grunde ein Inhaltsverzeichnis, dessen Einträge (genannt "Layer" oder "Blobs") die eigentlichen Signatur-Payloads sind.
+
+---
+
+### Der Ablauf mit Developer- und Maintainer-Signaturen
+
+**Ausgangszustand:**
+Ihre Entwickler-Pipeline hat das Image gebaut und gepusht. In der Registry existiert nur das Image-Manifest.
+
+```
+registry.zeta.corp/
+└── zeta-guard
+    └── manifests
+        └── sha256:abc123...  (Das ist Ihr Image)
+```
+
+**Schritt 1: Der Entwickler signiert das Image**
+
+1. **Befehl:** `cosign sign registry.zeta.corp/zeta-guard@sha256:abc123...`
+2. **Was `cosign` tut:**
+    * Es stellt fest: "Für dieses Image gibt es noch kein Signature Manifest."
+    * Es erstellt ein **neues Signature Manifest**.
+    * Es packt die Entwickler-Signatur (inklusive Zertifikat, etc.) in einen einzelnen Layer (ein Blob).
+    * Es lädt diesen Layer und das neue Signature Manifest in die Registry hoch.
+    * Es erstellt einen **neuen Tag** `sha256-abc123....sig`, der auf dieses brandneue Signature Manifest verweist.
+
+**Zustand nach der Entwickler-Signatur:**
+
+```
+registry.zeta.corp/
+└── zeta-guard
+    └── manifests
+        ├── sha256:abc123...             (Ihr Image, UNVERÄNDERT)
+        └── sha256-def456...             (Das neue Signature Manifest)
+    └── tags
+        └── sha256-abc123....sig  ──────> verweist auf sha256:def456...
+```
+
+Das Signature Manifest `sha256:def456...` enthält jetzt:
+
+* `layers`:
+  * `[0]`: Blob mit der **Developer-Signatur**
+
+**Schritt 2: Der Maintainer signiert dasselbe Image**
+
+1. **Befehl:** `cosign sign registry.zeta.corp/zeta-guard@sha256:abc123...`
+2. **Was `cosign` tut:**
+    * Es stellt fest: "Für dieses Image existiert bereits ein Signature Manifest unter dem Tag `sha256-abc123....sig`."
+    * Es lädt das **existierende Signature Manifest** (`sha256:def456...`) herunter.
+    * Es erstellt einen **neuen Layer**, der die Maintainer-Signatur enthält.
+    * Es **fügt diesen neuen Layer** zum heruntergeladenen Manifest hinzu.
+    * Es lädt das **aktualisierte Signature Manifest** wieder in die Registry hoch und überschreibt die alte Version (`sha256:def456...`). Der Tag selbst (`sha256-abc123....sig`) muss nicht geändert werden, da er weiterhin auf dasselbe Manifest (nach Digest) verweist, nur eben in einer neueren Version.
+
+**Endzustand nach der Maintainer-Signatur:**
+
+```
+registry.zeta.corp/
+└── zeta-guard
+    └── manifests
+        ├── sha256:abc123...             (Ihr Image, IMMER NOCH UNVERÄNDERT)
+        └── sha256:def456... (v2)        (Das AKTUALISIERTE Signature Manifest)
+    └── tags
+        └── sha256-abc123....sig  ──────> verweist immer noch auf sha256:def456...
+```
+
+Das Signature Manifest `sha256:def456...` enthält jetzt:
+
+* `layers`:
+  * `[0]`: Blob mit der **Developer-Signatur**
+  * `[1]`: Blob mit der **Maintainer-Signatur**
+
+### Wie die Verifizierung (`cosign verify`) funktioniert
+
+Wenn Sie `cosign verify` ausführen, passiert genau der umgekehrte Prozess:
+
+1. `cosign` bekommt den Image-Digest (`sha256:abc123...`).
+2. Es konstruiert den erwarteten Tag-Namen: `sha256-abc123....sig`.
+3. Es fragt die Registry nach diesem Tag und holt sich das dahinterliegende Signature Manifest.
+4. Es lädt **alle Layer** aus diesem Manifest herunter.
+5. Es prüft jede einzelne Signatur in jedem Layer gegen die von Ihnen erwarteten Identitäten (z.B. "Ich erwarte eine Signatur vom Entwickler-Workflow UND eine vom Maintainer-Workflow").
+
+### Zusammenfassung
+
+* **Nicht-invasiv:** Das ursprüngliche Image und sein Digest bleiben absolut unverändert. Dies ist entscheidend für die Reproduzierbarkeit und Integrität.
+* **Keine Tag-Verschmutzung:** Es wird nur ein einziger, vorhersagbarer und stabiler Tag (`.sig`) pro Image-Digest erstellt, der alle Signaturen bündelt.
+* **Atomar:** Das Hinzufügen einer Signatur ist eine atomare Operation, die ein bestehendes Manifest aktualisiert.
+* **Standardkonform:** Der gesamte Mechanismus baut auf den Standardfunktionen der OCI-Registry-Spezifikation auf und funktioniert mit jeder modernen Registry.
