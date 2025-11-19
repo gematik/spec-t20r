@@ -1,0 +1,3 @@
+tetragon:
+  # Kind usually has BTF at this location
+  btf: "/sys/kernel/btf/vmlinux"

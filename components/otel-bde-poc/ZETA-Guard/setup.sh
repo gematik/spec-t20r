@@ -70,8 +70,16 @@ CONFIG_FILE="./kind-config-${CLUSTER_NAME}.yaml"
 cat <<EOF > "${CONFIG_FILE}"
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  disableDefaultCNI: true
 nodes:
 - role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
 EOF
 
 # Füge Worker Nodes dynamisch hinzu
@@ -150,6 +158,13 @@ if $ISTIO; then
     fi
 fi
 
+# Prüfen, ob helm installiert ist
+if ! command -v helm &>/dev/null; then
+    echo "❌ 'helm' ist nicht installiert. Installiere es mit:"
+    echo "👉 https://helm.sh/docs/intro/install/"
+    exit 1
+fi
+
 # Erstellen des Docker-Images für den Resource Server
 echo "📦 Erstelle das Docker-Image ${DOCKER_IMAGE} aus ${DOCKERFILE_PATH}..."
 docker build --no-cache -t "${DOCKER_IMAGE}" -f "${DOCKERFILE_PATH}" resource-server/src
@@ -207,6 +222,42 @@ kubectl apply -f "${METRICS_SERVER_FILE}" # Erzeugt den Metrics Server (Ressourc
 kubectl apply -f "${HPA_FILE}" # Erzeugt den Horizontal Pod Autoscaler (HPA)
 # Ingress für Tracing aktivieren
 kubectl apply -f "${INGRESS_TRACING_FILE}"
+
+# Install Cilium
+echo "🚀 Installing Cilium..."
+helm repo add cilium https://helm.cilium.io/
+helm repo update
+helm install cilium cilium/cilium --version 1.14.4 \
+   --namespace kube-system \
+   --set k8sServiceHost="${CLUSTER_NAME}-control-plane" \
+   --set k8sServicePort=6443 \
+   -f helm/cilium-values.yaml
+
+# Wait for Cilium to be ready
+echo "⏳ Waiting for Cilium to be ready..."
+kubectl -n kube-system rollout status ds/cilium --timeout=300s
+
+# Install Tetragon
+echo "🚀 Installing Tetragon..."
+helm install tetragon cilium/tetragon --version 1.0.0 \
+   --namespace kube-system \
+   -f helm/tetragon-values.yaml
+
+# Wait for Tetragon CRDs to be created
+echo "⏳ Waiting for Tetragon CRDs to be created..."
+until kubectl get crd tracingpolicies.cilium.io &> /dev/null; do
+    sleep 2
+done
+
+# Wait for Tetragon CRDs to be established
+echo "⏳ Waiting for Tetragon CRDs to be established..."
+kubectl wait --for condition=established --timeout=60s crd/tracingpolicies.cilium.io
+
+# Apply Tetragon Policies
+echo "🛡️ Applying Tetragon Policies..."
+kubectl apply -f tetragon-policies/opa-policy.yaml
+kubectl apply -f tetragon-policies/envoy-policy.yaml
+kubectl apply -f tetragon-policies/otel-policy.yaml
 
 # Warten, bis die Ressourcen bereit sind
 #echo "Warten, bis die Deployments hochgefahren sind..."

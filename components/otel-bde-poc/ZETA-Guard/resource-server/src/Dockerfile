@@ -1,7 +1,7 @@
 # Dockerfile for rs-vsdm2 Go server
 
 # Builder stage: Compile the Go application
-FROM golang:1.23.6 AS builder
+FROM golang:latest AS builder
 
 WORKDIR /app
 

@@ -1,0 +1,20 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: otel-tracing
+spec:
+  kprobes:
+  - call: "sys_socket"
+    syscall: true
+    args:
+    - index: 0
+      type: "int"
+    - index: 1
+      type: "int"
+    - index: 2
+      type: "int"
+    selectors:
+    - matchBinaries:
+      - operator: "In"
+        values:
+        - "/otelcol-contrib"
