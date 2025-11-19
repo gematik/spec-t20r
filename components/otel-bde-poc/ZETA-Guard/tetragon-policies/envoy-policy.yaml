@@ -2,7 +2,11 @@ apiVersion: cilium.io/v1alpha1
 kind: TracingPolicy
 metadata:
   name: envoy-tracing
+  namespace: vsdm2
 spec:
+  podSelector:
+    matchLabels:
+      app: envoy-pep
   kprobes:
   - call: "tcp_connect"
     syscall: false
