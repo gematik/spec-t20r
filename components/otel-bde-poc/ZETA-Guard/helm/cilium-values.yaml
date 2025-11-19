@@ -1,0 +1,13 @@
+ipam:
+  mode: kubernetes
+kubeProxyReplacement: true
+hostServices:
+  enabled: false
+externalIPs:
+  enabled: true
+nodePort:
+  enabled: true
+hostPort:
+  enabled: true
+image:
+  pullPolicy: IfNotPresent
