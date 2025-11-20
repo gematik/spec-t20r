@@ -221,7 +221,7 @@ kubectl apply -f "${INGRESS_TRACING_FILE}"
 echo "🚀 Installing Cilium..."
 helm repo add cilium https://helm.cilium.io/
 helm repo update
-helm install cilium cilium/cilium --version 1.14.4 \
+helm install cilium cilium/cilium --version 1.18.4 \
    --namespace kube-system \
    --set k8sServiceHost="${CLUSTER_NAME}-control-plane" \
    --set k8sServicePort=6443 \
@@ -239,13 +239,13 @@ helm install tetragon cilium/tetragon --version 1.0.0 \
 
 # Wait for Tetragon CRDs to be created
 echo "⏳ Waiting for Tetragon CRDs to be created..."
-until kubectl get crd tracingpolicies.cilium.io &> /dev/null; do
+until kubectl get crd tracingpoliciesnamespaced.cilium.io &> /dev/null; do
     sleep 2
 done
 
 # Wait for Tetragon CRDs to be established
 echo "⏳ Waiting for Tetragon CRDs to be established..."
-kubectl wait --for condition=established --timeout=60s crd/tracingpolicies.cilium.io
+kubectl wait --for condition=established --timeout=60s crd/tracingpoliciesnamespaced.cilium.io
 
 # Apply Tetragon Policies
 echo "🛡️ Applying Tetragon Policies..."

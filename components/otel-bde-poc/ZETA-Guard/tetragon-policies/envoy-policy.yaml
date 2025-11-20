@@ -1,5 +1,5 @@
 apiVersion: cilium.io/v1alpha1
-kind: TracingPolicy
+kind: TracingPolicyNamespaced
 metadata:
   name: envoy-tracing
   namespace: vsdm2
@@ -13,6 +13,15 @@ spec:
     args:
     - index: 0
       type: "sock"
+  - call: "sys_socket"
+    syscall: true
+    args:
+    - index: 0
+      type: "int"
+    - index: 1
+      type: "int"
+    - index: 2
+      type: "int"
     selectors:
     - matchBinaries:
       - operator: "In"
