@@ -104,15 +104,12 @@ INGRESS_FILE="ingress/ingress.yaml"
 INGRESS_VSDM2_FILE="ingress/ingress-vsdm2.yaml"
 ENVOY_FILE="envoy/envoy.yaml"
 OPA_FILE="opa/opa.yaml"
-ORY_FILE="ory/ory.yaml"
 GEMATIK_SIEM_SECRET_FILE="otel-collector/gematik-siem-secret.yaml"
 OTEL_COLLECTOR_FILE="otel-collector/otel-collector.yaml"
 PROMETHEUS_FILE="prometheus/prometheus.yaml"
 JAEGER_FILE="jaeger/jaeger.yaml"
 GRAFANA_FILE="grafana/grafana.yaml"
 RESOURCE_SERVER_FILE="resource-server/rs-vsdm2-app.yaml"
-VALKEY_PDP_FILE="valkey-pdp/valkey-pdp.yaml"
-VALKEY_PEP_FILE="valkey-pep/valkey-pep.yaml"
 BDE_COLLECTOR_FILE="bde-collector/bde-collector.yaml"
 METRICS_SERVER_FILE="metrics-server/metrics-server.yaml"
 HPA_FILE="metrics-server/horizontal-pod-autoscaler.yaml"
@@ -208,15 +205,12 @@ echo "⏳ Warten auf das Ingress Controller Deployment..."
 kubectl apply -f "${INGRESS_VSDM2_FILE}" # Erzeugt den Ingress für die VSDM2 App
 kubectl apply -f "${ENVOY_FILE}" # Erzeugt den PEP HTTP Proxy
 kubectl apply -f "${OPA_FILE}" # Erzeugt den OPA Service (Policy Engine)
-kubectl apply -f "${ORY_FILE}" # Erzeugt die ORY Services (Authentifizierung und Autorisierung)
 kubectl apply -f "${GEMATIK_SIEM_SECRET_FILE}" # Erzeugt das Geamtik SIEM Secret
 kubectl apply -f "${OTEL_COLLECTOR_FILE}" # Erzeugt den OpenTelemetry Collector (Telemetrie-Daten Service)
 kubectl apply -f "${PROMETHEUS_FILE}" # Erzeugt den Prometheus Service (Monitoring)
 kubectl apply -f "${JAEGER_FILE}" # Erzeugt den Jaeger Service (Tracing)
 kubectl apply -f "${GRAFANA_FILE}" # Erzeugt den Grafana Service (Dashboard)
 kubectl apply -f "${RESOURCE_SERVER_FILE}" # Erzeugt den Resource Server Service (VSDM2 App)
-kubectl apply -f "${VALKEY_PDP_FILE}" # Erzeugt die PDP DB Service (ValKey)
-kubectl apply -f "${VALKEY_PEP_FILE}" # Erzeugt den PEP DB Service (ValKey)
 kubectl apply -f "${BDE_COLLECTOR_FILE}" # Erzeugt den BDE Collector Service (otel-collector für BDE)
 kubectl apply -f "${METRICS_SERVER_FILE}" # Erzeugt den Metrics Server (Ressourcenverbrauch)
 kubectl apply -f "${HPA_FILE}" # Erzeugt den Horizontal Pod Autoscaler (HPA)
