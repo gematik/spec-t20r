@@ -64,21 +64,20 @@ data:
       decision_cache_enabled: true
       decision_cache_ttl_seconds: 10
     services:
-      valkey:
-        url: "http://valkey-pdp-svc.vsdm2.svc.cluster.local:80" # ValKey PDP Service URL
-        headers:
-          Authorization: "Bearer some-secret-token" # Beispiel Auth (anpassen!)
-      artifact-registry:
+      gematik-pt-zeta-test:
         url: https://europe-west3-docker.pkg.dev
         type: oci
 
+
     bundles:
       authz:
-        service: artifact-registry
-        resource: europe-west3-docker.pkg.dev/gematik-pt-zeta-test/zeta-policies/test-fachdienst-policies:latest
+        service: gematik-pt-zeta-test
+        resource: europe-west3-docker.pkg.dev/gematik-pt-zeta-test/zeta-policies-dev/test-fachdienst-policy:latest
         signing:
           keyid: "zeta_artifact_reg_nist"
           files: true
+    decision_logs:
+      console: true
 
     keys:
       zeta_artifact_reg_nist:
