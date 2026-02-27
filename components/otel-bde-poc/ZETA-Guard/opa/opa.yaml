@@ -69,6 +69,9 @@ data:
       authz:
         service: gematik-pt-zeta-test
         resource: europe-west3-docker.pkg.dev/gematik-pt-zeta-test/zeta-policies-dev/vsdm-policy:latest
+        polling:
+          min_delay_seconds: 50
+          max_delay_seconds: 80
         signing:
           keyid: "zeta_artifact_reg_nist"
           files: true
@@ -104,5 +107,4 @@ data:
         algorithm: ES256
 
     status:
-      service: gematik-pt-zeta-test
-      reporting: true
+      console: true
