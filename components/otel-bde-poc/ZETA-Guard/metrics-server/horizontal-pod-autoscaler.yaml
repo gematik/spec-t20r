@@ -76,32 +76,7 @@ spec:
         type: Utilization
         averageUtilization: 80
 ---
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: hpa-for-envoy # Ändere den Namen, um die Änderung des Ziels widerzuspiegeln
-  namespace: projectcontour # Beachte: Namespace bleibt projectcontour, da Envoy und Contour im selben Namespace sind
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: DaemonSet # Ändere den Kind von Deployment zu DaemonSet
-    name: envoy      # Ändere den Namen von contour zu envoy
-  minReplicas: 2                  # Passe die minimalen Replicas für Envoy an (überdenke ob 2 für DaemonSet sinnvoll ist)
-  maxReplicas: 8                  # Passe die maximalen Replicas für Envoy an (überdenke ob 8 für DaemonSet sinnvoll ist)
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70    # Ziel-CPU-Auslastung (z.B. 70%)
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
----
+
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

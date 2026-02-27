@@ -9,3 +9,5 @@ var/
 console
 poetry.lock
 dist/
+kind-config-zeta-guard.yaml
+cluster-jwks.json

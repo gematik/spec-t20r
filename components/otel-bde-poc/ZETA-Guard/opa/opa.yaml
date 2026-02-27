@@ -14,31 +14,31 @@ spec:
         app: opa
     spec:
       containers:
-      - name: opa
-        image: openpolicyagent/opa:latest
-        args:
-        - "run"
-        - "--server"
-        - "--addr=:8181"
-        - "--config-file=/config/opa-config.yaml"
-        volumeMounts:
-        - name: opa-config-vol
-          mountPath: /config
-          readOnly: true
-        resources:
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-        ports:
-        - containerPort: 8181
-          name: http
+        - name: opa
+          image: openpolicyagent/opa:latest
+          args:
+            - "run"
+            - "--server"
+            - "--addr=:8181"
+            - "--config-file=/config/opa-config.yaml"
+          volumeMounts:
+            - name: opa-config-vol
+              mountPath: /config
+              readOnly: true
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+          ports:
+            - containerPort: 8181
+              name: http
       volumes: # Hinzugefügter Volumes-Abschnitt
-      - name: opa-config-vol
-        configMap:
-          name: opa-config
+        - name: opa-config-vol
+          configMap:
+            name: opa-config
 ---
 apiVersion: v1
 kind: Service
@@ -49,9 +49,9 @@ spec:
   selector:
     app: opa
   ports:
-  - protocol: TCP
-    port: 8181
-    targetPort: 8181
+    - protocol: TCP
+      port: 8181
+      targetPort: 8181
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -60,16 +60,49 @@ metadata:
   namespace: vsdm2
 data:
   opa-config.yaml: |
+    services:
+      gematik-pt-zeta-test:
+        url: https://europe-west3-docker.pkg.dev
+        type: oci
+
+    bundles:
+      authz:
+        service: gematik-pt-zeta-test
+        resource: europe-west3-docker.pkg.dev/gematik-pt-zeta-test/zeta-policies-dev/vsdm-policy:latest
+        signing:
+          keyid: "zeta_artifact_reg_nist"
+          files: true
+
+    decision_logs:
+      console: true
+
     authorization:
       decision_cache_enabled: true
       decision_cache_ttl_seconds: 10
-    services:
-      valkey:
-        url: "http://valkey-pdp-svc.vsdm2.svc.cluster.local:80" # ValKey PDP Service URL
-        headers:
-          Authorization: "Bearer some-secret-token" # Beispiel Auth (anpassen!)
 
-    policies:
-      authz/allow:
-        query: |
-          valkey.lookup("authz_policies", input.user) == "allow" # Beispiel: Lookup in ValKey
+    keys:
+      zeta_artifact_reg_nist:
+        key: |
+          -----BEGIN CERTIFICATE-----
+          MIIC6TCCAo+gAwIBAgIGaKePuebaMAoGCCqGSM49BAMCMIGEMQswCQYDVQQGEwJE
+          RTEfMB0GA1UECgwWZ2VtYXRpayBHbWJIIE5PVC1WQUxJRDEyMDAGA1UECwwpS29t
+          cG9uZW50ZW4tQ0EgZGVyIFRlbGVtYXRpa2luZnJhc3RydWt0dXIxIDAeBgNVBAMM
+          F0dFTS5LT01QLUNBNjEgVEVTVC1PTkxZMB4XDTI1MTAxNDAwMDAwMFoXDTMwMTAx
+          MzIzNTk1OVowWzELMAkGA1UEBhMCREUxKzApBgNVBAoMImdlbWF0aWsgR21iSCBU
+          RVNULU9OTFkgLSBOT1QtVkFMSUQxHzAdBgNVBAMMFnpldGFfYXJ0aWZhY3RfcmVn
+          X25pc3QwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQoHA1qvLJXvpoVQ8+LmvvI
+          PNGq7SHGKEEFLPQyKD4mqVOUONwIOeNke2t+ssR05xYALsAAZIWR4f07k1Gt5bOI
+          o4IBEzCCAQ8wOQYFKyQIAwMEMDAuMCwwKjAoMCYwGAwWWkVUQSBBcnRpZmFjdCBS
+          ZWdpc3RyeTAKBggqghQATASCRTAhBgNVHSAEGjAYMAoGCCqCFABMBIFLMAoGCCqC
+          FABMBIEjMB8GA1UdIwQYMBaAFJ814DCpf8r4Zp+QCkLNu4Fln0n+MAwGA1UdEwEB
+          /wQCMAAwHQYDVR0OBBYEFCpsnCnL4vy6ubi3fkfupnVzPTQuMA4GA1UdDwEB/wQE
+          AwIHgDA8BggrBgEFBQcBAQQwMC4wLAYIKwYBBQUHMAGGIGh0dHA6Ly9laGNhLmdl
+          bWF0aWsuZGUvbmlzdC1vY3NwMBMGA1UdJQQMMAoGCCsGAQUFBwMDMAoGCCqGSM49
+          BAMCA0gAMEUCIE6v7hdjKIR/dmMcfzU97JJEG+RwDL/k8sabbRVeJl4UAiEAsdCu
+          bllGiBJpD/CF9zX6foIMEIBEgFsD4bC60quL8AE=
+          -----END CERTIFICATE-----
+        algorithm: ES256
+
+    status:
+      service: gematik-pt-zeta-test
+      reporting: true
