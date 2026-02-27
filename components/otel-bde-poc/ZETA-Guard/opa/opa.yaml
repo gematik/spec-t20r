@@ -101,7 +101,7 @@ data:
           BAMCA0gAMEUCIE6v7hdjKIR/dmMcfzU97JJEG+RwDL/k8sabbRVeJl4UAiEAsdCu
           bllGiBJpD/CF9zX6foIMEIBEgFsD4bC60quL8AE=
           -----END CERTIFICATE-----
-          algorithm: ES256
+        algorithm: ES256
 
     status:
       service: gematik-pt-zeta-test
