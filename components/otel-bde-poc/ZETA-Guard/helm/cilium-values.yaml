@@ -11,3 +11,11 @@ hostPort:
   enabled: true
 image:
   pullPolicy: IfNotPresent
+hubble:
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+encryption:
+  enabled: true
+  type: wireguard
