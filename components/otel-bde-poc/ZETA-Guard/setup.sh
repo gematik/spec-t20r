@@ -4,7 +4,7 @@ set -e  # Beendet das Skript bei einem Fehler
 
 # Standardwerte
 CLUSTER_NAME="zeta-guard"
-INGRESS_PORT=8080  # Standardport für Ingress
+INGRESS_PORT=8081  # Standardport für Ingress
 WORKER_COUNT=4   # Standardanzahl Worker Nodes
 ISTIO=false # Standardmäßig Istio deaktiviert
 
