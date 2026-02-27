@@ -14,31 +14,31 @@ spec:
         app: opa
     spec:
       containers:
-      - name: opa
-        image: openpolicyagent/opa:latest
-        args:
-        - "run"
-        - "--server"
-        - "--addr=:8181"
-        - "--config-file=/config/opa-config.yaml"
-        volumeMounts:
-        - name: opa-config-vol
-          mountPath: /config
-          readOnly: true
-        resources:
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-        ports:
-        - containerPort: 8181
-          name: http
+        - name: opa
+          image: openpolicyagent/opa:latest
+          args:
+            - "run"
+            - "--server"
+            - "--addr=:8181"
+            - "--config-file=/config/opa-config.yaml"
+          volumeMounts:
+            - name: opa-config-vol
+              mountPath: /config
+              readOnly: true
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+          ports:
+            - containerPort: 8181
+              name: http
       volumes: # Hinzugefügter Volumes-Abschnitt
-      - name: opa-config-vol
-        configMap:
-          name: opa-config
+        - name: opa-config-vol
+          configMap:
+            name: opa-config
 ---
 apiVersion: v1
 kind: Service
@@ -49,9 +49,9 @@ spec:
   selector:
     app: opa
   ports:
-  - protocol: TCP
-    port: 8181
-    targetPort: 8181
+    - protocol: TCP
+      port: 8181
+      targetPort: 8181
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -60,24 +60,25 @@ metadata:
   namespace: vsdm2
 data:
   opa-config.yaml: |
-    authorization:
-      decision_cache_enabled: true
-      decision_cache_ttl_seconds: 10
     services:
       gematik-pt-zeta-test:
         url: https://europe-west3-docker.pkg.dev
         type: oci
 
-
     bundles:
       authz:
         service: gematik-pt-zeta-test
-        resource: europe-west3-docker.pkg.dev/gematik-pt-zeta-test/zeta-policies-dev/test-fachdienst-policy:latest
+        resource: europe-west3-docker.pkg.dev/gematik-pt-zeta-test/zeta-policies-dev/vsdm-policy:latest
         signing:
           keyid: "zeta_artifact_reg_nist"
           files: true
+
     decision_logs:
       console: true
+
+    authorization:
+      decision_cache_enabled: true
+      decision_cache_ttl_seconds: 10
 
     keys:
       zeta_artifact_reg_nist:
@@ -100,3 +101,8 @@ data:
           BAMCA0gAMEUCIE6v7hdjKIR/dmMcfzU97JJEG+RwDL/k8sabbRVeJl4UAiEAsdCu
           bllGiBJpD/CF9zX6foIMEIBEgFsD4bC60quL8AE=
           -----END CERTIFICATE-----
+          algorithm: ES256
+
+    status:
+      service: gematik-pt-zeta-test
+      reporting: true
