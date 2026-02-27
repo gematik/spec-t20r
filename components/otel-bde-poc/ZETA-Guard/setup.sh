@@ -71,7 +71,7 @@ cat <<EOF > "${CONFIG_FILE}"
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
-  disableDefaultCNI: true
+  disableDefaultCNI: false
 nodes:
 - role: control-plane
   kubeadmConfigPatches:
