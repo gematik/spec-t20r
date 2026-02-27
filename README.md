@@ -4,6 +4,14 @@
 
 Hier sind die Festlegungen zur Telematikinfrastruktur dokumentiert. Es werden insbesondere die Komponenten der anwendungsübergreifenden Telematikinfrastruktur sowie deren Schnittstellen beschrieben.
 
+## License
+
+(C) EY Strategy and Transactions GmbH, 2025, licensed for gematik GmbH
+
+Apache License, Version 2.0
+
+See the [LICENSE](./LICENSE) for the specific language governing permissions and limitations under the License
+
 ## Inhalt
 
 - [Telematikinfrastruktur](#telematikinfrastruktur)
