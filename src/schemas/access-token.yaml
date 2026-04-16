@@ -38,6 +38,9 @@ access_token:
           description: "SHA-256 hash of the public key used in the DPoP proof."
       required:
         - jkt
+    sid:
+      type: string
+      description: "The session ID of the token."
   required:
     - iss
     - exp
@@ -47,3 +50,4 @@ access_token:
     - iat
     - jti
     - cnf
+    - sid
